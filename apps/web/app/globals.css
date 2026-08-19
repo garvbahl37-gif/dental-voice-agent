@@ -1,0 +1,173 @@
+/*
+ * Vaani console — "Porcelain".
+ *
+ * Light, because the room this belongs in is light. A dental practice is
+ * daylight, enamel and paper; a black instrument panel is borrowed from a
+ * different profession. The base is a warm off-white rather than #fff —
+ * pure white glares under clinic lighting and flattens every surface above it.
+ *
+ * The two-channel colour rule survives from the dark version and matters more
+ * here: each participant owns one hue, and nothing decorative may borrow it,
+ * so "who is speaking" is legible from across a reception desk.
+ */
+
+:root {
+  /* Ground */
+  --bg: #fbfaf7;
+  --bg-tint: #f4f1ea;
+  --surface: #ffffff;
+  --hairline: #e9e4da;
+  --hairline-strong: #d8d1c4;
+
+  /* Ink */
+  --ink: #1a1815;
+  --ink-muted: #6b665c;
+  --ink-faint: #9c968a;
+
+  /* Channels — deepened from the dark palette to hold contrast on light. */
+  --agent: #b8730a; /* turmeric — the front desk */
+  --agent-soft: #fdf3e2;
+  --agent-line: #e8b96a;
+
+  --caller: #2f4b7c; /* deep slate blue — the person calling */
+  --caller-soft: #eef2f8;
+  --caller-line: #9fb2ce;
+
+  --confirm: #2e7d5b;
+  --confirm-soft: #e9f5ef;
+  --alert: #b3352a;
+  --alert-soft: #fbeceb;
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-ui: var(--font-familjen), system-ui, sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+  --font-deva: var(--font-noto-deva), var(--font-familjen), sans-serif;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  /* Light UI needs real shadows for hierarchy; hairlines alone go flat. */
+  --shadow-sm: 0 1px 2px rgba(26, 24, 21, 0.05);
+  --shadow-md: 0 2px 8px rgba(26, 24, 21, 0.06), 0 1px 2px rgba(26, 24, 21, 0.04);
+  --shadow-lg: 0 12px 32px rgba(26, 24, 21, 0.09), 0 2px 8px rgba(26, 24, 21, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The console is a fixed app shell and must never scroll the page. The landing
+   page must. Scoping the lock to the shell lets both live under one <body>. */
+body:has([data-shell='console']) {
+  overflow: hidden;
+}
+
+/* Devanagari needs its own stack and more leading; Latin faces render matras
+   badly or fall back inconsistently across platforms. */
+:lang(hi),
+.deva {
+  font-family: var(--font-deva);
+  line-height: 1.75;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+:focus-visible {
+  outline: 2px solid var(--caller);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: var(--r-pill);
+  border: 3px solid var(--bg);
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* A word arrives as it is spoken, not as it is generated. */
+@keyframes word-in {
+  from {
+    opacity: 0;
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

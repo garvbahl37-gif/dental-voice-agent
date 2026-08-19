@@ -1,0 +1,864 @@
+/*
+ * The landing page.
+ *
+ * Same Porcelain ground as the console, and deliberately the same two-channel
+ * colour rule: every accent on this page is either the caller's slate blue or
+ * the front desk's turmeric. Nothing decorative is allowed a third hue. The
+ * page is about one thing — two people taking turns — so the palette is only
+ * ever those two voices, and a reader who later opens the console finds the
+ * colours already mean something.
+ *
+ * The one moment of boldness is the headline, where the script changes
+ * mid-sentence from Latin to Devanagari. That is not ornament: it is the
+ * product's single differentiating claim, set in type rather than described.
+ * Everything around it stays quiet.
+ *
+ * All selectors are `.lp-` prefixed. The console styles itself with inline
+ * objects, so there is no cascade between the two — but the prefix keeps that
+ * true if the console ever grows a stylesheet.
+ */
+
+.lp {
+  --lp-gutter: clamp(20px, 5vw, 64px);
+  --lp-measure: 1180px;
+  --lp-band: clamp(64px, 9vw, 120px);
+  font-family: var(--font-ui);
+}
+
+.lp-wrap {
+  max-width: var(--lp-measure);
+  margin: 0 auto;
+  padding-inline: var(--lp-gutter);
+}
+
+/* Section rhythm lives on one rule so nothing later cancels it. */
+.lp-band {
+  padding-block: var(--lp-band);
+  border-top: 1px solid var(--hairline);
+}
+
+.lp-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 18px;
+}
+
+.lp-h2 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4.2vw, 42px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  margin: 0 0 14px;
+  max-width: 20ch;
+}
+
+.lp-lede {
+  font-size: clamp(15px, 1.5vw, 17px);
+  line-height: 1.62;
+  color: var(--ink-muted);
+  max-width: 56ch;
+  margin: 0;
+}
+
+/* ── Top bar ─────────────────────────────────────────────────────────────── */
+
+.lp-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(251, 250, 247, 0.86);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.lp-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 62px;
+}
+
+.lp-mark {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.lp-mark-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.lp-mark-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.lp-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lp-nav-link {
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 8px 13px;
+  border-radius: var(--r-pill);
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.lp-nav-link:hover {
+  background: var(--bg-tint);
+  color: var(--ink);
+}
+
+@media (max-width: 720px) {
+  .lp-nav-links .lp-nav-link {
+    display: none;
+  }
+  .lp-nav-links .lp-btn {
+    display: inline-flex;
+  }
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.lp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 13px 26px;
+  border-radius: var(--r-pill);
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+}
+
+.lp-btn-primary {
+  background: var(--agent);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(184, 115, 10, 0.26);
+}
+
+.lp-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(184, 115, 10, 0.32);
+}
+
+.lp-btn-ghost {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.lp-btn-ghost:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.lp-btn-sm {
+  font-size: 13px;
+  padding: 9px 19px;
+}
+
+.lp :is(a, button):focus-visible {
+  outline: 2px solid var(--caller);
+  outline-offset: 3px;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+
+.lp-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+  padding-block: clamp(52px, 8vw, 92px) clamp(56px, 8vw, 96px);
+}
+
+@media (max-width: 940px) {
+  .lp-hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.lp-h1 {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6.1vw, 68px);
+  font-weight: 500;
+  font-variation-settings: 'SOFT' 20, 'WONK' 1, 'opsz' 48;
+  letter-spacing: -0.032em;
+  line-height: 1.04;
+  margin: 0 0 22px;
+  text-wrap: balance;
+}
+
+/* The signature. The sentence changes script where a caller changes language,
+   so the claim is demonstrated by the type rather than asserted by the copy. */
+.lp-h1 .lp-deva {
+  font-family: var(--font-deva);
+  font-size: 0.82em;
+  font-weight: 500;
+  color: var(--agent);
+  letter-spacing: 0;
+}
+
+.lp-h1 .lp-en {
+  color: var(--caller);
+}
+
+.lp-hero-lede {
+  font-size: clamp(16px, 1.7vw, 18.5px);
+  line-height: 1.6;
+  color: var(--ink-muted);
+  max-width: 44ch;
+  margin: 0 0 32px;
+}
+
+.lp-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.lp-cta-note {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin: 16px 0 0;
+}
+
+/* ── The call, playing ───────────────────────────────────────────────────── */
+
+.lp-call {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* Fixed frame. The panel filled downward as the call played, growing the hero
+     by ~600px while someone was still reading the headline. A real call screen
+     holds its size and scrolls inside. */
+  height: clamp(440px, 66vh, 545px);
+}
+
+.lp-call-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg-tint);
+}
+
+.lp-call-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.lp-live {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--alert);
+  box-shadow: 0 0 0 0 rgba(179, 53, 42, 0.5);
+  animation: lp-pulse 2s ease-out infinite;
+}
+
+.lp-call-clock {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-call-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  padding: 20px 18px 24px;
+  /* Softens the top edge so a turn scrolling out reads as scrolled, not cut. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+}
+
+.lp-call-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.lp-call-body::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+  border-radius: var(--r-pill);
+}
+
+.lp-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 86%;
+  animation: lp-rise 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.lp-turn-caller {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.lp-turn-desk {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.lp-turn-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lp-who {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.lp-turn-caller .lp-who {
+  color: var(--caller);
+}
+
+.lp-turn-desk .lp-who {
+  color: var(--agent);
+}
+
+.lp-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.lp-lang {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink-muted);
+  background: var(--bg-tint);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  padding: 1px 7px;
+}
+
+.lp-bubble {
+  border: 1px solid;
+  padding: 10px 14px;
+  line-height: 1.5;
+  box-shadow: var(--shadow-sm);
+}
+
+.lp-turn-caller .lp-bubble {
+  background: var(--caller-soft);
+  border-color: var(--caller-line);
+  border-radius: 4px 14px 14px 14px;
+  font-size: 15px;
+}
+
+.lp-turn-desk .lp-bubble {
+  background: var(--agent-soft);
+  border-color: var(--agent-line);
+  border-radius: 14px 4px 14px 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  text-align: right;
+}
+
+.lp-bubble.lp-deva {
+  font-family: var(--font-deva);
+  line-height: 1.78;
+  font-size: 15px;
+}
+
+/* What the agent did while it was talking — the reason the answer is true. */
+.lp-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-muted);
+  background: var(--bg-tint);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--r-pill);
+  padding: 5px 13px;
+  animation: lp-rise 340ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.lp-tool-ok {
+  color: var(--confirm);
+  border-style: solid;
+  border-color: rgba(46, 125, 91, 0.3);
+  background: var(--confirm-soft);
+}
+
+.lp-typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 2px;
+}
+
+.lp-typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--agent);
+  opacity: 0.4;
+  animation: lp-blink 1.2s ease-in-out infinite;
+}
+
+.lp-typing i:nth-child(2) {
+  animation-delay: 0.16s;
+}
+.lp-typing i:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+.lp-call-foot {
+  border-top: 1px solid var(--hairline);
+  padding: 11px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
+.lp-replay {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  border-radius: var(--r-pill);
+  padding: 5px 13px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.lp-replay:hover {
+  background: var(--bg-tint);
+  color: var(--ink);
+}
+
+/* ── Ledger: what is actually loaded ─────────────────────────────────────── */
+
+.lp-ledger-band {
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  background: var(--bg-tint);
+}
+
+.lp-ledger {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+  .lp-ledger {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lp-ledger-cell:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--hairline);
+  }
+  .lp-ledger-cell:nth-child(2n) {
+    border-right: none;
+  }
+}
+
+.lp-ledger-cell {
+  padding: 26px 24px 26px 0;
+  border-right: 1px solid var(--hairline);
+}
+
+.lp-ledger-cell + .lp-ledger-cell {
+  padding-left: 24px;
+}
+
+.lp-ledger-cell:last-child {
+  border-right: none;
+}
+
+.lp-ledger-n {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  display: block;
+  margin-bottom: 7px;
+}
+
+.lp-ledger-k {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+  display: block;
+  max-width: 22ch;
+}
+
+/* ── Capability cards ────────────────────────────────────────────────────── */
+
+.lp-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(268px, 1fr));
+  gap: 16px;
+  margin-top: 44px;
+}
+
+.lp-card {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: 26px 24px 28px;
+  box-shadow: var(--shadow-sm);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.lp-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.lp-card h3 {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0 0 10px;
+}
+
+.lp-card p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* A verbatim line the agent says, quoted as evidence under each claim. */
+.lp-quote {
+  margin: 16px 0 0;
+  padding: 11px 14px;
+  background: var(--bg-tint);
+  border-left: 2px solid var(--agent-line);
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+.lp-quote.lp-deva {
+  font-family: var(--font-deva);
+  font-size: 13.5px;
+}
+
+/* ── Limits — the deliberate centrepiece of the argument ─────────────────── */
+
+.lp-limits {
+  background: var(--ink);
+  color: #f6f3ec;
+  border-top: none;
+}
+
+.lp-limits .lp-eyebrow {
+  color: rgba(246, 243, 236, 0.5);
+}
+
+.lp-limits .lp-h2 {
+  color: #f6f3ec;
+}
+
+.lp-limits .lp-lede {
+  color: rgba(246, 243, 236, 0.66);
+}
+
+.lp-limit-list {
+  list-style: none;
+  margin: 42px 0 0;
+  padding: 0;
+  border-top: 1px solid rgba(246, 243, 236, 0.14);
+}
+
+.lp-limit {
+  display: grid;
+  grid-template-columns: minmax(0, 0.68fr) minmax(0, 1fr);
+  gap: clamp(16px, 4vw, 56px);
+  padding: 22px 0;
+  border-bottom: 1px solid rgba(246, 243, 236, 0.14);
+  align-items: baseline;
+}
+
+@media (max-width: 720px) {
+  .lp-limit {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
+.lp-limit-k {
+  font-family: var(--font-display);
+  font-size: clamp(17px, 2.2vw, 21px);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: #f6f3ec;
+}
+
+/* The refusal itself, struck through: the page shows you the thing not
+   happening rather than describing it. */
+.lp-limit-k s {
+  text-decoration: line-through;
+  text-decoration-color: var(--agent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 2px;
+  opacity: 0.62;
+}
+
+.lp-limit-v {
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: rgba(246, 243, 236, 0.72);
+}
+
+.lp-limit-v em {
+  font-style: normal;
+  color: var(--agent-line);
+}
+
+/* ── Emergency band ──────────────────────────────────────────────────────── */
+
+.lp-urgent {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .lp-urgent {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.lp-urgent-card {
+  background: var(--alert-soft);
+  border: 1px solid rgba(179, 53, 42, 0.24);
+  border-radius: var(--r-lg);
+  padding: 24px 26px;
+}
+
+.lp-urgent-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--alert);
+  margin-bottom: 14px;
+}
+
+.lp-trigger-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.lp-trigger {
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid rgba(179, 53, 42, 0.2);
+  border-radius: var(--r-pill);
+  padding: 5px 13px;
+}
+
+.lp-trigger.lp-deva {
+  font-family: var(--font-deva);
+  font-size: 12.5px;
+}
+
+/* ── Channels ────────────────────────────────────────────────────────────── */
+
+.lp-channels {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin-top: 40px;
+}
+
+.lp-channel {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 20px;
+  background: var(--surface);
+}
+
+.lp-channel-state {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.lp-state-live {
+  color: var(--confirm);
+  background: var(--confirm-soft);
+  border: 1px solid rgba(46, 125, 91, 0.28);
+}
+
+.lp-state-next {
+  color: var(--ink-faint);
+  background: var(--bg-tint);
+  border: 1px solid var(--hairline);
+}
+
+.lp-channel h4 {
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.lp-channel p {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+  margin: 0;
+}
+
+/* ── Close ───────────────────────────────────────────────────────────────── */
+
+.lp-close {
+  text-align: center;
+  padding-block: clamp(72px, 11vw, 132px);
+  border-top: 1px solid var(--hairline);
+}
+
+.lp-close .lp-h2 {
+  margin-inline: auto;
+  max-width: 18ch;
+}
+
+.lp-close .lp-lede {
+  margin-inline: auto;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.lp-close .lp-cta-row {
+  justify-content: center;
+}
+
+.lp-foot {
+  border-top: 1px solid var(--hairline);
+  padding-block: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.lp-foot a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.lp-foot a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* ── Motion ──────────────────────────────────────────────────────────────── */
+
+@keyframes lp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes lp-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(179, 53, 42, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(179, 53, 42, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(179, 53, 42, 0);
+  }
+}
+
+@keyframes lp-blink {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp *,
+  .lp *::before,
+  .lp *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .lp-btn:hover,
+  .lp-card:hover {
+    transform: none;
+  }
+}
