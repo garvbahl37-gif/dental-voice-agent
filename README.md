@@ -11,6 +11,11 @@ and hands off to a human when it should.
 The agent has no persona name. Asked who it is, it says it is the practice's automated
 receptionist and carries on — it never claims to be a person.
 
+**Live:** [dental-voice-agent-pi.vercel.app](https://dental-voice-agent-pi.vercel.app) —
+open the console and press *Take a call*. The voice server sleeps when idle on Render's
+free tier, so the first call after a quiet spell waits ~40s on "Waking the server…"
+before it connects.
+
 ![The landing page](docs/screenshots/landing.png)
 
 ---
@@ -56,10 +61,17 @@ serverless hosting.** It needs a host that keeps a socket open.
 A `Dockerfile` is here, with `render.yaml` and `fly.toml` for the two easiest:
 
 ```bash
-# Render — connect the repo, it reads render.yaml
+# Render — connect the repo; it reads render.yaml
 # Fly
 fly launch --copy-config --no-deploy && fly secrets set GEMINI_API_KEY=… && fly deploy
 ```
+
+The deployed pair:
+
+| | where | why |
+|---|---|---|
+| Console | Vercel | static, and its build command is `next build` — Vercel's Turbo autodetect trips on the agent↔core cycle |
+| Voice server | Render (Singapore) | holds the call socket; free tier sleeps when idle |
 
 Then set, on the voice server:
 
