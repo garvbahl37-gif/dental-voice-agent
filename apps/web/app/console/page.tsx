@@ -24,6 +24,32 @@ const SERVER_URL = process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? 'ws://localhost:8
  * console has no voice server behind it. Telling someone on a deployed page to
  * "start it locally" is wrong advice and makes a working build look broken.
  */
+/**
+ * Poll /health until the instance answers, or give up.
+ *
+ * Returns false only when the server is genuinely unreachable, so a real
+ * misconfiguration still surfaces as an error rather than an endless wait.
+ */
+async function wakeServer(onSlow: () => void): Promise<boolean> {
+  const http = SERVER_URL.replace(/^ws/, 'http')
+  const deadline = Date.now() + 90_000
+  let announced = false
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`${http}/health`, { signal: AbortSignal.timeout(10_000) })
+      if (res.ok) return true
+    } catch {
+      /* asleep, starting, or absent — the retry decides which */
+    }
+    if (!announced) {
+      announced = true
+      onSlow()
+    }
+    await new Promise((r) => setTimeout(r, 2000))
+  }
+  return false
+}
+
 function unreachableMessage(): string {
   const remote = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   const localTarget = SERVER_URL.includes('localhost')
@@ -41,6 +67,8 @@ const LANG_LABEL: Record<Lang, string> = {
 
 export default function Console() {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'live' | 'ended' | 'error'>('idle')
+  /** The server is asleep and being woken; the call has not failed. */
+  const [waking, setWaking] = useState(false)
   const [agentState, setAgentState] = useState<AgentState>('idle')
   const [turns, setTurns] = useState<Turn[]>([])
   const [metrics, setMetrics] = useState<TurnMetrics[]>([])
@@ -261,6 +289,7 @@ export default function Console() {
 
   const start = useCallback(async () => {
     setError(null)
+    setWaking(false)
     setLastCall(null)
     utteranceTurn.current.clear()
     setTurns([])
@@ -270,6 +299,22 @@ export default function Console() {
     setTools([])
     setTriage(null)
     setAgentState('idle')
+    /**
+     * Wake the server before opening the socket.
+     *
+     * The voice server sleeps when idle on a free host, and a cold start takes
+     * the better part of a minute. A WebSocket handshake will not wait that
+     * long — it just fails — so the first call after a quiet spell died on the
+     * doorstep. An HTTP request wakes the instance and *will* wait, so one goes
+     * first and the caller is told what is happening.
+     */
+    if (!(await wakeServer(() => setWaking(true)))) {
+      setError(unreachableMessage())
+      setStatus('error')
+      return
+    }
+    setWaking(false)
+
     const vc = new VoiceClient(`${SERVER_URL}/session`, {
       onEvent: handleEvent,
       onLevel: (mic, agent) => setLevels({ mic, agent }),
@@ -439,7 +484,7 @@ export default function Console() {
             </button>
           ) : (
             <button onClick={start} disabled={status === 'connecting'} style={s.startBtn}>
-              {status === 'connecting' ? 'Connecting…' : 'Take a call'}
+              {waking ? 'Waking the server…' : status === 'connecting' ? 'Connecting…' : 'Take a call'}
             </button>
           )}
         </div>
