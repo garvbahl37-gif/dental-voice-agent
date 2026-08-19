@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { createServer } from 'node:http'
+import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { WebSocketServer } from 'ws'
 import { LiveSession, LIVE_VOICE } from '@vaani/live'
 import {
@@ -41,9 +42,63 @@ const practice = new PracticeStore()
 /** Call history. Survives between calls; not yet between restarts. */
 const callLog = new CallLog()
 
+/**
+ * Who may read caller data.
+ *
+ * `/crm` and `/practice` return patient names, mobile numbers and the reason
+ * someone called a dentist. That is health-adjacent personal data, so these
+ * endpoints fail closed: with no token configured they answer only to loopback,
+ * which is exactly the local-development case and nothing else. Setting
+ * VAANI_ADMIN_TOKEN is what allows a real CRM to read them from off-box.
+ *
+ * The previous version sent `access-control-allow-origin: *` on every response
+ * and required no credential at all, so any page in any browser could read the
+ * whole call log off a reachable server.
+ */
+const ADMIN_TOKEN = process.env.VAANI_ADMIN_TOKEN ?? ''
+const ALLOWED_ORIGINS = (process.env.VAANI_ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean)
+
+function isLoopback(addr: string | undefined): boolean {
+  if (!addr) return false
+  const a = addr.replace(/^::ffff:/, '')
+  return a === '127.0.0.1' || a === '::1' || a === 'localhost'
+}
+
+/** Constant-time, and length-safe — comparing different lengths throws. */
+function tokenMatches(given: string): boolean {
+  if (!ADMIN_TOKEN || given.length !== ADMIN_TOKEN.length) return false
+  return timingSafeEqual(Buffer.from(given), Buffer.from(ADMIN_TOKEN))
+}
+
+function mayReadCallerData(req: import('node:http').IncomingMessage): boolean {
+  if (ADMIN_TOKEN) {
+    const header = req.headers.authorization ?? ''
+    return header.startsWith('Bearer ') && tokenMatches(header.slice(7))
+  }
+  return isLoopback(req.socket.remoteAddress)
+}
+
 const http = createServer(async (req, res) => {
-  res.setHeader('access-control-allow-origin', '*')
+  const origin = req.headers.origin
+  // Reflect only configured origins. A wildcard here is what let any site read
+  // the call log; `*` also cannot carry credentials, so it bought nothing.
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('access-control-allow-origin', origin)
+    res.setHeader('access-control-allow-credentials', 'true')
+    res.setHeader('vary', 'Origin')
+  }
+  res.setHeader('access-control-allow-headers', 'authorization, content-type')
+
   const url = req.url ?? '/'
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
+  }
 
   if (url === '/health') {
     return json(res, { ok: true, practice: practice.name, engine: 'gemini-live', voice: LIVE_VOICE })
@@ -56,6 +111,21 @@ const http = createServer(async (req, res) => {
       tts: [{ id: `gemini-live voice: ${LIVE_VOICE}`, tier: 'cloud', available: ready }],
     })
   }
+  // Everything below returns caller data. One gate, checked before any of it.
+  if (url === '/crm' || url.startsWith('/crm/') || url === '/practice') {
+    if (!mayReadCallerData(req)) {
+      res.writeHead(401, { 'www-authenticate': 'Bearer' })
+      res.end(
+        JSON.stringify({
+          error: ADMIN_TOKEN
+            ? 'A bearer token is required to read caller data.'
+            : 'Caller data is served to localhost only. Set VAANI_ADMIN_TOKEN to read it from elsewhere.',
+        }),
+      )
+      return
+    }
+  }
+
   if (url === '/crm') {
     return json(res, { stats: callLog.stats(), calls: callLog.all() })
   }
@@ -93,11 +163,32 @@ function json(res: import('node:http').ServerResponse, body: unknown): void {
   res.end(JSON.stringify(body))
 }
 
-const wss = new WebSocketServer({ server: http, path: '/session' })
-let sessionSeq = 0
+/**
+ * Who may open a call.
+ *
+ * A session spends the practice's Gemini quota and can drive every booking
+ * tool, so an open socket is not a neutral thing to leave listening. Same
+ * posture as the data endpoints: loopback by default, token or configured
+ * origin to reach it from anywhere else.
+ */
+const wss = new WebSocketServer({
+  server: http,
+  path: '/session',
+  verifyClient: ({ req, origin }, done) => {
+    if (isLoopback(req.socket.remoteAddress)) return done(true)
+    if (ALLOWED_ORIGINS.length > 0 && origin && ALLOWED_ORIGINS.includes(origin)) return done(true)
+    if (ADMIN_TOKEN) {
+      const header = req.headers.authorization ?? ''
+      if (header.startsWith('Bearer ') && tokenMatches(header.slice(7))) return done(true)
+    }
+    done(false, 401, 'Unauthorized')
+  },
+})
 
 wss.on('connection', async (socket) => {
-  const sessionId = `s${++sessionSeq}_${Date.now().toString(36)}`
+  // Random, not sequential. The id is also the CRM record key, and `s1_`,
+  // `s2_`, … made every past call's record trivially guessable at /crm/call/:id.
+  const sessionId = randomUUID()
   const transport = new WsTransport(socket)
 
   let lang: Lang = 'en-IN'

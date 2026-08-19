@@ -94,6 +94,12 @@ terms carry explicit stress marks (`Iyer [EYE-yer]`, `Deshpande [desh-PAAN-day]`
 `Bandra [BAAN-dra]`) fed to the model as custom vocabulary. Scored by round-trip —
 synthesise, transcribe, compare — which moved it from 79% to 86%.
 
+**Caller data fails closed.** `/crm` and `/practice` return patient names, mobile
+numbers and the reason someone rang a dentist. With no `VAANI_ADMIN_TOKEN` set they
+answer loopback only — which is local development and nothing else; a token or an
+allowed origin is required to reach them, or to open a call session, from anywhere
+else. Session ids are random, because the session id is also the CRM record key.
+
 ---
 
 ## Layout
