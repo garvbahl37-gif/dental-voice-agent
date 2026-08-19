@@ -73,6 +73,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@google/genai':
+        specifier: ^2.15.0
+        version: 2.17.1
+      '@vaani/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
+      '@vaani/live':
+        specifier: workspace:*
+        version: link:../../packages/live
       '@vaani/shared':
         specifier: workspace:*
         version: link:../../packages/shared

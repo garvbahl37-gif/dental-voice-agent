@@ -34,7 +34,9 @@ import { WsTransport } from './ws-transport'
  * those belong on the server.
  */
 
-const PORT = Number(process.env.VOICE_SERVER_PORT ?? 8787)
+// Managed hosts inject PORT and expect the process to take it; ignoring it is
+// the usual reason a container passes its build and then fails its health check.
+const PORT = Number(process.env.PORT ?? process.env.VOICE_SERVER_PORT ?? 8787)
 const GEMINI_KEY = process.env.GEMINI_API_KEY ?? ''
 
 const practice = new PracticeStore()
@@ -61,6 +63,9 @@ const ALLOWED_ORIGINS = (process.env.VAANI_ALLOWED_ORIGINS ?? '')
   .map((o) => o.trim())
   .filter(Boolean)
 
+/** True once this server has been given any deployment configuration. */
+const CONFIGURED = ADMIN_TOKEN.length > 0 || ALLOWED_ORIGINS.length > 0
+
 function isLoopback(addr: string | undefined): boolean {
   if (!addr) return false
   const a = addr.replace(/^::ffff:/, '')
@@ -78,7 +83,7 @@ function mayReadCallerData(req: import('node:http').IncomingMessage): boolean {
     const header = req.headers.authorization ?? ''
     return header.startsWith('Bearer ') && tokenMatches(header.slice(7))
   }
-  return isLoopback(req.socket.remoteAddress)
+  return !CONFIGURED && isLoopback(req.socket.remoteAddress)
 }
 
 const http = createServer(async (req, res) => {
@@ -175,12 +180,20 @@ const wss = new WebSocketServer({
   server: http,
   path: '/session',
   verifyClient: ({ req, origin }, done) => {
-    if (isLoopback(req.socket.remoteAddress)) return done(true)
     if (ALLOWED_ORIGINS.length > 0 && origin && ALLOWED_ORIGINS.includes(origin)) return done(true)
     if (ADMIN_TOKEN) {
       const header = req.headers.authorization ?? ''
       if (header.startsWith('Bearer ') && tokenMatches(header.slice(7))) return done(true)
     }
+    /**
+     * Loopback is a free pass only in local development.
+     *
+     * Deliberately last, and disabled the moment anything is configured: some
+     * container platforms front the process with a proxy that connects over
+     * loopback, so "trust loopback" on a deployed server would trust the whole
+     * internet while looking like a local-only rule.
+     */
+    if (!CONFIGURED && isLoopback(req.socket.remoteAddress)) return done(true)
     done(false, 401, 'Unauthorized')
   },
 })
@@ -347,7 +360,9 @@ wss.on('connection', async (socket) => {
   }
 })
 
-http.listen(PORT, () => {
+// 0.0.0.0, not the default: inside a container, binding loopback makes the
+// server unreachable from outside it.
+http.listen(PORT, '0.0.0.0', () => {
   console.log('')
   console.log('  ▚ Vaani — AI front desk')
   console.log(`    ${practice.name}`)

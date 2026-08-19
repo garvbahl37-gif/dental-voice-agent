@@ -28,7 +28,7 @@ function unreachableMessage(): string {
   const remote = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
   const localTarget = SERVER_URL.includes('localhost')
   if (remote && localTarget) {
-    return 'This deployment is the console only — voice calls need the WebSocket server, which runs separately. Clone the repo and run ./scripts/dev.sh to take a call.'
+    return 'This console is not pointed at a voice server. Set NEXT_PUBLIC_VOICE_SERVER_URL to a deployed one, or run ./scripts/dev.sh locally.'
   }
   return 'Voice server not reachable at ' + SERVER_URL + '. Start it with ./scripts/dev.sh'
 }

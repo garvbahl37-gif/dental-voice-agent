@@ -46,6 +46,34 @@ cp .env.example .env          # set GEMINI_API_KEY
 ./scripts/dev.sh              # console :3000, voice server :8787
 ```
 
+## Deploying it
+
+Two processes, because they have different shapes. The console is static and
+goes anywhere — it is on Vercel. **A call is one long-lived WebSocket holding a
+Gemini Live session, so the voice server is a stateful process and cannot run on
+serverless hosting.** It needs a host that keeps a socket open.
+
+A `Dockerfile` is here, with `render.yaml` and `fly.toml` for the two easiest:
+
+```bash
+# Render — connect the repo, it reads render.yaml
+# Fly
+fly launch --copy-config --no-deploy && fly secrets set GEMINI_API_KEY=… && fly deploy
+```
+
+Then set, on the voice server:
+
+```
+GEMINI_API_KEY=…
+VAANI_ALLOWED_ORIGINS=https://your-console.vercel.app
+```
+
+and on the console: `NEXT_PUBLIC_VOICE_SERVER_URL=wss://your-voice-server.onrender.com`.
+
+Both are required. The server fails closed — with neither an allowed origin nor
+an admin token it answers loopback only, which is local development and nothing
+else.
+
 Open <http://localhost:3000>, then <http://localhost:3000/console> to take a call.
 
 ```bash
@@ -140,6 +168,26 @@ Every slot the agent offers is read from the diary at the moment it speaks.
 ## Mobile
 
 ![The landing page on mobile](docs/screenshots/landing-mobile.png)
+
+---
+
+## A dead end worth recording
+
+Serving calls straight from the browser — no voice server at all — would make
+the console deployable as one static site. Gemini issues ephemeral auth tokens
+for exactly that: the API key stays server-side and the browser gets a
+single-use credential.
+
+It does not work here, and the reason is not obvious. The SDK routes any
+`auth_tokens/…` credential to `BidiGenerateContentConstrained` rather than
+`BidiGenerateContent`, and on that endpoint this project gets **audio only** —
+`outputAudioTranscription` returns nothing and tool calls are never emitted,
+across every model and config combination tried. A console with no transcript
+that cannot book is worse than one that says plainly it needs a server, so the
+browser path was removed rather than shipped.
+
+Worth re-testing when the constrained endpoint leaves preview. The session code
+is already isomorphic, so it is a small change if it starts working.
 
 ---
 

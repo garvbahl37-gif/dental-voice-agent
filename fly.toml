@@ -1,0 +1,26 @@
+# Alternative host. Same image as render.yaml uses.
+app = "vaani-voice-server"
+primary_region = "bom"          # Mumbai — the callers are in India
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  VOICE_SERVER_PORT = "8787"
+  GEMINI_LIVE_MODEL = "gemini-3.1-flash-live-preview"
+  GEMINI_LIVE_VOICE = "Leda"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  # A call is a held socket. Stopping the machine mid-conversation drops it.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"

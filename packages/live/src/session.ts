@@ -1,6 +1,7 @@
 import { GoogleGenAI, type LiveServerMessage, type Session as GenAISession } from '@google/genai'
-import type { Lang, ServerEvent } from '@vaani/shared'
-import { detectLang, type ToolCall, type ToolDef } from '@vaani/providers'
+import { base64ToPcm, pcmToBase64, type Lang, type ServerEvent } from '@vaani/shared'
+import { detectLang } from '@vaani/providers/lang-detect'
+import type { ToolCall, ToolDef } from '@vaani/providers/types'
 import { buildLiveConfig, LIVE_MODEL, LIVE_OUTPUT_RATE } from './config'
 
 /**
@@ -42,6 +43,17 @@ export interface ToolRunner {
 export interface LiveSessionOptions {
   sessionId: string
   apiKey: string
+  /**
+   * Fetched fresh for every connect, when set, and preferred over `apiKey`.
+   *
+   * The browser holds this session on an ephemeral token that is good for a
+   * single connection. Reconnecting — for an accent switch, or after a dropped
+   * line — therefore needs a new one, so the credential has to be a function
+   * rather than a value. The server passes a long-lived key and omits this.
+   */
+  getApiKey?: () => Promise<string>
+  /** Ephemeral tokens are only accepted on the v1alpha endpoint. */
+  apiVersion?: string
   systemInstruction: string
   lang: Lang
   voice?: string
@@ -162,7 +174,11 @@ export class LiveSession {
   }
 
   private async connect({ resume }: { resume: boolean }): Promise<void> {
-    const ai = new GoogleGenAI({ apiKey: this.opts.apiKey })
+    const apiKey = this.opts.getApiKey ? await this.opts.getApiKey() : this.opts.apiKey
+    const ai = new GoogleGenAI({
+      apiKey,
+      ...(this.opts.apiVersion ? { httpOptions: { apiVersion: this.opts.apiVersion } } : {}),
+    })
 
     const instruction = this.opts.buildInstructions?.(this.lang) ?? this.opts.systemInstruction
 
@@ -235,9 +251,8 @@ export class LiveSession {
   /** Caller microphone audio, PCM16 at 16 kHz. */
   pushAudio(pcm: Int16Array): void {
     if (this.closed || !this.session) return
-    const bytes = Buffer.from(pcm.buffer, pcm.byteOffset, pcm.length * 2)
     this.session.sendRealtimeInput({
-      audio: { data: bytes.toString('base64'), mimeType: 'audio/pcm;rate=16000' },
+      audio: { data: pcmToBase64(pcm), mimeType: 'audio/pcm;rate=16000' },
     })
   }
 
@@ -301,9 +316,7 @@ export class LiveSession {
       const data = part.inlineData?.data
       if (!data) continue
       if (!this.firstAudioAt) this.firstAudioAt = Date.now()
-      const buf = Buffer.from(data, 'base64')
-      const pcm = new Int16Array(buf.buffer, buf.byteOffset, Math.floor(buf.length / 2))
-      this.opts.sendAudio(pcm, LIVE_OUTPUT_RATE)
+      this.opts.sendAudio(base64ToPcm(data), LIVE_OUTPUT_RATE)
     }
 
     // ── Barge-in ───────────────────────────────────────────────────────────
