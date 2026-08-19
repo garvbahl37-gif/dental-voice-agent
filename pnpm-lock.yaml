@@ -63,6 +63,9 @@ importers:
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
+      tsx:
+        specifier: ^4.19.2
+        version: 4.23.12
       ws:
         specifier: ^8.18.0
         version: 8.21.3

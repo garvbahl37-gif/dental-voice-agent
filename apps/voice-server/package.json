@@ -15,7 +15,8 @@
     "@vaani/agent": "workspace:*",
     "dotenv": "^16.4.7",
     "ws": "^8.18.0",
-    "@vaani/live": "workspace:*"
+    "@vaani/live": "workspace:*",
+    "tsx": "^4.19.2"
   },
   "devDependencies": {
     "@types/ws": "^8.5.13"

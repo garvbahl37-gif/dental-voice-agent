@@ -6,7 +6,7 @@ services:
     name: vaani-voice-server
     runtime: docker
     dockerfilePath: ./Dockerfile
-    plan: starter
+    plan: free
     healthCheckPath: /health
     envVars:
       - key: GEMINI_API_KEY
