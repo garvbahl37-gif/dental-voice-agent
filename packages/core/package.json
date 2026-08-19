@@ -15,7 +15,9 @@
   },
   "dependencies": {
     "@vaani/shared": "workspace:*",
-    "@vaani/providers": "workspace:*",
+    "@vaani/providers": "workspace:*"
+  },
+  "devDependencies": {
     "@vaani/agent": "workspace:*"
   }
 }
