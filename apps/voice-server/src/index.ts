@@ -19,6 +19,8 @@ import {
 } from '@vaani/agent'
 import type { Lang, ServerEvent } from '@vaani/shared'
 import { WsTransport } from './ws-transport'
+import { handleStatus, handleTransferResult, handleVoice } from './telephony'
+import { handleTwilioStream } from './twilio-stream'
 
 /**
  * The voice server.
@@ -99,6 +101,30 @@ const http = createServer(async (req, res) => {
 
   const url = req.url ?? '/'
 
+  /**
+   * Telephony first.
+   *
+   * These carry their own authentication — a Twilio signature — rather than the
+   * origin and token rules the dashboard endpoints use, because they are called
+   * by Twilio's servers and not by a browser. Routing them before the CORS
+   * gate keeps the two authentication schemes from being confused for one.
+   */
+  if (req.method === 'POST' && url.startsWith('/twilio/')) {
+    const streamUrl =
+      process.env.TWILIO_STREAM_URL ?? `wss://${req.headers.host ?? 'localhost'}/twilio/stream`
+    try {
+      if (url === '/twilio/voice') return await handleVoice(req, res, { streamUrl })
+      if (url === '/twilio/status') return await handleStatus(req, res)
+      if (url === '/twilio/transfer') return await handleTransferResult(req, res)
+    } catch (err) {
+      console.error('[twilio] webhook failed:', err)
+      res.writeHead(500).end('error')
+      return
+    }
+    res.writeHead(404).end()
+    return
+  }
+
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
     res.end()
@@ -176,6 +202,31 @@ function json(res: import('node:http').ServerResponse, body: unknown): void {
  * posture as the data endpoints: loopback by default, token or configured
  * origin to reach it from anywhere else.
  */
+const twilioWss = new WebSocketServer({
+  server: http,
+  path: '/twilio/stream',
+  /**
+   * No origin or token check here, deliberately.
+   *
+   * Twilio's media socket carries no signature and comes from Twilio's own
+   * infrastructure, so authentication is the custom parameters it echoes —
+   * issued by the voice webhook only after that request's signature verified,
+   * and re-checked against the call row before any audio is processed.
+   */
+  verifyClient: (_info, done) => done(true),
+})
+
+twilioWss.on('connection', (socket) => {
+  void handleTwilioStream(socket).catch((err) => {
+    console.error('[twilio] stream failed:', err)
+    try {
+      socket.close()
+    } catch {
+      /* already gone */
+    }
+  })
+})
+
 const wss = new WebSocketServer({
   server: http,
   path: '/session',

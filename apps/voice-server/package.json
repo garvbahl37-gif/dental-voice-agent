@@ -16,7 +16,9 @@
     "dotenv": "^16.4.7",
     "ws": "^8.18.0",
     "@vaani/live": "workspace:*",
-    "tsx": "^4.19.2"
+    "tsx": "^4.19.2",
+    "@vaani/db": "workspace:*",
+    "@vaani/telephony": "workspace:*"
   },
   "devDependencies": {
     "@types/ws": "^8.5.13"

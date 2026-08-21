@@ -211,15 +211,15 @@ export class DentalTools implements ToolRunner {
     switch (call.name) {
       case 'lookup_patient': {
         const found = a.phone
-          ? practice.findPatientByPhone(normalisePhone(String(a.phone)) ?? String(a.phone))
+          ? await practice.findPatientByPhone(normalisePhone(String(a.phone)) ?? String(a.phone))
           : a.name
-            ? practice.findPatientByName(String(a.name))
+            ? await practice.findPatientByName(String(a.name))
             : undefined
         if (!found) {
           return { ok: true, result: { found: false, say: 'No existing record — take their name and number.' } }
         }
         this.ctx.setPatient(found.id)
-        const upcoming = practice.upcomingFor(found.id)
+        const upcoming = await practice.upcomingFor(found.id)
         emit({
           type: 'ui.event',
           event: 'patient.identified',
@@ -254,7 +254,7 @@ export class DentalTools implements ToolRunner {
             },
           }
         }
-        const created = practice.createPatient({
+        const created = await practice.createPatient({
           name: String(a.name),
           phone,
           preferredLanguage: lang,
@@ -298,7 +298,7 @@ export class DentalTools implements ToolRunner {
             )
           : undefined
 
-        const slots = practice.findSlots({
+        const slots = await practice.findSlots({
           serviceId: service.id,
           providerId: provider?.id,
           days: a.withinDays ? Number(a.withinDays) : 10,
@@ -344,7 +344,7 @@ export class DentalTools implements ToolRunner {
 
         // Re-checked at the moment of writing, not on the strength of the
         // earlier search — the slot may have gone while the caller decided.
-        const outcome = practice.bookAtomic({
+        const outcome = await practice.bookAtomic({
           patientId,
           serviceId: service.id,
           start: String(a.slotStart),
@@ -396,7 +396,7 @@ export class DentalTools implements ToolRunner {
       case 'list_my_appointments': {
         const patientId = this.ctx.patientId()
         if (!patientId) return { ok: false, result: { say: 'Identify the patient first.' } }
-        const list = practice.upcomingFor(patientId)
+        const list = await practice.upcomingFor(patientId)
         return {
           ok: true,
           result: {
@@ -411,7 +411,7 @@ export class DentalTools implements ToolRunner {
       }
 
       case 'reschedule_appointment': {
-        const moved = practice.reschedule({
+        const moved = await practice.reschedule({
           appointmentId: String(a.appointmentId),
           start: String(a.slotStart),
           providerId: String(a.providerId),
@@ -439,7 +439,7 @@ export class DentalTools implements ToolRunner {
       }
 
       case 'cancel_appointment': {
-        const appt = practice.cancel(String(a.appointmentId))
+        const appt = await practice.cancel(String(a.appointmentId))
         if (!appt) return { ok: false, result: { say: 'Could not find that appointment.' } }
         emit({ type: 'ui.event', event: 'appointment.cancelled', payload: { ...appt } })
         // A freed slot is a waitlist opportunity — the highest-ROI moment in
@@ -459,7 +459,7 @@ export class DentalTools implements ToolRunner {
         const patientId = this.ctx.patientId()
         const service = practice.findService(String(a.service))
         if (!patientId || !service) return { ok: false, result: { say: 'Need patient and treatment first.' } }
-        const entry = practice.joinWaitlist(patientId, service.id, String(a.preference ?? 'any'))
+        const entry = await practice.joinWaitlist(patientId, service.id, String(a.preference ?? 'any'))
         emit({ type: 'ui.event', event: 'waitlist.joined', payload: { ...entry } })
         return { ok: true, result: { say: 'Confirm they will be called the moment something opens.' } }
       }
@@ -467,7 +467,7 @@ export class DentalTools implements ToolRunner {
       case 'search_knowledge': {
         const hit = searchKnowledge(String(a.query), lang)
         if (!hit) {
-          practice.addTask('callback', `Unanswered question: ${String(a.query)}`, 'normal')
+          await practice.addTask('callback', `Unanswered question: ${String(a.query)}`, 'normal')
           return {
             ok: true,
             result: {
@@ -499,7 +499,7 @@ export class DentalTools implements ToolRunner {
           })
         }
         if (result.alertPractice) {
-          practice.addTask('escalation', `RED triage: ${result.reason}`, 'high')
+          await practice.addTask('escalation', `RED triage: ${result.reason}`, 'high')
         }
         return {
           ok: true,
@@ -518,13 +518,13 @@ export class DentalTools implements ToolRunner {
 
       case 'escalate_to_human': {
         const urgency = (['low', 'normal', 'high'] as const).find((u) => u === a.urgency) ?? 'normal'
-        const task = practice.addTask('escalation', String(a.reason), urgency)
+        const task = await practice.addTask('escalation', String(a.reason), urgency)
         emit({ type: 'ui.event', event: 'handoff.requested', payload: { ...task } })
         return { ok: true, result: { say: 'Tell them someone from the clinic will call shortly.' } }
       }
 
       case 'record_note': {
-        practice.addTask('note', String(a.note), 'low')
+        await practice.addTask('note', String(a.note), 'low')
         return { ok: true, result: { say: 'Noted. Continue naturally.' } }
       }
 

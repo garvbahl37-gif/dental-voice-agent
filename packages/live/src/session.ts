@@ -62,6 +62,11 @@ export interface LiveSessionOptions {
   agentName?: string
   /** Rebuilt per turn so mid-call state reaches the model. */
   buildInstructions?: (lang: Lang) => string
+  /**
+   * Telephony has no browser echo cancellation and an 8 kHz codec, so it needs
+   * more silence before a turn is called finished.
+   */
+  channel?: 'browser' | 'phone'
   send: (event: ServerEvent) => void
   sendAudio: (pcm: Int16Array, sampleRate: number) => void
   onClose?: () => void
@@ -189,6 +194,7 @@ export class LiveSession {
         lang: this.lang,
         voice: this.opts.voice,
         resumeHandle: this.resumeHandle,
+        channel: this.opts.channel,
       }),
       callbacks: {
         // Deliberately does NOT send anything. `onopen` fires *during* the
