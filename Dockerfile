@@ -16,7 +16,13 @@ COPY packages/core/package.json        packages/core/
 COPY packages/providers/package.json   packages/providers/
 COPY packages/agent/package.json       packages/agent/
 COPY packages/live/package.json        packages/live/
+COPY packages/db/package.json          packages/db/
+COPY packages/telephony/package.json   packages/telephony/
 COPY apps/voice-server/package.json    apps/voice-server/
+
+# NOTE: a new workspace package the voice server depends on needs a line above.
+# The filtered install resolves workspace links from these manifests, so a
+# missing one fails the build here rather than at runtime — loudly, at least.
 
 RUN pnpm install --frozen-lockfile --filter @vaani/voice-server...
 
