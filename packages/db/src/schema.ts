@@ -492,6 +492,14 @@ export const campaignTargets = pgTable(
     attempts: integer('attempts').notNull().default(0),
     /** Earliest this may be dialled — respects the window and any backoff. */
     nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }),
+    /**
+     * When it was last actually dialled.
+     *
+     * Distinct from nextAttemptAt, which is a plan rather than a record. The
+     * once-a-day rule needs the record; reading the plan instead made every
+     * freshly queued target look as though it had already been rung today.
+     */
+    lastAttemptAt: timestamp('last_attempt_at', { withTimezone: true }),
     lastCallId: text('last_call_id'),
     result: text('result'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

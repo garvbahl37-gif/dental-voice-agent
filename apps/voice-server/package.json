@@ -18,7 +18,8 @@
     "@vaani/live": "workspace:*",
     "tsx": "^4.19.2",
     "@vaani/db": "workspace:*",
-    "@vaani/telephony": "workspace:*"
+    "@vaani/telephony": "workspace:*",
+    "@vaani/outbound": "workspace:*"
   },
   "devDependencies": {
     "@types/ws": "^8.5.13"

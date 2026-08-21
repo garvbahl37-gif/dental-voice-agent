@@ -36,6 +36,7 @@ export default defineConfig({
       '@vaani/agent': src('agent/src/index.ts'),
       '@vaani/live': src('live/src/index.ts'),
       '@vaani/telephony': src('telephony/src/index.ts'),
+      '@vaani/outbound': src('outbound/src/index.ts'),
     },
   },
 })

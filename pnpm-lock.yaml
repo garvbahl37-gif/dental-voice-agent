@@ -60,6 +60,9 @@ importers:
       '@vaani/live':
         specifier: workspace:*
         version: link:../../packages/live
+      '@vaani/outbound':
+        specifier: workspace:*
+        version: link:../../packages/outbound
       '@vaani/providers':
         specifier: workspace:*
         version: link:../../packages/providers
@@ -169,6 +172,21 @@ importers:
       '@vaani/shared':
         specifier: workspace:*
         version: link:../shared
+
+  packages/outbound:
+    dependencies:
+      '@vaani/db':
+        specifier: workspace:*
+        version: link:../db
+      '@vaani/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@vaani/telephony':
+        specifier: workspace:*
+        version: link:../telephony
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@electric-sql/pglite@0.5.5)(postgres@3.4.9)
 
   packages/providers:
     dependencies:

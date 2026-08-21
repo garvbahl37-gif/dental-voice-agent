@@ -311,6 +311,7 @@ CREATE TABLE IF NOT EXISTS campaign_targets (
   status text NOT NULL DEFAULT 'queued',
   attempts integer NOT NULL DEFAULT 0,
   next_attempt_at timestamptz,
+  last_attempt_at timestamptz,
   last_call_id text,
   result text,
   created_at timestamptz NOT NULL DEFAULT now()
@@ -366,4 +367,17 @@ CREATE TABLE IF NOT EXISTS usage_daily (
   revenue_paise integer NOT NULL DEFAULT 0,
   PRIMARY KEY (org_id, day)
 );
+
+-- ── Additive migrations ─────────────────────────────────────────────────────
+--
+-- CREATE TABLE IF NOT EXISTS skips a table that already exists, columns and
+-- all, so a new field added above never reaches a database that predates it.
+-- Postgres has an idempotent ADD COLUMN, which covers the common case safely
+-- and can be re-run on every deploy. A rename or a retype still needs a real
+-- migration; this only closes the gap for additions.
+ALTER TABLE campaign_targets ADD COLUMN IF NOT EXISTS last_attempt_at timestamptz;
+ALTER TABLE calls ADD COLUMN IF NOT EXISTS cost_paise integer;
+ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS model_cost_paise integer NOT NULL DEFAULT 0;
+ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS telephony_cost_paise integer NOT NULL DEFAULT 0;
+ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS revenue_paise integer NOT NULL DEFAULT 0;
 `

@@ -4,6 +4,7 @@ import { DentalTools, newConversation, speakable, systemPrompt } from '@vaani/ag
 import { decideRouting, TwilioTransport } from '@vaani/telephony'
 import type { Lang, ServerEvent } from '@vaani/shared'
 import type { CallTurn } from '@vaani/db'
+import { outboundPrompt, type CampaignKind } from '@vaani/outbound'
 import { loadStreamContext } from './telephony'
 
 /**
@@ -141,13 +142,30 @@ export async function handleTwilioStream(socket: WebSocket): Promise<void> {
       },
     })
 
+    /**
+     * An outbound call is a different conversation.
+     *
+     * The campaign prompt replaces the inbound framing entirely rather than
+     * being appended to it — telling the agent both "you answered the phone"
+     * and "you rang them" produces a greeting that is neither.
+     */
+    const campaign = custom.campaign as CampaignKind | undefined
+    const outboundBrief = campaign
+      ? outboundPrompt(campaign, {
+          practiceName: adapter.name,
+          branchName: branch?.name,
+          branchPhone: branch?.emergencyPhone ?? branch?.phone ?? undefined,
+        })
+      : null
+
     const instructions = (current: Lang): string =>
       [
         systemPrompt({ practice: adapter as never, lang: current }),
         '',
-        '# Right now',
-        routing.note,
-        call?.fromNumber ? `The caller is ringing from ${call.fromNumber}.` : '',
+        outboundBrief ?? ['# Right now', routing.note].join('\n'),
+        !outboundBrief && call?.fromNumber
+          ? `The caller is ringing from ${call.fromNumber}.`
+          : '',
         org?.agentPersona ?? '',
       ]
         .filter(Boolean)

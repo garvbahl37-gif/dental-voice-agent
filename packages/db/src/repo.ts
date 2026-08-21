@@ -641,6 +641,36 @@ export class OrgRepo {
 }
 
 /**
+ * Every active tenant, for work that runs across all of them.
+ *
+ * Used by the outbound worker, which is one of the few things in the system
+ * with a legitimate reason to know more than one practice exists — it still
+ * scopes every query it makes to a single org afterwards.
+ */
+export async function activeOrganizations(
+  db: Database,
+): Promise<Array<{ id: string; name: string; outboundNumber: string | null }>> {
+  const rows = await db
+    .select({
+      id: organizations.id,
+      name: organizations.name,
+      number: phoneNumbers.e164,
+    })
+    .from(organizations)
+    .leftJoin(phoneNumbers, eq(phoneNumbers.orgId, organizations.id))
+    .where(eq(organizations.status, 'active'))
+
+  // One row per org, keeping the first number found as the caller ID.
+  const byId = new Map<string, { id: string; name: string; outboundNumber: string | null }>()
+  for (const r of rows) {
+    const seen = byId.get(r.id)
+    if (!seen) byId.set(r.id, { id: r.id, name: r.name, outboundNumber: r.number })
+    else if (!seen.outboundNumber && r.number) seen.outboundNumber = r.number
+  }
+  return [...byId.values()]
+}
+
+/**
  * Turn a dialled number into a tenant.
  *
  * The only query in this package without an org, because an inbound call knows

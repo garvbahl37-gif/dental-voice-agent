@@ -9,11 +9,12 @@ import { DDL } from './testing'
  * statement is `IF NOT EXISTS`, which makes this safe to run on every deploy —
  * a migration you are afraid to re-run is a migration nobody runs.
  *
- * **This creates; it does not alter.** Every statement is IF NOT EXISTS, so a
- * renamed or retyped column on an existing table is silently *not* applied —
- * the table already exists, so the statement is skipped and the old column
- * stays. While the schema is still moving and the only rows are demo data,
- * dropping and re-running is the honest answer.
+ * **Creates, and adds columns.** CREATE TABLE IF NOT EXISTS skips an existing
+ * table entirely — columns and all — so the DDL ends with an idempotent
+ * ADD COLUMN IF NOT EXISTS block that closes the gap for new fields. Both
+ * halves are safe to re-run on every deploy.
+ *
+ * A **rename or a retype is still not handled** and will silently do nothing.
  *
  * The moment a real practice's patients are in here, that stops being true and
  * this has to become a versioned chain. drizzle-kit is already configured for

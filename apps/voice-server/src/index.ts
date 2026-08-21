@@ -21,6 +21,7 @@ import type { Lang, ServerEvent } from '@vaani/shared'
 import { WsTransport } from './ws-transport'
 import { handleStatus, handleTransferResult, handleVoice } from './telephony'
 import { handleTwilioStream } from './twilio-stream'
+import { startOutboundWorker } from './outbound-worker'
 
 /**
  * The voice server.
@@ -414,6 +415,9 @@ wss.on('connection', async (socket) => {
 // 0.0.0.0, not the default: inside a container, binding loopback makes the
 // server unreachable from outside it.
 http.listen(PORT, '0.0.0.0', () => {
+  startOutboundWorker(
+    process.env.TWILIO_STREAM_URL ?? `wss://localhost:${PORT}/twilio/stream`,
+  )
   console.log('')
   console.log('  ▚ Vaani — AI front desk')
   console.log(`    ${practice.name}`)
