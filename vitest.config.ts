@@ -38,6 +38,7 @@ export default defineConfig({
       '@vaani/telephony': src('telephony/src/index.ts'),
       '@vaani/outbound': src('outbound/src/index.ts'),
       '@vaani/knowledge': src('knowledge/src/index.ts'),
+      '@vaani/evals': src('evals/src/index.ts'),
     },
   },
 })

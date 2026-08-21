@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { id, knowledgeChunks, knowledgeDocuments, type Database } from '@vaani/db'
 import { chunkText, extractLinks, extractTitle, htmlToText, isWorthCrawling } from './chunk'
 import type { Embedder } from './retrieve'
+import { assertPublicUrl, safeFetchHtml } from './safe-fetch'
 
 /**
  * Getting a clinic's own words into the agent.
@@ -103,15 +104,15 @@ export async function ingestText(
 
 export type Fetcher = (url: string) => Promise<{ ok: boolean; html: string; contentType?: string }>
 
+/**
+ * The real fetcher, which refuses to reach inside our own network.
+ *
+ * Every hop is re-validated — see safe-fetch.ts. A crawler that takes a URL
+ * from a user and fetches it server-side is an SSRF primitive unless it does.
+ */
 export const httpFetcher: Fetcher = async (url) => {
-  const res = await fetch(url, {
-    redirect: 'follow',
-    headers: { 'user-agent': 'VaaniBot/1.0 (+clinic knowledge import)' },
-    signal: AbortSignal.timeout(15_000),
-  })
-  const contentType = res.headers.get('content-type') ?? ''
-  if (!res.ok || !contentType.includes('text/html')) return { ok: false, html: '', contentType }
-  return { ok: true, html: await res.text(), contentType }
+  const out = await safeFetchHtml(url)
+  return { ok: out.ok, html: out.html, contentType: 'text/html' }
 }
 
 export interface CrawlOptions extends IngestOptions {
@@ -137,13 +138,9 @@ export async function crawlSite(
   const maxPages = opts.maxPages ?? 12
   const delay = opts.delayMs ?? 400
 
-  let origin: URL
-  try {
-    origin = new URL(startUrl)
-  } catch {
-    throw new Error('That does not look like a web address.')
-  }
-  if (!/^https?:$/.test(origin.protocol)) throw new Error('Only http and https addresses can be imported.')
+  // Validated before anything is fetched, so a bad address fails loudly at the
+  // start rather than after a partial import.
+  const origin = await assertPublicUrl(startUrl)
 
   const queue: string[] = [origin.toString()]
   const seen = new Set<string>([origin.toString()])
@@ -181,6 +178,9 @@ export async function crawlSite(
 
     for (const link of extractLinks(page.html, url)) {
       if (seen.has(link) || !isWorthCrawling(link)) continue
+      // Links come out of fetched HTML, which is attacker-influenced content.
+      // Same-host is checked in extractLinks; the address itself is checked at
+      // fetch time by the fetcher.
       seen.add(link)
       queue.push(link)
     }

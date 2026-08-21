@@ -164,6 +164,15 @@ importers:
         specifier: ^0.31.5
         version: 0.31.10
 
+  packages/evals:
+    dependencies:
+      '@vaani/db':
+        specifier: workspace:*
+        version: link:../db
+      '@vaani/shared':
+        specifier: workspace:*
+        version: link:../shared
+
   packages/knowledge:
     dependencies:
       '@vaani/db':

@@ -1,5 +1,12 @@
 import { connect } from '@vaani/db'
-import { crawlSite, forgetDocument, geminiEmbedder, ingestText, listDocuments } from '@vaani/knowledge'
+import {
+  BlockedAddressError,
+  crawlSite,
+  forgetDocument,
+  geminiEmbedder,
+  ingestText,
+  listDocuments,
+} from '@vaani/knowledge'
 import { requireUser } from '@/lib/session'
 
 export const runtime = 'nodejs'
@@ -72,9 +79,21 @@ export async function POST(req: Request): Promise<Response> {
 
     return Response.json({ error: 'Give either a web address or some text.' }, { status: 400 })
   } catch (err) {
-    // The message is the user's — a crawl failure is usually a typo in the URL.
+    /**
+     * Only messages we wrote deliberately are shown.
+     *
+     * A raw fetch or DNS error carries internal detail — resolved addresses,
+     * internal hostnames, sometimes a stack — and handing that back turns a
+     * failed import into a way to map the network from outside it. Ours are
+     * written for a user ("that address resolves inside a private network");
+     * everything else is logged here and generic there.
+     */
+    if (err instanceof BlockedAddressError) {
+      return Response.json({ error: err.message }, { status: 422 })
+    }
+    console.error('[knowledge] import failed:', err)
     return Response.json(
-      { error: err instanceof Error ? err.message : 'The import failed.' },
+      { error: 'That import did not work. Check the address opens in a browser and try again.' },
       { status: 422 },
     )
   }
