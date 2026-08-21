@@ -1,0 +1,367 @@
+/*
+ * The dashboard.
+ *
+ * Same Porcelain ground and the same two-channel rule as the console and the
+ * landing page: turmeric for the desk, slate blue for the caller, and a third
+ * hue only where something is genuinely wrong. That restraint is what makes the
+ * red on an emergency row mean something — if every tile were coloured, none of
+ * them would read.
+ */
+
+.db-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 40px) clamp(20px, 5vw, 64px) 96px;
+}
+
+.db-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 8px;
+}
+
+.db-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  margin: 4px 0 0;
+}
+
+.db-head-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.db-range {
+  display: inline-flex;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.db-range-btn {
+  font: inherit;
+  font-size: 12.5px;
+  padding: 7px 15px;
+  border: none;
+  background: none;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.db-range-btn:hover {
+  background: var(--bg-tint);
+}
+
+.db-range-btn.is-on {
+  background: var(--agent);
+  color: #fff;
+}
+
+.db-who {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+}
+
+.db-signout {
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  background: none;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  padding: 7px 15px;
+  cursor: pointer;
+}
+
+.db-signout:hover {
+  background: var(--bg-tint);
+  color: var(--ink);
+}
+
+.db-section {
+  padding-top: 38px;
+}
+
+.db-h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0 0 16px;
+}
+
+.db-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--alert);
+  color: #fff;
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+}
+
+.db-empty {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  background: var(--bg-tint);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  margin: 0;
+  max-width: 62ch;
+}
+
+.db-good {
+  color: var(--confirm);
+  background: var(--confirm-soft);
+  border-color: rgba(46, 125, 91, 0.28);
+}
+
+/* ── Tiles ───────────────────────────────────────────────────────────────── */
+
+.db-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  gap: 12px;
+}
+
+.db-tile {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: 18px 20px 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.db-tile-wide {
+  grid-column: span 2;
+}
+
+@media (max-width: 640px) {
+  .db-tile-wide {
+    grid-column: span 1;
+  }
+}
+
+.db-tile-n {
+  font-family: var(--font-display);
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.db-tile-wide .db-tile-n {
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.db-tile-k {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+/* Colour only where something is true about the number, never decoratively. */
+.db-tile-good .db-tile-n {
+  color: var(--confirm);
+}
+.db-tile-warn .db-tile-n {
+  color: var(--agent);
+}
+.db-tile-alert {
+  border-color: rgba(179, 53, 42, 0.3);
+  background: var(--alert-soft);
+}
+.db-tile-alert .db-tile-n {
+  color: var(--alert);
+}
+
+.db-note {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-faint);
+  margin: 14px 0 0;
+  max-width: 70ch;
+}
+
+/* ── Handoff briefs ──────────────────────────────────────────────────────── */
+
+.db-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.db-brief {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.db-urgency-high,
+.db-urgency-emergency {
+  border-left-color: var(--alert);
+  background: var(--alert-soft);
+}
+
+.db-brief-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 14.5px;
+}
+
+.db-chip {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  padding: 2px 8px;
+  color: var(--ink-muted);
+}
+
+.db-chip-alert {
+  color: var(--alert);
+  border-color: rgba(179, 53, 42, 0.35);
+  margin-left: 8px;
+}
+
+.db-time {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  margin-left: auto;
+}
+
+.db-brief-reason {
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+
+.db-brief-list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+/* The line someone reads in the two seconds before they pick up the phone. */
+.db-brief-action {
+  font-family: var(--font-display);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+}
+
+/* ── Table ───────────────────────────────────────────────────────────────── */
+
+.db-table-wrap {
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  /* Wide content scrolls inside its own box; the page never scrolls sideways. */
+  overflow-x: auto;
+  box-shadow: var(--shadow-sm);
+}
+
+.db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 640px;
+}
+
+.db-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  font-weight: 400;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+  white-space: nowrap;
+}
+
+.db-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+
+.db-table tr:last-child td {
+  border-bottom: none;
+}
+
+.db-table .mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.db-outcome {
+  font-size: 12.5px;
+}
+
+.db-outcome-booked {
+  color: var(--confirm);
+  font-weight: 600;
+}
+.db-outcome-escalated,
+.db-outcome-failed {
+  color: var(--alert);
+}
+.db-outcome-no_speech,
+.db-outcome-abandoned {
+  color: var(--ink-faint);
+}
+
+.db-more {
+  font: inherit;
+  font-size: 13px;
+  width: 100%;
+  text-align: left;
+  color: var(--ink-muted);
+  background: var(--surface);
+  border: 1px dashed var(--hairline-strong);
+  border-radius: var(--r-md);
+  padding: 12px 18px;
+  cursor: pointer;
+}
+
+.db-more:hover {
+  background: var(--bg-tint);
+  color: var(--ink);
+}

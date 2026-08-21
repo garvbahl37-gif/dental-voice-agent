@@ -481,11 +481,14 @@ export class OrgRepo {
     toNumber?: string
     branchId?: string
     patientId?: string
+    /** Back-dated imports and campaign dials both need to set this. */
+    startedAt?: Date
   }) {
     const [row] = await this.db
       .insert(calls)
       .values({
         id: input.id ?? id('call'),
+        startedAt: input.startedAt,
         orgId: this.orgId,
         channel: input.channel,
         direction: input.direction ?? 'inbound',

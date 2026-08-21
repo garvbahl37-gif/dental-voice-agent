@@ -323,7 +323,8 @@ export const calls = pgTable(
     bargeInCount: integer('barge_in_count').notNull().default(0),
     inputTokens: integer('input_tokens'),
     outputTokens: integer('output_tokens'),
-    costMicros: integer('cost_micros'),
+    /** Paise, like every other amount here. Micro-rupees overflowed int32. */
+    costPaise: integer('cost_paise'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -573,9 +574,9 @@ export const usageDaily = pgTable(
     callSeconds: integer('call_seconds').notNull().default(0),
     bookings: integer('bookings').notNull().default(0),
     escalations: integer('escalations').notNull().default(0),
-    modelCostMicros: integer('model_cost_micros').notNull().default(0),
-    telephonyCostMicros: integer('telephony_cost_micros').notNull().default(0),
-    revenueMicros: integer('revenue_micros').notNull().default(0),
+    modelCostPaise: integer('model_cost_paise').notNull().default(0),
+    telephonyCostPaise: integer('telephony_cost_paise').notNull().default(0),
+    revenuePaise: integer('revenue_paise').notNull().default(0),
   },
   (t) => [primaryKey({ columns: [t.orgId, t.day] })],
 )

@@ -230,7 +230,7 @@ CREATE TABLE IF NOT EXISTS calls (
   barge_in_count integer NOT NULL DEFAULT 0,
   input_tokens integer,
   output_tokens integer,
-  cost_micros integer,
+  cost_paise integer,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS calls_org_started_idx ON calls (org_id, started_at);
@@ -361,9 +361,9 @@ CREATE TABLE IF NOT EXISTS usage_daily (
   call_seconds integer NOT NULL DEFAULT 0,
   bookings integer NOT NULL DEFAULT 0,
   escalations integer NOT NULL DEFAULT 0,
-  model_cost_micros integer NOT NULL DEFAULT 0,
-  telephony_cost_micros integer NOT NULL DEFAULT 0,
-  revenue_micros integer NOT NULL DEFAULT 0,
+  model_cost_paise integer NOT NULL DEFAULT 0,
+  telephony_cost_paise integer NOT NULL DEFAULT 0,
+  revenue_paise integer NOT NULL DEFAULT 0,
   PRIMARY KEY (org_id, day)
 );
 `
