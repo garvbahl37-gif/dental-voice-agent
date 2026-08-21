@@ -162,6 +162,9 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
+          <a className="db-signout" href="/knowledge">
+            Knowledge
+          </a>
           <span className="db-who">
             {data.me.name} · {data.me.role}
           </span>

@@ -5,6 +5,8 @@ import { decideRouting, TwilioTransport } from '@vaani/telephony'
 import type { Lang, ServerEvent } from '@vaani/shared'
 import type { CallTurn } from '@vaani/db'
 import { outboundPrompt, type CampaignKind } from '@vaani/outbound'
+import { connect } from '@vaani/db'
+import { geminiEmbedder, retrieve } from '@vaani/knowledge'
 import { loadStreamContext } from './telephony'
 
 /**
@@ -139,6 +141,22 @@ export async function handleTwilioStream(socket: WebSocket): Promise<void> {
       setPatient: (pid) => {
         patientId = pid
         void repo.finishCall(callId, { patientId: pid } as never)
+      },
+      // The practice's own uploaded documents, scoped to this tenant.
+      searchDocuments: async (query) => {
+        const { db } = connect()
+        const hits = await retrieve({
+          db,
+          orgId: ctx.orgId,
+          query,
+          embed: geminiEmbedder(),
+        })
+        trace('knowledge.search', { query, hits: hits.length })
+        return hits.map((h) => ({
+          title: h.documentTitle,
+          content: h.content,
+          sourceRef: h.sourceRef,
+        }))
       },
     })
 

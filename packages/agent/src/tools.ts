@@ -28,6 +28,16 @@ export interface ToolContext {
   /** Patient identified so far this call. */
   patientId: () => string | null
   setPatient: (id: string) => void
+  /**
+   * The clinic's own uploaded knowledge, when it has any.
+   *
+   * Optional so the seeded demo and every existing test keep working against
+   * the built-in facts. When present it is tried first, because a practice that
+   * uploaded its fee list means that list, not a generic one.
+   */
+  searchDocuments?: (query: string) => Promise<
+    Array<{ title: string; content: string; sourceRef?: string | null }>
+  >
 }
 
 const HOURS_12 = (iso: string, lang: Lang): string => {
@@ -465,6 +475,33 @@ export class DentalTools implements ToolRunner {
       }
 
       case 'search_knowledge': {
+        /**
+         * The practice's own documents outrank the built-in facts.
+         *
+         * If a clinic has uploaded a fee list, that list is the answer — the
+         * seeded knowledge is a fallback for a tenant that has not imported
+         * anything yet, not a competing source.
+         */
+        if (this.ctx.searchDocuments) {
+          const passages = await this.ctx.searchDocuments(String(a.query))
+          if (passages.length > 0) {
+            emit({
+              type: 'ui.event',
+              event: 'knowledge.cited',
+              payload: { id: passages[0]!.sourceRef ?? 'document', title: passages[0]!.title },
+            })
+            return {
+              ok: true,
+              result: {
+                found: true,
+                answer: passages.map((x) => x.content).join('\n\n'),
+                source: passages[0]!.title,
+                say: "Answer ONLY from this, briefly and in the caller's language. It is the practice's own wording. If it does not cover the question, say so and offer a callback.",
+              },
+            }
+          }
+        }
+
         const hit = searchKnowledge(String(a.query), lang)
         if (!hit) {
           await practice.addTask('callback', `Unanswered question: ${String(a.query)}`, 'normal')

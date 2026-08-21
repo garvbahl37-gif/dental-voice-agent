@@ -57,6 +57,9 @@ importers:
       '@vaani/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@vaani/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       '@vaani/live':
         specifier: workspace:*
         version: link:../../packages/live
@@ -91,6 +94,9 @@ importers:
       '@vaani/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@vaani/knowledge':
+        specifier: workspace:*
+        version: link:../../packages/knowledge
       '@vaani/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -157,6 +163,18 @@ importers:
       drizzle-kit:
         specifier: ^0.31.5
         version: 0.31.10
+
+  packages/knowledge:
+    dependencies:
+      '@vaani/db':
+        specifier: workspace:*
+        version: link:../db
+      '@vaani/shared':
+        specifier: workspace:*
+        version: link:../shared
+      drizzle-orm:
+        specifier: ^0.45.2
+        version: 0.45.2(@electric-sql/pglite@0.5.5)(postgres@3.4.9)
 
   packages/live:
     dependencies:
