@@ -130,6 +130,9 @@ export function noteAsked(s: ConversationState, question: string): ConversationS
  * oscillate. Devanagari is unambiguous and switches immediately; anything else
  * needs two consecutive turns to agree.
  */
+/** Sure enough to act on a single utterance. */
+const CONFIDENT = 0.85
+
 export function observeLanguage(
   s: ConversationState,
   detected: Lang,
@@ -139,12 +142,28 @@ export function observeLanguage(
 
   if (detected === s.language) return s
 
-  // Devanagari cannot be a mis-detection.
-  if (detected === 'hi-IN' && confidence > 0.85) {
+  /**
+   * Confident detections are acted on at once, whichever language they name.
+   *
+   * This used to be a fast path for Hindi alone, with everything else needing
+   * the same language twice in a row. That made the state a one-way ratchet:
+   * a caller could be moved into Hindi by one sentence but needed two to get
+   * out, so a caller who asked in Hindi for Punjabi, then asked in English for
+   * English, was still recorded as speaking Hindi — and since the prompt is
+   * built from this state, the agent drifted back to Hindi while the caller was
+   * speaking English.
+   *
+   * The detector already reports how sure it is, and it is just as sure about
+   * English or Punjabi as about Hindi. Ambiguity belongs in that number, not in
+   * a list of favoured languages.
+   */
+  if (confidence > CONFIDENT) {
     s.language = detected
     return s
   }
 
+  // Below that, the same reading twice — one uncertain guess should not move a
+  // call that is going fine.
   const recent = s.languageHistory.slice(-2)
   if (recent.length === 2 && recent[0] === detected && recent[1] === detected) {
     s.language = detected

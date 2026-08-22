@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { ALL_LANGS, SCRIPT_RANGES, scriptOf } from '@vaani/shared'
+import { ALL_LANGS, SCRIPT_RANGES, scriptOf, type Lang } from '@vaani/shared'
 import { guard } from './safety'
+import { systemPrompt } from './prompt'
+import { PracticeStore } from './practice'
 import { triage } from './triage'
 
 /**
@@ -56,5 +58,50 @@ describe('triage scripts', () => {
       if (script === 'latin') continue
       expect(SCRIPT_RANGES[script].test(emergency.script[lang]), `${lang}`).toBe(true)
     }
+  })
+})
+
+/**
+ * Who the agent says she is.
+ *
+ * Hindi, Marathi, Punjabi and Gujarati inflect first-person verbs for the
+ * speaker's own gender. The model reaches for the masculine by default, so with
+ * a female voice it was saying "मैं कर सकता हूँ" — a man's sentence in a woman's
+ * voice, which is the first thing a native speaker notices.
+ */
+describe('grammatical gender', () => {
+  const practice = new PracticeStore()
+  const inflected: Lang[] = ['hi-IN', 'hi-Latn-IN', 'mr-IN', 'pa-IN', 'gu-IN']
+
+  for (const lang of inflected) {
+    it(`tells the model it is speaking as a woman in ${lang}`, () => {
+      const p = systemPrompt({ practice, lang, gender: 'feminine' })
+      expect(p).toContain('Who is speaking')
+      expect(p).toMatch(/You are a woman/)
+    })
+
+    it(`follows a masculine voice in ${lang}`, () => {
+      const p = systemPrompt({ practice, lang, gender: 'masculine' })
+      expect(p).toMatch(/You are a man/)
+    })
+  }
+
+  it('says nothing in languages that do not inflect', () => {
+    // An instruction that does not apply is one the model has to ignore.
+    for (const lang of ['en-IN', 'ta-IN', 'ml-IN', 'bn-IN', 'te-IN', 'kn-IN'] as Lang[]) {
+      expect(systemPrompt({ practice, lang, gender: 'feminine' })).not.toContain('Who is speaking')
+    }
+  })
+
+  it('names the feminine forms and rules out the masculine ones', () => {
+    const hi = systemPrompt({ practice, lang: 'hi-IN', gender: 'feminine' })
+    expect(hi).toContain('सकती')
+    expect(hi).toContain('Never')
+    const pa = systemPrompt({ practice, lang: 'pa-IN', gender: 'feminine' })
+    expect(pa).toContain('ਸਕਦੀ')
+  })
+
+  it('defaults to the shipped voice when no gender is given', () => {
+    expect(systemPrompt({ practice, lang: 'hi-IN' })).toMatch(/You are a woman/)
   })
 })

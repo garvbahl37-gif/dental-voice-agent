@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { detectLang } from './lang-detect'
+import { detectLang, requestedLang } from './lang-detect'
 
 describe('detectLang', () => {
   it('detects plain English', () => {
@@ -99,5 +99,41 @@ describe('detectLang — regional languages', () => {
     // Ties go to Hindi: it is the larger population, so it is the cheaper error.
     const r = detectLang('ठीक')
     expect(r.lang).toBe('hi-IN')
+  })
+})
+
+/**
+ * Asking for a language by name.
+ *
+ * The case that broke a real call: the request was made in one language and
+ * named another. Reading the sentence answers the wrong question.
+ */
+describe('requestedLang', () => {
+  it('hears a request for Punjabi made in Hindi', () => {
+    expect(requestedLang('क्या आप पंजाबी में बात कर सकते हैं?')).toBe('pa-IN')
+    expect(requestedLang('Punjabi mein baat kar sakte hain?')).toBe('pa-IN')
+  })
+
+  it('hears a request for English made in any language', () => {
+    expect(requestedLang('please talk to me in English')).toBe('en-IN')
+    expect(requestedLang('मुझसे अंग्रेजी में बात करिए')).toBe('en-IN')
+    expect(requestedLang('ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਗੱਲ ਕਰੋ')).toBe('en-IN')
+  })
+
+  it('recognises each language by its own name', () => {
+    expect(requestedLang('தமிழில் பேசுங்கள்')).toBe('ta-IN')
+    expect(requestedLang('can you speak Malayalam')).toBe('ml-IN')
+    expect(requestedLang('বাংলায় বলুন')).toBe('bn-IN')
+    expect(requestedLang('Hinglish is fine')).toBe('hi-Latn-IN')
+  })
+
+  it('stays out of the way when no language is named', () => {
+    expect(requestedLang('I need an appointment on Thursday')).toBeNull()
+    expect(requestedLang('मुझे कल अपॉइंटमेंट चाहिए')).toBeNull()
+  })
+
+  it('refuses to choose when two languages are named', () => {
+    // Guessing here is worse than reading the sentence itself.
+    expect(requestedLang('I speak Hindi at home but English is fine')).toBeNull()
   })
 })

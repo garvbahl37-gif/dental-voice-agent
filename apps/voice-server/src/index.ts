@@ -17,7 +17,17 @@ import {
   speakable,
   systemPrompt,
 } from '@vaani/agent'
-import { LangSchema, type Lang, type ServerEvent } from '@vaani/shared'
+import { LangSchema, voiceGender, type Lang, type ServerEvent } from '@vaani/shared'
+
+/**
+ * Whether the agent speaks of herself as a woman.
+ *
+ * Follows the configured voice, because the two have to agree: Hindi, Marathi,
+ * Punjabi and Gujarati inflect first-person verbs for the speaker's gender, and
+ * a female voice using masculine verbs is wrong in a way every native speaker
+ * hears at once.
+ */
+const AGENT_GENDER = voiceGender(LIVE_VOICE, process.env.GEMINI_LIVE_VOICE_GENDER)
 import { WsTransport } from './ws-transport'
 import { handleStatus, handleTransferResult, handleVoice } from './telephony'
 import { handleTwilioStream } from './twilio-stream'
@@ -362,11 +372,12 @@ wss.on('connection', async (socket, req: IncomingMessage) => {
   const session = new LiveSession({
     sessionId,
     apiKey: GEMINI_KEY,
-    systemInstruction: systemPrompt({ practice, lang, known: describeConversation(convo) }),
+    systemInstruction: systemPrompt({ practice, lang, gender: AGENT_GENDER, known: describeConversation(convo) }),
     buildInstructions: (current) =>
-      systemPrompt({ practice, lang: current, known: describeConversation(convo) }),
+      systemPrompt({ practice, lang: current, gender: AGENT_GENDER, known: describeConversation(convo) }),
     lang,
     voice: LIVE_VOICE,
+    gender: AGENT_GENDER,
     tools,
     practiceName: practice.name,
     agentName: 'the front desk',

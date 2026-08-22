@@ -198,3 +198,45 @@ export function detectLang(text: string, hint?: Lang): DetectionResult {
 export function hasDevanagari(text: string): boolean {
   return DEVANAGARI.test(text)
 }
+
+/**
+ * A language the caller has asked for by name.
+ *
+ * Detection answers "what is this sentence written in", which is the wrong
+ * question when the sentence is "Punjabi mein baat kar sakte hain?" — that is
+ * Hindi, and answering it in Hindi is precisely what the caller did not ask
+ * for. The request outranks the medium it arrived in.
+ *
+ * Only acts when exactly one language is named. "I speak Hindi at home, but
+ * English is fine" names two, and guessing between them is worse than falling
+ * back to reading the sentence itself.
+ */
+/**
+ * Stems, not citation forms.
+ *
+ * These languages inflect the language's own name: Tamil for "in Tamil" is
+ * "தமிழில்", which does not contain "தமிழ்" — the final pulli is replaced by the
+ * case ending. Matching the bare stem catches both.
+ */
+const LANGUAGE_NAMED: Record<Lang, RegExp> = {
+  'en-IN': /\b(english|angrezi|angreji)\b|अंग्रे[ज़]?ी|इंग्लिश|ਅੰਗਰੇਜ਼ੀ|ஆங்கில|ఇంగ్లీష్|ಇಂಗ್ಲಿಷ್|ഇംഗ്ലീഷ|ইংরেজি|અંગ્રેજી/i,
+  'hi-IN': /\bhindi\b|हिंदी|हिन्दी|ਹਿੰਦੀ|இந்தி|హిందీ|ಹಿಂದಿ|ഹിന്ദി|হিন্দি|હિન્દી/i,
+  'hi-Latn-IN': /\bhinglish\b/i,
+  'mr-IN': /\bmarathi\b|मराठी|ਮਰਾਠੀ|மராத்தி|మరాఠీ|ಮರಾಠಿ|മറാത്തി|মারাঠি|મરાઠી/i,
+  'gu-IN': /\bgujarati\b|गुजराती|ગુજરાતી|ਗੁਜਰਾਤੀ|குஜராத்தி|గుజరాతీ|ಗುಜರಾತಿ|ഗുജറാത്തി|গুজরাটি/i,
+  'bn-IN': /\b(bengali|bangla)\b|बंगाली|बांग्ला|বাংলা|ਬੰਗਾਲੀ|வங்காள|బెంగాలీ|ಬಂಗಾಳಿ|ബംഗാളി/i,
+  'ta-IN': /\btamil\b|तमिल|तमिळ|தமிழ|ਤਮਿਲ|తమిళ్|ತಮಿಳು|തമിഴ്|তামিল|તમિલ/i,
+  'te-IN': /\btelugu\b|तेलुगु|తెలుగు|ਤੇਲਗੂ|தெலுங்க|ತೆಲುಗು|തെലുങ്ക്|তেলুগু|તેલુગુ/i,
+  'kn-IN': /\bkannada\b|कन्नड़|कन्नड|ಕನ್ನಡ|ਕੰਨੜ|கன்னட|కన్నడ|കന്നഡ|কন্নড়|કન્નડ/i,
+  'ml-IN': /\bmalayalam\b|मलयालम|മലയാള|ਮਲਿਆਲਮ|மலையாளம்|మలయాళం|ಮಲಯಾಳಂ|মালয়ালম|મલયાલમ/i,
+  'pa-IN': /\b(punjabi|panjabi)\b|पंजाबी|ਪੰਜਾਬੀ|பஞ்சாபி|పంజాబీ|ಪಂಜಾಬಿ|പഞ്ചാബി|পাঞ্জাবি|પંજાબી/i,
+}
+
+export function requestedLang(text: string): Lang | null {
+  const named = (Object.keys(LANGUAGE_NAMED) as Lang[]).filter((l) =>
+    LANGUAGE_NAMED[l].test(text),
+  )
+  // Hinglish names itself with "Hinglish"; the word also contains no "hindi",
+  // so the two never collide.
+  return named.length === 1 ? named[0]! : null
+}

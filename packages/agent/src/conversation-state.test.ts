@@ -121,3 +121,55 @@ describe('extraction', () => {
     expect(extractFacts('I need a cleaning')).toEqual({})
   })
 })
+
+/**
+ * The sequence a caller actually walked through: ask in Hindi for Punjabi, get
+ * Punjabi, ask in English for English, get English — and then stay in English.
+ * The last step is the one that failed.
+ */
+describe('following a caller who changes their mind', () => {
+  it('lets English take hold as readily as Hindi', () => {
+    const s = newConversation('en-IN')
+
+    observeLanguage(s, 'hi-IN', 0.94)
+    expect(s.language).toBe('hi-IN')
+
+    observeLanguage(s, 'pa-IN', 0.99)
+    expect(s.language).toBe('pa-IN')
+
+    // One clear English sentence, and the call is in English.
+    observeLanguage(s, 'en-IN', 0.95)
+    expect(s.language).toBe('en-IN')
+  })
+
+  it('does not slide back to a language the caller has left', () => {
+    // The bug: Hindi could be entered on one utterance but only left after two,
+    // so the state stayed Hindi and the prompt kept asking for it.
+    const s = newConversation('hi-IN')
+
+    observeLanguage(s, 'en-IN', 0.95)
+    expect(s.language).toBe('en-IN')
+
+    observeLanguage(s, 'en-IN', 0.95)
+    expect(s.language).toBe('en-IN')
+  })
+
+  it('still waits for a second reading when it is unsure', () => {
+    const s = newConversation('en-IN')
+
+    observeLanguage(s, 'hi-Latn-IN', 0.6)
+    expect(s.language).toBe('en-IN')
+
+    observeLanguage(s, 'hi-Latn-IN', 0.6)
+    expect(s.language).toBe('hi-Latn-IN')
+  })
+
+  it('treats every language the same at the same confidence', () => {
+    // No language gets a shorter path than any other.
+    for (const lang of ['ta-IN', 'ml-IN', 'bn-IN', 'pa-IN', 'en-IN'] as const) {
+      const s = newConversation('hi-IN')
+      observeLanguage(s, lang, 0.95)
+      expect(s.language, `${lang} should take hold on one confident reading`).toBe(lang)
+    }
+  })
+})

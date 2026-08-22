@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import type { ServerEvent } from '@vaani/shared'
+import type { Lang, ServerEvent } from '@vaani/shared'
 import { LiveSession } from './session'
 
 /**
@@ -223,5 +223,74 @@ describe('accent switching', () => {
     session.setLang('ml-IN')
 
     expect(switches.length).toBe(1)
+  })
+})
+
+/**
+ * Two switches in quick succession.
+ *
+ * A caller who asks for Punjabi and then changes their mind to English queues
+ * two reconnects. Left unserialised they race to assign the session, and the
+ * one that finishes last wins regardless of which language it was built for —
+ * which is how a call that had moved to English started answering in Punjabi
+ * again a turn later.
+ */
+describe('rapid language changes', () => {
+  function connected() {
+    const h = harness()
+    const priv = h.session as unknown as {
+      session: unknown
+      resumeHandle: string | undefined
+      switching: boolean
+      pendingAccentSwitch: boolean
+      openUtteranceId: string | null
+      switchAccent(): Promise<void>
+    }
+    priv.session = { sendRealtimeInput: () => {} }
+    priv.resumeHandle = 'handle'
+    return { ...h, priv }
+  }
+
+  it('never runs two reconnects at once', () => {
+    const { session, priv } = connected()
+    const started: string[] = []
+    let release: (() => void) | undefined
+    priv.switchAccent = async () => {
+      started.push('in')
+      priv.switching = true
+      await new Promise<void>((r) => (release = r))
+      priv.switching = false
+    }
+
+    session.setLang('pa-IN')
+    session.setLang('en-IN')
+
+    expect(started.length).toBe(1)
+    release?.()
+  })
+
+  it('ends on the language the caller actually chose last', async () => {
+    const { session, priv } = connected()
+    const built: Lang[] = []
+    // Stand in for the reconnect, recording which language it was built for.
+    priv.switchAccent = async function (this: unknown) {
+      priv.switching = true
+      const target = (session as unknown as { lang: Lang }).lang
+      await Promise.resolve()
+      built.push(target)
+      priv.switching = false
+      const now = (session as unknown as { lang: Lang }).lang
+      if (now !== target) {
+        priv.pendingAccentSwitch = true
+        ;(session as unknown as { applyPendingAccent(): void }).applyPendingAccent()
+      }
+    }
+
+    session.setLang('pa-IN')
+    session.setLang('en-IN')
+    await new Promise((r) => setTimeout(r, 0))
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(built.at(-1)).toBe('en-IN')
   })
 })

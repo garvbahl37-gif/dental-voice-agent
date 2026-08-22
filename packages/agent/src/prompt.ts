@@ -1,4 +1,4 @@
-import type { Lang } from '@vaani/shared'
+import type { Lang, VoiceGender } from '@vaani/shared'
 import type { PracticeStore } from './practice'
 
 /**
@@ -76,9 +76,65 @@ const LANG_REGISTER: Record<Lang, string> = {
     'Everyday spoken Punjabi. Keep appointment, cleaning, doctor, X-ray in English. Use "ਤੁਸੀਂ", the polite form.',
 }
 
+/**
+ * How the agent refers to herself.
+ *
+ * Only the languages that inflect first-person verbs for the speaker's gender
+ * appear here. In the rest there is no choice to get wrong, so nothing is said
+ * — an instruction that does not apply is an instruction the model has to spend
+ * attention ignoring.
+ */
+const SELF_REFERENCE: Partial<Record<Lang, Record<VoiceGender, string>>> = {
+  'hi-IN': {
+    feminine:
+      'You are a woman, so every verb you use about yourself is feminine: "मैं देख सकती हूँ", "मैंने बुक कर दिया है", "मैं बताती हूँ". Never "सकता", "करता", "बताता" — those are a man speaking.',
+    masculine:
+      'You are a man, so every verb you use about yourself is masculine: "मैं देख सकता हूँ", "मैं बताता हूँ". Never "सकती", "बताती".',
+  },
+  'hi-Latn-IN': {
+    feminine:
+      'You are a woman: "kar sakti hoon", "main dekhti hoon", "maine book kar diya". Never "sakta hoon" or "dekhta hoon".',
+    masculine:
+      'You are a man: "kar sakta hoon", "main dekhta hoon". Never "sakti hoon" or "dekhti hoon".',
+  },
+  'mr-IN': {
+    feminine:
+      'You are a woman: "मी करू शकते", "मी बघते", "मी सांगते". Never "शकतो", "बघतो", "सांगतो".',
+    masculine:
+      'You are a man: "मी करू शकतो", "मी बघतो". Never "शकते", "बघते".',
+  },
+  'pa-IN': {
+    feminine:
+      'You are a woman: "ਮੈਂ ਕਰ ਸਕਦੀ ਹਾਂ", "ਮੈਂ ਵੇਖਦੀ ਹਾਂ", "ਮੈਂ ਦੱਸਦੀ ਹਾਂ". Never "ਸਕਦਾ", "ਵੇਖਦਾ", "ਦੱਸਦਾ".',
+    masculine:
+      'You are a man: "ਮੈਂ ਕਰ ਸਕਦਾ ਹਾਂ", "ਮੈਂ ਵੇਖਦਾ ਹਾਂ". Never "ਸਕਦੀ", "ਵੇਖਦੀ".',
+  },
+  'gu-IN': {
+    feminine:
+      'You are a woman. Where Gujarati agrees with the speaker, use the feminine: "હું ગઈ", "મેં કરી". Never "હું ગયો".',
+    masculine:
+      'You are a man: "હું ગયો", "મેં કર્યું". Never "હું ગઈ".',
+  },
+}
+
+/** Empty for languages that do not inflect for the speaker's gender. */
+export function selfReferenceNote(lang: Lang, gender: VoiceGender): string {
+  return SELF_REFERENCE[lang]?.[gender] ?? ''
+}
+
+function selfReference(lang: Lang, gender: VoiceGender): string {
+  const note = selfReferenceNote(lang, gender)
+  return note ? `\n**Who is speaking.** ${note}` : ''
+}
+
+/** Named with the script, because a mid-call nudge is all the model may get. */
+export const LANG_FULL_NAME: Record<Lang, string> = LANG_NAME
+
 export interface PromptContext {
   practice: PracticeStore
   lang: Lang
+  /** Follows the configured voice, so the grammar matches what the caller hears. */
+  gender?: VoiceGender
   callerName?: string
   isReturning?: boolean
   now?: Date
@@ -171,6 +227,7 @@ it twice:
   languages.
 
 **How this language is actually spoken.** ${LANG_REGISTER[ctx.lang]}
+${selfReference(ctx.lang, ctx.gender ?? 'feminine')}
 
 That register matters as much as the words. Every Indian language borrows
 English for clinical and clerical vocabulary, and a receptionist borrows it too.

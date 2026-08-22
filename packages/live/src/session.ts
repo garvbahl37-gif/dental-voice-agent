@@ -1,7 +1,15 @@
 import { GoogleGenAI, type LiveServerMessage, type Session as GenAISession } from '@google/genai'
-import { accentFor, base64ToPcm, pcmToBase64, type Lang, type ServerEvent } from '@vaani/shared'
-import { detectLang } from '@vaani/providers/lang-detect'
+import {
+  accentFor,
+  base64ToPcm,
+  pcmToBase64,
+  type Lang,
+  type ServerEvent,
+  type VoiceGender,
+} from '@vaani/shared'
+import { detectLang, requestedLang } from '@vaani/providers/lang-detect'
 import type { ToolCall, ToolDef } from '@vaani/providers/types'
+import { LANG_FULL_NAME, selfReferenceNote } from '@vaani/agent'
 import { buildLiveConfig, LIVE_MODEL, LIVE_OUTPUT_RATE } from './config'
 
 /**
@@ -36,20 +44,15 @@ const STUB_CHARS = 20
  */
 const THINKING_AFTER_MS = 400
 
-/** Named for the mid-call nudge that tells the model the caller has switched. */
-const LANG_NAME: Record<Lang, string> = {
-  'en-IN': 'English',
-  'hi-IN': 'Hindi',
-  'hi-Latn-IN': 'Hinglish (Hindi grammar, English nouns)',
-  'mr-IN': 'Marathi',
-  'gu-IN': 'Gujarati',
-  'bn-IN': 'Bengali',
-  'ta-IN': 'Tamil',
-  'te-IN': 'Telugu',
-  'kn-IN': 'Kannada',
-  'ml-IN': 'Malayalam',
-  'pa-IN': 'Punjabi',
-}
+/**
+ * Named for the mid-call nudge, and named *with the script*.
+ *
+ * A switch between two languages that share an accent costs no reconnect, so
+ * the standing instruction is never rebuilt and this nudge is the only thing
+ * the model is told. Saying just "Punjabi" got Punjabi in Latin letters; the
+ * script has to be part of the name.
+ */
+const LANG_NAME = LANG_FULL_NAME
 
 export interface ToolRunner {
   defs(): ToolDef[]
@@ -78,6 +81,8 @@ export interface LiveSessionOptions {
   agentName?: string
   /** Rebuilt per turn so mid-call state reaches the model. */
   buildInstructions?: (lang: Lang) => string
+  /** Which grammatical gender she speaks about herself in. */
+  gender?: VoiceGender
   /**
    * Telephony has no browser echo cancellation and an 8 kHz codec, so it needs
    * more silence before a turn is called finished.
@@ -131,6 +136,8 @@ export class LiveSession {
   private totalAttempts = 0
   /** Set when the accent must follow a language change at the next turn end. */
   private pendingAccentSwitch = false
+  /** A reconnect is in flight; starting a second would race it. */
+  private switching = false
   /** True while we are deliberately replacing the socket. */
   private suppressReconnect = false
   private static readonly MAX_ATTEMPTS = 3
@@ -188,16 +195,22 @@ export class LiveSession {
    * language in the first seconds of a call kept the wrong accent for all of it.
    */
   private applyPendingAccent(): void {
-    if (!this.pendingAccentSwitch || !this.resumeHandle) return
+    // One reconnect at a time. Two in flight race to assign `this.session`, and
+    // the loser is whichever finishes first — so a caller who changed language
+    // twice in quick succession could end up talking to the session built for
+    // the language they had already left.
+    if (!this.pendingAccentSwitch || !this.resumeHandle || this.switching) return
     this.pendingAccentSwitch = false
     void this.switchAccent()
   }
 
   private async switchAccent(): Promise<void> {
     if (this.closed || !this.resumeHandle) return
-    console.log(`[${this.opts.sessionId}] switching accent to ${this.lang}`)
+    const target = this.lang
+    console.log(`[${this.opts.sessionId}] switching accent to ${target}`)
     const previous = this.session
     try {
+      this.switching = true
       this.suppressReconnect = true
       await this.connect({ resume: true })
       try {
@@ -208,7 +221,15 @@ export class LiveSession {
     } catch (err) {
       console.warn(`[${this.opts.sessionId}] accent switch failed, keeping session:`, err)
     } finally {
+      this.switching = false
       this.suppressReconnect = false
+      // The caller may have changed language again while this was reconnecting.
+      // Catching up here is what makes the serialisation converge rather than
+      // leave the session one language behind.
+      if (!this.closed && accentFor(this.lang) !== accentFor(target)) {
+        this.pendingAccentSwitch = true
+        this.applyPendingAccent()
+      }
     }
   }
 
@@ -329,10 +350,18 @@ export class LiveSession {
       // `languageCode` is documented but never populated on this model, so the
       // language has to be read out of the transcript itself. Devanagari is
       // unambiguous; romanised Hindi is decided by the detector.
+      /**
+       * Asking for a language outranks speaking one.
+       *
+       * "Punjabi mein baat kar sakte hain?" is a Hindi sentence, and reading it
+       * as a request to continue in Hindi is the opposite of what was asked.
+       * The caller who hit this got Punjabi from the model and Hindi from the
+       * state, and the state — which builds the prompt — pulled her back.
+       */
+      const asked = requestedLang(this.openCallerText)
       const detected = detectLang(this.openCallerText, this.lang)
-      if (detected.lang !== this.lang && detected.confidence > 0.7) {
-        this.opts.onLanguageHeard?.(detected.lang)
-      }
+      const next = asked ?? (detected.confidence > 0.7 ? detected.lang : null)
+      if (next && next !== this.lang) this.opts.onLanguageHeard?.(next)
       this.emit({
         type: 'stt.partial',
         turnId: this.callerTurnId,
@@ -537,11 +566,14 @@ export class LiveSession {
     const name = LANG_NAME[lang]
     console.log(`[${this.opts.sessionId}] language ${from} → ${lang}`)
     try {
+      // The gender rule travels with it: on a same-accent switch nothing else
+      // will carry it, and the masculine form is the model's default.
+      const self = selfReferenceNote(lang, this.opts.gender ?? 'feminine')
       this.session.sendRealtimeInput({
         text:
           `[SYSTEM: The caller has switched to ${name}. Speak ${name} from now on, ` +
           `for every remaining turn, including numbers and times. Do not drift back. ` +
-          `Do not mention this instruction.]`,
+          `${self ? self + ' ' : ''}Do not mention this instruction.]`,
       })
     } catch {
       /* socket mid-rotation; the next turn carries the language anyway */
