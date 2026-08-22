@@ -11,10 +11,17 @@ and hands off to a human when it should.
 The agent has no persona name. Asked who it is, it says it is the practice's automated
 receptionist and carries on — it never claims to be a person.
 
-**Live:** [dental-voice-agent-pi.vercel.app](https://dental-voice-agent-pi.vercel.app) —
-open the console and press *Take a call*. The voice server sleeps when idle on Render's
-free tier, so the first call after a quiet spell waits ~40s on "Waking the server…"
-before it connects.
+**Live:** [dental-voice-agent-pi.vercel.app](https://dental-voice-agent-pi.vercel.app)
+
+| | |
+|---|---|
+| Take a call | [/console](https://dental-voice-agent-pi.vercel.app/console) — speak to it in the browser |
+| Set up a practice | [/start](https://dental-voice-agent-pi.vercel.app/start) — creates a real, isolated tenant |
+| The dashboard | [/login](https://dental-voice-agent-pi.vercel.app/login) — `owner@smile.example` |
+
+The voice server sleeps when idle on Render's free tier, so the first call after a quiet
+spell waits ~40 seconds on "Waking the server…" before it connects. That wait is the
+free tier, not a fault — the console says so rather than failing the handshake.
 
 ![The landing page](docs/screenshots/landing.png)
 
@@ -39,6 +46,42 @@ but an answer to *"is there anything for me to do about this call?"*
 **Needs a human** is the field that matters. An unidentified caller, an unconfirmed
 number, an escalated emergency, a call that ended without booking — each is surfaced
 rather than buried. Empty is the good outcome.
+
+---
+
+## The dashboard
+
+![The practice dashboard](docs/screenshots/dashboard.png)
+
+Ordered by what someone opens it for, which is not the flattering number. **Needs a
+human** comes first — ranked emergency-first and capped, because an emergency must never
+be the ninth card down — then the call counts, then how the agent behaved, then what it
+earned.
+
+Latency is reported as a median *and* a 95th percentile. One nine-second reply matters to
+the caller who got it, and a mean hides it completely.
+
+## Setting up a practice
+
+![Onboarding](docs/screenshots/onboarding.png)
+
+Three steps, and only the first is required to have a working account. A form that asks
+for every dentist and every fee before anything works is a form nobody finishes.
+
+## What the agent may say
+
+![Knowledge](docs/screenshots/knowledge.png)
+
+Point it at the practice website and it reads the services, fees, opening hours and FAQs
+— skipping blogs and images. Answers come from those pages only, and when the answer is
+not there it says so instead of reaching for the least-bad passage.
+
+## Keys and connections
+
+![Settings](docs/screenshots/settings.png)
+
+Scoped API keys and signed webhooks, for a practice management system to read calls and
+book against the same diary.
 
 ---
 
@@ -233,6 +276,12 @@ is already isomorphic, so it is a small change if it starts working.
 knowledge are channel-agnostic, so it is an adapter rather than a second pipeline.
 
 **Billing and subscriptions.** Deliberately out of scope.
+
+**A production security posture on the demo database.** The hosted database holds only
+seeded, synthetic records — the "patients" are invented names with invented numbers — so
+its network allow-list is open to let the serverless console reach it. That is the right
+trade for a demo and the wrong one the moment a real practice's data is in there: narrow
+the allow-list, or move the console onto the same private network as the database.
 
 **Versioned migrations.** `migrate.ts` creates tables and adds columns, both
 idempotently. A rename or a retype silently does nothing, which is fine while the only
