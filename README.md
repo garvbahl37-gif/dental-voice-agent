@@ -89,10 +89,16 @@ else.
 Open <http://localhost:3000>, then <http://localhost:3000/console> to take a call.
 
 ```bash
-pnpm test                     # 405 tests
+pnpm test                     # 640 tests
 pnpm tsx scripts/e2e-call.ts  # drives a real call with synthesised caller speech
 node scripts/browser-audit.mjs # real browser, fake mic, asserts behaviour §-by-§
 ```
+
+Database-backed tests run against real Postgres in-process via pglite, so the
+SQL under test is the SQL that ships. Every multi-tenant case seeds **two**
+practices into the same tables — a single-tenant fixture cannot fail the test
+that matters, because a missing `WHERE org_id = ?` still returns the right rows
+when only one clinic's rows exist.
 
 ---
 
@@ -146,15 +152,33 @@ else. Session ids are random, because the session id is also the CRM record key.
 
 ```
 packages/
-  shared/      wire protocol (zod), audio format, latency budgets, PII redaction
+  shared/      wire protocol (zod), audio format, PII redaction, base64
   live/        Gemini Live session — config, reconnection, accent switching
-  agent/       practice data, slot solver, 13 tools, knowledge, triage, safety, CRM
+  agent/       tools, triage, safety guard, sentiment, prompts
+  db/          multi-tenant schema, repositories, auth, analytics, API keys
+  telephony/   Twilio — mu-law codec, TwiML, media stream, business hours
+  knowledge/   chunking, hybrid retrieval, website crawler, SSRF guard
+  outbound/    campaign builders, calling policy, dialler
+  evals/       scenarios, scoring, runner
   core/        Transport interface (+ the earlier cascaded pipeline, see below)
   providers/   STT/LLM/TTS adapters used by the cascaded pipeline
 apps/
-  voice-server/  WebSocket bridge: browser ⟷ Gemini Live, with tools and guards
-  web/           Next.js — landing page at /, console at /console
+  voice-server/  browser + phone calls, tools, guards, outbound worker
+  web/           landing, console, dashboard, knowledge, settings, onboarding, API
 ```
+
+## What it does now
+
+| | |
+|---|---|
+| **Phone calls** | Twilio inbound, caller-ID recognition, business-hours routing, after-hours emergency routing, transfer with ring-out escalation |
+| **Multi-tenant** | every clinic-owned row carries `org_id`; the repository takes the org in its constructor so no query can be built without one |
+| **Scheduling** | a root canal goes to an endodontist, in a chair with rotary endo, inside branch hours, with turnaround — booking re-checks inside the transaction |
+| **Outbound** | reminders, recall, waitlist recovery, missed-call recovery, follow-up — with consent, calling windows and attempt limits |
+| **Knowledge** | import a website or paste text; hybrid retrieval that returns *nothing* rather than the least-bad passage |
+| **Dashboard** | needs-a-human first, then calls, agent latency percentiles, and what it earned |
+| **Integrations** | scoped API keys, signed webhooks, white-label branding |
+| **Evals** | 14 scenarios; `must` failures gate, quality is graded separately |
 
 `packages/core` and `packages/providers` hold the original cascaded implementation —
 turn manager, adaptive endpointing, barge-in truncation, sentence chunker, hallucination
@@ -203,12 +227,17 @@ is already isomorphic, so it is a small change if it starts working.
 
 ---
 
-## Not built yet
+## Not built
 
-The Twilio and WhatsApp adapters — the `Transport` interface exists for them, and the
-conversation, diary and knowledge are transport-agnostic, so each is an adapter rather
-than a second pipeline. Also outbound campaigns (reminders, recall, waitlist auto-fill),
-call recording and playback, and the analytics dashboard.
+**WhatsApp.** The `Transport` interface exists for it and the conversation, diary and
+knowledge are channel-agnostic, so it is an adapter rather than a second pipeline.
+
+**Billing and subscriptions.** Deliberately out of scope.
+
+**Versioned migrations.** `migrate.ts` creates tables and adds columns, both
+idempotently. A rename or a retype silently does nothing, which is fine while the only
+rows are demo data and stops being fine the moment a real practice's patients are in
+there. drizzle-kit is already configured for the handover.
 
 Compliance posture is *architected toward* HIPAA / India DPDP — consent logging, PII
 redaction, audit trail — but it is not certified, and that claim is not made.
