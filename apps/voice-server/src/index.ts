@@ -204,8 +204,7 @@ function json(res: import('node:http').ServerResponse, body: unknown): void {
  * origin to reach it from anywhere else.
  */
 const twilioWss = new WebSocketServer({
-  server: http,
-  path: '/twilio/stream',
+  noServer: true,
   /**
    * No origin or token check here, deliberately.
    *
@@ -228,27 +227,24 @@ twilioWss.on('connection', (socket) => {
   })
 })
 
-const wss = new WebSocketServer({
-  server: http,
-  path: '/session',
-  verifyClient: ({ req, origin }, done) => {
-    if (ALLOWED_ORIGINS.length > 0 && origin && ALLOWED_ORIGINS.includes(origin)) return done(true)
-    if (ADMIN_TOKEN) {
-      const header = req.headers.authorization ?? ''
-      if (header.startsWith('Bearer ') && tokenMatches(header.slice(7))) return done(true)
-    }
-    /**
-     * Loopback is a free pass only in local development.
-     *
-     * Deliberately last, and disabled the moment anything is configured: some
-     * container platforms front the process with a proxy that connects over
-     * loopback, so "trust loopback" on a deployed server would trust the whole
-     * internet while looking like a local-only rule.
-     */
-    if (!CONFIGURED && isLoopback(req.socket.remoteAddress)) return done(true)
-    done(false, 401, 'Unauthorized')
-  },
-})
+const wss = new WebSocketServer({ noServer: true })
+
+/**
+ * Who may open a console call.
+ *
+ * The same rules the WebSocketServer used to enforce via verifyClient, lifted
+ * out so the single upgrade router can apply them — behaviour unchanged.
+ */
+function consoleUpgradeAllowed(req: import('node:http').IncomingMessage): boolean {
+  const origin = req.headers.origin
+  if (ALLOWED_ORIGINS.length > 0 && origin && ALLOWED_ORIGINS.includes(origin)) return true
+  if (ADMIN_TOKEN) {
+    const header = req.headers.authorization ?? ''
+    if (header.startsWith('Bearer ') && tokenMatches(header.slice(7))) return true
+  }
+  // Loopback is a free pass only in local development — see CONFIGURED.
+  return !CONFIGURED && isLoopback(req.socket.remoteAddress)
+}
 
 wss.on('connection', async (socket) => {
   // Random, not sequential. The id is also the CRM record key, and `s1_`,
@@ -410,6 +406,37 @@ wss.on('connection', async (socket) => {
       recoverable: false,
     })
   }
+})
+
+/**
+ * One upgrade handler, routing by path.
+ *
+ * `new WebSocketServer({ server })` attaches its own `upgrade` listener and
+ * destroys any socket whose path it does not recognise. With two of them on one
+ * HTTP server, whichever fires first kills the other's connections — which is
+ * exactly what happened when telephony was added: every console call started
+ * failing its handshake with a 400 that never reached the auth gate.
+ */
+http.on('upgrade', (req, socket, head) => {
+  const path = (req.url ?? '').split('?')[0]
+
+  if (path === '/twilio/stream') {
+    twilioWss.handleUpgrade(req, socket, head, (ws) => twilioWss.emit('connection', ws, req))
+    return
+  }
+
+  if (path === '/session') {
+    if (!consoleUpgradeAllowed(req)) {
+      socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n')
+      socket.destroy()
+      return
+    }
+    wss.handleUpgrade(req, socket, head, (ws) => wss.emit('connection', ws, req))
+    return
+  }
+
+  socket.write('HTTP/1.1 404 Not Found\r\n\r\n')
+  socket.destroy()
 })
 
 // 0.0.0.0, not the default: inside a container, binding loopback makes the
