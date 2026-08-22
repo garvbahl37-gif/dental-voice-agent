@@ -16,8 +16,13 @@ export async function currentUser(): Promise<AuthedUser | null> {
   const jar = await cookies()
   const token = jar.get(SESSION_COOKIE)?.value
   if (!token) return null
-  const { db } = connect()
-  return resolveSession(db, token)
+  try {
+    const { db } = connect()
+    return await resolveSession(db, token)
+  } catch {
+    // No database configured. Nobody is signed in, rather than a crash.
+    return null
+  }
 }
 
 /** Returns the user, or a Response to send back. Never throws past the route. */

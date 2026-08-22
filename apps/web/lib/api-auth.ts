@@ -12,7 +12,26 @@ export async function requireApiKey(
   req: Request,
   need: 'read' | 'write' = 'read',
 ): Promise<{ caller: ApiCaller } | { error: Response }> {
-  const { db } = connect()
+  /**
+   * A missing database is a 503, not a 500 and not a 401.
+   *
+   * It said 500 before, which reads as "your request broke us" — an integrator
+   * retries that and files a bug. It is neither their fault nor an auth
+   * failure, and calling it 401 would send them hunting for a key problem that
+   * does not exist.
+   */
+  let db: ReturnType<typeof connect>['db']
+  try {
+    db = connect().db
+  } catch {
+    return {
+      error: Response.json(
+        { error: 'This deployment has no database configured, so the API is unavailable.' },
+        { status: 503 },
+      ),
+    }
+  }
+
   const caller = await resolveApiKey(db, req.headers.get('authorization'))
   if (!caller) {
     return {
