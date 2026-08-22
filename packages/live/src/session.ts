@@ -29,6 +29,13 @@ import { buildLiveConfig, LIVE_MODEL, LIVE_OUTPUT_RATE } from './config'
  */
 const STUB_CHARS = 20
 
+/**
+ * How long the caller's speech must be quiet before the agent counts as
+ * thinking. Short enough to appear during a real pause, long enough not to
+ * flicker between words.
+ */
+const THINKING_AFTER_MS = 400
+
 /** Named for the mid-call nudge that tells the model the caller has switched. */
 const LANG_NAME: Record<Lang, string> = {
   'en-IN': 'English',
@@ -94,6 +101,9 @@ export class LiveSession {
 
   /** Set once per agent turn, so one reply is one transcript bubble. */
   private openUtteranceId: string | null = null
+  /** The id of the caller utterance currently being transcribed. */
+  private callerTurnId = 't0'
+  private thinkingTimer: ReturnType<typeof setTimeout> | undefined
   private openAgentText = ''
   private openCallerText = ''
 
@@ -168,6 +178,21 @@ export class LiveSession {
    * Failure is survivable — the old session keeps working, only in the
    * previous accent.
    */
+  /**
+   * Take a pending accent change if it is safe to.
+   *
+   * A reconnect without a resumption handle would restart the conversation
+   * rather than continue it, so an early switch has to wait for one — and it
+   * *waits* rather than being discarded, which is what used to happen: the flag
+   * was cleared before the handle was checked, so a caller who chose their
+   * language in the first seconds of a call kept the wrong accent for all of it.
+   */
+  private applyPendingAccent(): void {
+    if (!this.pendingAccentSwitch || !this.resumeHandle) return
+    this.pendingAccentSwitch = false
+    void this.switchAccent()
+  }
+
   private async switchAccent(): Promise<void> {
     if (this.closed || !this.resumeHandle) return
     console.log(`[${this.opts.sessionId}] switching accent to ${this.lang}`)
@@ -294,7 +319,12 @@ export class LiveSession {
 
     // ── Caller speech ──────────────────────────────────────────────────────
     if (sc?.inputTranscription?.text) {
+      // A fresh utterance gets the id it will settle under, so the console can
+      // keep one bubble per thing the caller said rather than inferring the
+      // boundary from whichever bubble is last.
+      if (!this.openCallerText) this.callerTurnId = `t${++this.turnSeq}`
       this.openCallerText += sc.inputTranscription.text
+      this.armThinking()
 
       // `languageCode` is documented but never populated on this model, so the
       // language has to be read out of the transcript itself. Devanagari is
@@ -305,6 +335,7 @@ export class LiveSession {
       }
       this.emit({
         type: 'stt.partial',
+        turnId: this.callerTurnId,
         text: this.openCallerText,
         lang: this.lang,
         confidence: 0.9,
@@ -319,6 +350,15 @@ export class LiveSession {
       // fragments; emitting one event each would scatter a single reply across
       // a dozen transcript bubbles.
       if (!this.openUtteranceId) {
+        /**
+         * The agent starting to answer *is* the end of the caller's utterance —
+         * Live's VAD has already decided they stopped. Settling it here rather
+         * than at `turnComplete` keeps the transcript in the order the two
+         * people actually spoke, and stops the next thing the caller says from
+         * being appended to the last thing they said.
+         */
+        this.finalizeCallerTurn()
+        this.clearThinking()
         this.openUtteranceId = `u${++this.utteranceSeq}`
         this.turnStartedAt = Date.now()
         this.emit({ type: 'agent.state', state: 'speaking' })
@@ -365,17 +405,7 @@ export class LiveSession {
 
     // ── Turn boundaries ────────────────────────────────────────────────────
     if (sc?.turnComplete) {
-      if (this.openCallerText.trim()) {
-        this.turnSeq += 1
-        this.emit({
-          type: 'stt.final',
-          turnId: `t${this.turnSeq}`,
-          text: this.openCallerText.trim(),
-          lang: this.lang,
-          codeSwitched: false,
-        })
-        this.openCallerText = ''
-      }
+      this.finalizeCallerTurn()
       if (this.openUtteranceId) {
         this.emit({
           type: 'metrics.turn',
@@ -392,10 +422,7 @@ export class LiveSession {
       this.emit({ type: 'agent.state', state: 'idle' })
 
       // A safe moment to change accent: nobody is mid-sentence.
-      if (this.pendingAccentSwitch) {
-        this.pendingAccentSwitch = false
-        void this.switchAccent()
-      }
+      this.applyPendingAccent()
     }
 
     // Reconnect handle, for surviving a network blip.
@@ -494,7 +521,18 @@ export class LiveSession {
      * language into a single "hi" bucket, which left a caller who switched to
      * Tamil being answered in Tamil words with a Hindi mouth.
      */
-    if (accentFor(from) !== accentFor(lang)) this.pendingAccentSwitch = true
+    if (accentFor(from) !== accentFor(lang)) {
+      this.pendingAccentSwitch = true
+      /**
+       * If nobody is mid-sentence, take it now.
+       *
+       * Waiting for the next turn boundary means the next thing she says is
+       * still in the old accent — and switching from the console happens
+       * precisely when the line is quiet, so that was the common case rather
+       * than the rare one.
+       */
+      if (!this.openUtteranceId) this.applyPendingAccent()
+    }
 
     const name = LANG_NAME[lang]
     console.log(`[${this.opts.sessionId}] language ${from} → ${lang}`)
@@ -510,6 +548,41 @@ export class LiveSession {
     }
   }
 
+  /**
+   * The pause between the caller finishing and the agent's first word.
+   *
+   * Live announces neither end of it: transcription chunks simply stop
+   * arriving, and some time later the reply starts. A short timer is what turns
+   * that silence into something the console can show, so the caller is not left
+   * watching a still screen wondering whether they were heard.
+   */
+  private armThinking(): void {
+    this.clearThinking()
+    this.thinkingTimer = setTimeout(() => {
+      this.thinkingTimer = undefined
+      if (this.closed || this.openUtteranceId) return
+      this.emit({ type: 'agent.state', state: 'thinking' })
+    }, THINKING_AFTER_MS)
+  }
+
+  private clearThinking(): void {
+    if (this.thinkingTimer) clearTimeout(this.thinkingTimer)
+    this.thinkingTimer = undefined
+  }
+
+  private finalizeCallerTurn(): void {
+    const text = this.openCallerText.trim()
+    this.openCallerText = ''
+    if (!text) return
+    this.emit({
+      type: 'stt.final',
+      turnId: this.callerTurnId,
+      text,
+      lang: this.lang,
+      codeSwitched: false,
+    })
+  }
+
   private emit(event: ServerEvent): void {
     if (this.closed && event.type !== 'agent.state') return
     this.opts.send(event)
@@ -518,6 +591,7 @@ export class LiveSession {
   async close(): Promise<void> {
     if (this.closed) return
     this.closed = true
+    this.clearThinking()
     try {
       this.session?.close()
     } catch {

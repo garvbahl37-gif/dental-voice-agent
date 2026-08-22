@@ -178,6 +178,9 @@ export class Session {
       this.turns.onPartial(r.text, r.lang)
       this.emit({
         type: 'stt.partial',
+        // The id this utterance will settle under, so the console keeps one
+        // bubble per thing the caller said.
+        turnId: `t${this.turnSeq + 1}`,
         text: r.text,
         lang: r.lang,
         confidence: r.confidence,
@@ -338,7 +341,13 @@ export class Session {
     this.stt = this.newSttStream()
     this.stt.onPartial((r) => {
       this.turns.onPartial(r.text, r.lang)
-      this.emit({ type: 'stt.partial', text: r.text, lang: r.lang, confidence: r.confidence })
+      this.emit({
+        type: 'stt.partial',
+        turnId: `t${this.turnSeq + 1}`,
+        text: r.text,
+        lang: r.lang,
+        confidence: r.confidence,
+      })
     })
 
     const result = await finished.end()

@@ -98,14 +98,24 @@ export default function Console() {
       case 'stt.partial':
         if (!event.text.trim()) break
         setTurns((prev) => {
-          const last = prev.at(-1)
-          if (last?.speaker === 'caller' && last.interim) {
-            return [...prev.slice(0, -1), { ...last, text: event.text, lang: event.lang }]
+          /**
+           * Matched by id, not by position.
+           *
+           * Matching "the last bubble, if it is an unsettled caller one" merged
+           * everything the caller said before the agent got a word in into a
+           * single run-on bubble. Each utterance carries the id it will settle
+           * under, so a new one starts a new bubble.
+           */
+          const at = prev.findIndex((t) => t.id === event.turnId)
+          if (at >= 0) {
+            const next = [...prev]
+            next[at] = { ...prev[at]!, text: event.text, lang: event.lang }
+            return next
           }
           return [
             ...prev,
             {
-              id: `interim-${Date.now()}`,
+              id: event.turnId,
               speaker: 'caller',
               text: event.text,
               lang: event.lang,
@@ -118,8 +128,10 @@ export default function Console() {
 
       case 'stt.final':
         setTurns((prev) => {
-          const at = prev.findIndex((t) => t.interim)
-          if (!event.text.trim()) return at >= 0 ? prev.filter((t) => !t.interim) : prev
+          // The same id the partials carried, so it settles the bubble the
+          // caller has been watching fill in rather than any other.
+          const at = prev.findIndex((t) => t.id === event.turnId)
+          if (!event.text.trim()) return at >= 0 ? prev.filter((_, i) => i !== at) : prev
 
           const settled: Turn = {
             id: event.turnId,
@@ -494,7 +506,7 @@ export default function Console() {
 
         {turns.length > 0 && (
           <div style={s.transcriptWrap}>
-            <Transcript turns={turns} startedAt={startedAt} />
+            <Transcript turns={turns} startedAt={startedAt} thinking={agentState === 'thinking'} />
           </div>
         )}
         </>

@@ -145,6 +145,14 @@ const SessionReady = z.object({
 
 const SttPartial = z.object({
   type: z.literal('stt.partial'),
+  /**
+   * The id this utterance will settle under.
+   *
+   * Without it the console had to guess which bubble a partial belonged to by
+   * looking at whichever one happened to be last, so two things the caller said
+   * before the agent answered ran together into a single bubble.
+   */
+  turnId: z.string(),
   text: z.string(),
   lang: LangSchema,
   confidence: z.number().min(0).max(1),

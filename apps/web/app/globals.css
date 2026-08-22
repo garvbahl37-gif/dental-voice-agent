@@ -205,3 +205,59 @@ button:disabled {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* ── Transcript motion ──────────────────────────────────────────────────────
+   A turn should read as arriving. The bubble rises a few pixels as it fades in
+   — enough to catch the eye at the bottom of a scrolling column, small enough
+   that a long call does not feel busy. */
+.tx-in {
+  animation: tx-rise 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes tx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The pause before a reply, borrowed from chat because it is the one idiom
+   everybody already reads as "it heard you, it is working on it". */
+.tx-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--agent);
+  opacity: 0.35;
+  animation: tx-pulse 1.25s ease-in-out infinite;
+}
+
+.tx-dot:nth-child(3) { animation-delay: 0.16s; }
+.tx-dot:nth-child(4) { animation-delay: 0.32s; }
+
+@keyframes tx-pulse {
+  0%, 60%, 100% { opacity: 0.28; transform: translateY(0); }
+  30% { opacity: 0.95; transform: translateY(-3px); }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Motion is decoration here; the transcript reads the same without it. */
+@media (prefers-reduced-motion: reduce) {
+  .tx-in { animation: none; }
+  .tx-dot { animation: none; opacity: 0.5; }
+}

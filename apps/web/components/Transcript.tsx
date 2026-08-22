@@ -42,20 +42,56 @@ export interface Turn {
 interface Props {
   turns: Turn[]
   startedAt: number | null
+  /** True between the caller finishing and the reply's first word. */
+  thinking?: boolean
 }
 
-export function Transcript({ turns, startedAt }: Props) {
+export function Transcript({ turns, startedAt, thinking = false }: Props) {
   const endRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [turns])
+  }, [turns, thinking])
 
   return (
     <div style={s.scroll}>
       {turns.map((turn) => (
         <Row key={turn.id} turn={turn} startedAt={startedAt} />
       ))}
+      {thinking && <Thinking />}
       <div ref={endRef} />
+    </div>
+  )
+}
+
+/**
+ * The pause before the reply.
+ *
+ * Voice has no equivalent of watching someone type, so a caller who has just
+ * finished speaking has nothing to tell them they were heard. This is the one
+ * moment in the call where showing that something is happening matters more
+ * than showing what.
+ */
+function Thinking() {
+  return (
+    <div style={{ ...s.row, alignItems: 'flex-end' }} aria-live="polite">
+      <div style={s.meta}>
+        <span style={{ ...s.who, color: 'var(--agent)' }}>Front desk</span>
+      </div>
+      <div
+        className="tx-in"
+        style={{
+          ...s.bubble,
+          ...s.thinking,
+          background: 'var(--agent-soft)',
+          borderColor: 'var(--agent-line)',
+          borderRadius: '14px 4px 14px 14px',
+        }}
+      >
+        <span className="sr-only">Thinking</span>
+        <i className="tx-dot" aria-hidden />
+        <i className="tx-dot" aria-hidden />
+        <i className="tx-dot" aria-hidden />
+      </div>
     </div>
   )
 }
@@ -82,6 +118,7 @@ function Row({ turn, startedAt }: { turn: Turn; startedAt: number | null }) {
       </div>
 
       <div
+        className="tx-in"
         lang={htmlLang(turn.lang)}
         style={{
           ...s.bubble,
@@ -205,6 +242,12 @@ const s: Record<string, React.CSSProperties> = {
     padding: '11px 15px',
     lineHeight: 1.5,
     boxShadow: 'var(--shadow-sm)',
+  },
+  thinking: {
+    display: 'flex',
+    gap: 5,
+    alignItems: 'center',
+    padding: '14px 16px',
   },
   unspoken: {
     textDecoration: 'line-through',
