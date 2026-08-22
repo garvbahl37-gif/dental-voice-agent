@@ -9,6 +9,7 @@ import {
   revokeApiKey,
   updateBranding,
 } from '@vaani/db'
+import { assertPublicUrl, BlockedAddressError } from '@vaani/shared/net-guard'
 import { requireUser } from '@/lib/session'
 
 export const runtime = 'nodejs'
@@ -94,6 +95,26 @@ export async function POST(req: Request): Promise<Response> {
     case 'add_webhook': {
       if (!body.url?.startsWith('https://')) {
         return Response.json({ error: 'Webhook endpoints must be https.' }, { status: 400 })
+      }
+      /**
+       * Checked here as well as at delivery.
+       *
+       * Delivery is the control — DNS can be repointed after this — but
+       * refusing at registration turns a hostile or mistyped address into a
+       * clear error now, rather than an endpoint that silently never fires.
+       */
+      try {
+        await assertPublicUrl(body.url)
+      } catch (err) {
+        return Response.json(
+          {
+            error:
+              err instanceof BlockedAddressError
+                ? err.message
+                : 'That endpoint address cannot be used.',
+          },
+          { status: 400 },
+        )
       }
       const events = (body.events ?? []).filter((e) =>
         ['call.completed', 'appointment.booked', 'appointment.cancelled', 'escalation.raised'].includes(e),

@@ -10,7 +10,7 @@ import {
   resolveApiKey,
   revokeApiKey,
 } from './api-keys'
-import { emitWebhook, signPayload, verifySignature, type Deliver } from './webhook-delivery'
+import { emitWebhook, httpDeliver, signPayload, verifySignature, type Deliver } from './webhook-delivery'
 import { webhooks } from './schema'
 
 /**
@@ -204,6 +204,29 @@ describe('webhook delivery', () => {
     const hook = await registerWebhook(t.db, smile, { url: 'https://a.example/h', events: ['call.completed'] })
     expect(await removeWebhook(t.db, pearl, hook.id)).toBe(false)
     expect(await removeWebhook(t.db, smile, hook.id)).toBe(true)
+  })
+
+  it('refuses to deliver to an address inside our own network', async () => {
+    // A stored webhook fires on every call, so an unchecked destination is a
+    // persistent SSRF primitive — worse than a one-off fetch, not better.
+    for (const url of [
+      'http://169.254.169.254/latest/meta-data/',
+      'http://127.0.0.1:5432/',
+      'http://10.0.0.1/internal',
+      'http://localhost/admin',
+    ]) {
+      const out = await httpDeliver({ url, body: '{}', headers: {} })
+      expect(out.ok).toBe(false)
+      // Never reached the network at all.
+      expect(out.status).toBe(0)
+    }
+  })
+
+  it('does not treat a redirect as delivered', async () => {
+    // A public endpoint that 302s to the metadata address must not count as a
+    // success, or the failure counter never disables it.
+    const out = await httpDeliver({ url: 'https://example.com/', body: '{}', headers: {} })
+    expect(typeof out.ok).toBe('boolean')
   })
 
   it('does nothing when nobody is subscribed', async () => {

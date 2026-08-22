@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { assertPublicUrl, BlockedAddressError } from '@vaani/shared/net-guard'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { Database } from './client'
 import { webhooks } from './schema'
@@ -22,6 +23,14 @@ import type { WebhookEvent } from './api-keys'
  *   **Self-disabling.** An endpoint that has failed repeatedly is gone, and
  *   retrying it forever burns the sender's time to no purpose. After enough
  *   consecutive failures it is switched off and the practice is told.
+ *
+ * And one that is not about usefulness at all: **the destination is checked
+ * every time it is used, not only when it was registered.** A webhook URL comes
+ * from a user and makes this server issue a request, which is the same SSRF
+ * primitive as the website importer. A POST to a cloud metadata endpoint cannot
+ * read the response back to the attacker, but it is still a request to an
+ * internal service, and DNS for a public-looking name can be repointed at
+ * 127.0.0.1 long after the endpoint was saved.
  */
 
 const TIMEOUT_MS = 5_000
@@ -59,14 +68,24 @@ export type Deliver = (input: {
 
 export const httpDeliver: Deliver = async ({ url, body, headers }) => {
   try {
+    // Re-resolved at delivery, not trusted from registration.
+    await assertPublicUrl(url)
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...headers },
       body,
+      // Never follow: a public endpoint that 302s to 169.254.169.254 defeats a
+      // check done only on the address we were given.
+      redirect: 'manual',
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
+    // A redirect is not a success — the receiver should be given a final URL.
+    if (res.status >= 300 && res.status < 400) return { ok: false, status: res.status }
     return { ok: res.ok, status: res.status }
-  } catch {
+  } catch (err) {
+    if (err instanceof BlockedAddressError) {
+      console.warn('[webhook] refused to deliver to a non-public address:', url)
+    }
     return { ok: false, status: 0 }
   }
 }

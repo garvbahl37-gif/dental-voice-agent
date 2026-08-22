@@ -23,6 +23,7 @@ export default defineConfig({
      * export the test harness.
      */
     alias: {
+      '@vaani/shared/net-guard': src('shared/src/net-guard.ts'),
       '@vaani/db/testing': src('db/src/testing.ts'),
       '@vaani/db/schema': src('db/src/schema.ts'),
       '@vaani/providers/lang-detect': src('providers/src/lang-detect.ts'),

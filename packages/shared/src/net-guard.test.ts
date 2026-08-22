@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertPublicUrl, isPrivateAddress } from './safe-fetch'
+import { assertPublicUrl, isPrivateAddress } from './net-guard'
 
 /**
  * Every case here is a way to make the server fetch something it should not.
