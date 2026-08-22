@@ -432,3 +432,183 @@
   border-color: rgba(179, 53, 42, 0.35);
   background: var(--alert-soft);
 }
+
+/* ── Onboarding ──────────────────────────────────────────────────────────── */
+
+.ob-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px 64px;
+}
+
+.ob-card {
+  width: min(520px, 94vw);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: clamp(26px, 5vw, 40px);
+  box-shadow: var(--shadow-lg);
+}
+
+.ob-steps {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.ob-step {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+  border: 1px solid var(--hairline-strong);
+}
+
+.ob-step.is-on {
+  background: var(--agent);
+  border-color: var(--agent);
+  color: #fff;
+}
+
+.ob-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 8px;
+}
+
+.ob-sub {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  margin: 0 0 20px;
+}
+
+.ob-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 16px 0 6px;
+}
+
+.ob-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .ob-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ob-hint {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+  margin: 6px 0 0;
+}
+
+.ob-error {
+  margin-top: 18px;
+}
+
+.ob-next {
+  width: 100%;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.ob-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.ob-actions .lp-btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Skipping is a real option, so it looks like one rather than a dead link. */
+.ob-skip {
+  display: block;
+  width: 100%;
+  margin-top: 14px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ob-skip:hover {
+  color: var(--ink);
+}
+
+/* ── Settings ────────────────────────────────────────────────────────────── */
+
+/* A secret shown once. Loud, and dismissed deliberately. */
+.st-secret {
+  background: var(--agent-soft);
+  border: 1px solid var(--agent-line);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+}
+
+.st-secret-value {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  margin: 12px 0 10px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.st-secret-note {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin: 0 0 14px;
+}
+
+.st-select {
+  flex: 0 0 auto;
+  min-width: 150px;
+  width: auto;
+}
+
+.st-events {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  margin-top: 12px;
+}
+
+.st-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+
+.st-url {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  word-break: break-all;
+}

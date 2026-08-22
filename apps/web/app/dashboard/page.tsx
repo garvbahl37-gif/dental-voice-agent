@@ -165,6 +165,9 @@ export default function Dashboard() {
           <a className="db-signout" href="/knowledge">
             Knowledge
           </a>
+          <a className="db-signout" href="/settings">
+            Settings
+          </a>
           <span className="db-who">
             {data.me.name} · {data.me.role}
           </span>

@@ -53,6 +53,9 @@ CREATE TABLE IF NOT EXISTS organizations (
   languages jsonb NOT NULL DEFAULT '["en-IN","hi-IN","hi-Latn-IN"]',
   voice text NOT NULL DEFAULT 'Leda',
   agent_persona text,
+  brand_name text,
+  brand_color text,
+  brand_logo_url text,
   plan text NOT NULL DEFAULT 'trial',
   status text NOT NULL DEFAULT 'active',
   created_at timestamptz NOT NULL DEFAULT now()
@@ -380,4 +383,34 @@ ALTER TABLE calls ADD COLUMN IF NOT EXISTS cost_paise integer;
 ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS model_cost_paise integer NOT NULL DEFAULT 0;
 ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS telephony_cost_paise integer NOT NULL DEFAULT 0;
 ALTER TABLE usage_daily ADD COLUMN IF NOT EXISTS revenue_paise integer NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS api_keys (
+  id text PRIMARY KEY,
+  org_id text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  name text NOT NULL,
+  prefix text NOT NULL,
+  secret_hash text NOT NULL,
+  scope text NOT NULL DEFAULT 'read',
+  last_used_at timestamptz,
+  revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS api_keys_hash_idx ON api_keys (secret_hash);
+CREATE INDEX IF NOT EXISTS api_keys_org_idx ON api_keys (org_id);
+
+CREATE TABLE IF NOT EXISTS webhooks (
+  id text PRIMARY KEY,
+  org_id text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  url text NOT NULL,
+  events jsonb NOT NULL DEFAULT '[]',
+  secret text NOT NULL,
+  failures integer NOT NULL DEFAULT 0,
+  disabled_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS webhooks_org_idx ON webhooks (org_id);
+
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS brand_name text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS brand_color text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS brand_logo_url text;
 `

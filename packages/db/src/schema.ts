@@ -45,6 +45,13 @@ export const organizations = pgTable(
     voice: text('voice').notNull().default('Leda'),
     /** Free-text persona and policy overlay, appended to the system prompt. */
     agentPersona: text('agent_persona'),
+    /**
+     * White-label. A group that resells this to its own practices needs the
+     * dashboard to be theirs, not ours.
+     */
+    brandName: text('brand_name'),
+    brandColor: text('brand_color'),
+    brandLogoUrl: text('brand_logo_url'),
     plan: text('plan').notNull().default('trial'),
     status: text('status').notNull().default('active'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -589,7 +596,58 @@ export const usageDaily = pgTable(
   (t) => [primaryKey({ columns: [t.orgId, t.day] })],
 )
 
+/**
+ * Machine credentials.
+ *
+ * The secret is stored as a hash, like a session token — a dumped table must
+ * not yield a working key. `prefix` is visible so a practice can tell four keys
+ * apart when one needs revoking; without it they revoke all four and break
+ * three working integrations.
+ */
+export const apiKeys = pgTable(
+  'api_keys',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    /** First few characters, shown in the dashboard. Not a secret. */
+    prefix: text('prefix').notNull(),
+    secretHash: text('secret_hash').notNull(),
+    scope: text('scope').$type<'read' | 'write'>().notNull().default('read'),
+    lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('api_keys_hash_idx').on(t.secretHash),
+    index('api_keys_org_idx').on(t.orgId),
+  ],
+)
+
+export const webhooks = pgTable(
+  'webhooks',
+  {
+    id: text('id').primaryKey(),
+    orgId: text('org_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    url: text('url').notNull(),
+    events: jsonb('events').$type<string[]>().notNull().default([]),
+    /** Signs each delivery, so a receiver can prove it came from us. */
+    secret: text('secret').notNull(),
+    /** Consecutive failures. A dead endpoint stops being retried forever. */
+    failures: integer('failures').notNull().default(0),
+    disabledAt: timestamp('disabled_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('webhooks_org_idx').on(t.orgId)],
+)
+
 export const schema = {
+  apiKeys,
+  webhooks,
   organizations,
   users,
   sessions,

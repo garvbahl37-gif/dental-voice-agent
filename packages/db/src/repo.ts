@@ -641,6 +641,22 @@ export class OrgRepo {
 }
 
 /**
+ * Is this practice slug free?
+ *
+ * The slug is the tenant's subdomain and is globally unique, so this is one of
+ * the few legitimately unscoped reads — it exists to give a clear "that name is
+ * taken" at signup rather than a database constraint error.
+ */
+export async function slugAvailable(db: Database, slug: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: organizations.id })
+    .from(organizations)
+    .where(eq(organizations.slug, slug))
+    .limit(1)
+  return !row
+}
+
+/**
  * Every active tenant, for work that runs across all of them.
  *
  * Used by the outbound worker, which is one of the few things in the system

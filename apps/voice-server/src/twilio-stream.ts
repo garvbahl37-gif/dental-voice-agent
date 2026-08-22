@@ -1,11 +1,18 @@
 import type { WebSocket } from 'ws'
 import { LiveSession } from '@vaani/live'
-import { DentalTools, newConversation, speakable, systemPrompt } from '@vaani/agent'
+import {
+  DentalTools,
+  analyseSentiment,
+  detectIntent,
+  newConversation,
+  speakable,
+  systemPrompt,
+} from '@vaani/agent'
 import { decideRouting, TwilioTransport } from '@vaani/telephony'
 import type { Lang, ServerEvent } from '@vaani/shared'
 import type { CallTurn } from '@vaani/db'
 import { outboundPrompt, type CampaignKind } from '@vaani/outbound'
-import { connect } from '@vaani/db'
+import { connect, emitWebhookDetached } from '@vaani/db'
 import { geminiEmbedder, retrieve } from '@vaani/knowledge'
 import { loadStreamContext } from './telephony'
 
@@ -68,7 +75,7 @@ export async function handleTwilioStream(socket: WebSocket): Promise<void> {
       transport.close()
       return
     }
-    const { repo, adapter, callId } = ctx
+    const { repo, adapter, callId, orgId } = ctx
 
     const org = await repo.org()
     const branches = await repo.branches()
@@ -147,7 +154,7 @@ export async function handleTwilioStream(socket: WebSocket): Promise<void> {
         const { db } = connect()
         const hits = await retrieve({
           db,
-          orgId: ctx.orgId,
+          orgId,
           query,
           embed: geminiEmbedder(),
         })
@@ -221,19 +228,45 @@ export async function handleTwilioStream(socket: WebSocket): Promise<void> {
       if (!ready) return
       ready = false
       const durationSec = Math.round((Date.now() - startedAt) / 1000)
+
+      // The caller's turns only. The agent sounds warm whatever is happening,
+      // so scoring its side reports a furious call as pleasant.
+      const callerSaid = transcript.filter((t) => t.speaker === 'caller').map((t) => t.text)
+      const mood = analyseSentiment(callerSaid)
+
       await repo.finishCall(callId, {
         durationSec,
         language: lang,
         outcome,
         triageBand,
         transcript,
+        sentiment: mood.sentiment,
         bargeInCount: bargeIns,
         firstResponseMs: firstResponseMs ?? undefined,
         avgResponseMs: responseTimes.length
           ? Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length)
           : undefined,
       })
-      trace('call.ended', { outcome, durationSec })
+      trace('call.ended', { outcome, durationSec, sentiment: mood.sentiment, intent: detectIntent(callerSaid) })
+
+      // Fire-and-forget: a slow receiver must never add latency to a call, and
+      // a missed notification is worth far less than the call it would delay.
+      emitWebhookDetached({
+        db: connect().db,
+        orgId,
+        event: 'call.completed',
+        data: {
+          callId,
+          durationSec,
+          outcome,
+          language: lang,
+          sentiment: mood.sentiment,
+          intent: detectIntent(callerSaid),
+          triageBand,
+          from: call?.fromNumber,
+        },
+      })
+
       void session?.close()
     }
 

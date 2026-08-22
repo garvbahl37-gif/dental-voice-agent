@@ -203,8 +203,11 @@ export default function Landing() {
             <a className="lp-nav-link" href="#channels">
               Where it answers
             </a>
-            <a className="lp-btn lp-btn-primary lp-btn-sm" href="/console">
-              Take a call
+            <a className="lp-nav-link" href="/login">
+              Sign in
+            </a>
+            <a className="lp-btn lp-btn-primary lp-btn-sm" href="/start">
+              Set up your practice
             </a>
           </div>
         </div>
@@ -227,11 +230,11 @@ export default function Landing() {
           </p>
 
           <div className="lp-cta-row">
-            <a className="lp-btn lp-btn-primary" href="/console">
-              Take a call →
+            <a className="lp-btn lp-btn-primary" href="/start">
+              Set up your practice →
             </a>
-            <a className="lp-btn lp-btn-ghost" href="#does">
-              See what it handles
+            <a className="lp-btn lp-btn-ghost" href="/console">
+              Hear it first
             </a>
           </div>
           <p className="lp-cta-note">
