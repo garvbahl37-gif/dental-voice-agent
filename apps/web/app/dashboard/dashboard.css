@@ -376,7 +376,7 @@
 
 .kb-input {
   flex: 1;
-  min-width: 240px;
+  min-width: 0;
   font: inherit;
   font-size: 14.5px;
   padding: 11px 14px;
@@ -385,6 +385,32 @@
   background: var(--surface);
   color: var(--ink);
   width: 100%;
+  /* Without this a padded 100%-wide field overflows its grid column. */
+  box-sizing: border-box;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+/*
+ * The focus ring, drawn inside the field's own footprint.
+ *
+ * The browser default is an outline painted *outside* the border box, so on a
+ * field sitting near the edge of a card it visibly spills past it — which is
+ * what "the box coming out" was. A box-shadow ring occupies no layout and is
+ * clipped by nothing, so the field looks focused without growing.
+ */
+.kb-input:focus,
+.kb-input:focus-visible {
+  outline: none;
+  border-color: var(--caller);
+  box-shadow: 0 0 0 3px rgba(47, 75, 124, 0.16);
+}
+
+/* Chrome paints its own yellow fill on an autofilled field, which reads as an
+   error state against this palette. */
+.kb-input:-webkit-autofill,
+.kb-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--ink);
+  box-shadow: 0 0 0 1000px var(--surface) inset;
 }
 
 .kb-textarea {

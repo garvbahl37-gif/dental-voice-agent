@@ -84,27 +84,27 @@ export default function Start() {
 
             <label className="ob-label" htmlFor="name">Practice name</label>
             <input id="name" className="kb-input" required value={practiceName} minLength={3}
-              autoComplete="organization" onChange={(e) => setPracticeName(e.target.value)}
+              autoComplete="off" onChange={(e) => setPracticeName(e.target.value)}
               placeholder="Smile Dental Care" />
 
             <div className="ob-row">
               <div>
                 <label className="ob-label" htmlFor="area">Area</label>
                 <input id="area" className="kb-input" value={area}
-                  autoComplete="address-level3" onChange={(e) => setArea(e.target.value)}
+                  autoComplete="off" onChange={(e) => setArea(e.target.value)}
                   placeholder="Bandra West" />
               </div>
               <div>
                 <label className="ob-label" htmlFor="city">City</label>
                 <input id="city" className="kb-input" value={city}
-                  autoComplete="address-level2" onChange={(e) => setCity(e.target.value)}
+                  autoComplete="off" onChange={(e) => setCity(e.target.value)}
                   placeholder="Mumbai" />
               </div>
             </div>
 
             <label className="ob-label" htmlFor="phone">Practice phone</label>
             <input id="phone" className="kb-input" value={phone} inputMode="tel" type="tel"
-              autoComplete="tel" onChange={(e) => setPhone(e.target.value)}
+              autoComplete="off" onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 22 2655 1200" />
             <p className="ob-hint">
               Used as the number the agent gives out, and where urgent calls are sent.
