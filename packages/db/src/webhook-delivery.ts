@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
-import { assertPublicUrl, BlockedAddressError } from '@vaani/shared/net-guard'
+import { assertPublicUrl, BlockedAddressError, safeDispatcher } from '@vaani/shared/net-guard'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { Database } from './client'
 import { webhooks } from './schema'
@@ -78,7 +78,10 @@ export const httpDeliver: Deliver = async ({ url, body, headers }) => {
       // check done only on the address we were given.
       redirect: 'manual',
       signal: AbortSignal.timeout(TIMEOUT_MS),
-    })
+      // Validated inside the socket's own resolution, so the address approved
+      // above is the address actually dialled — no second lookup to poison.
+      dispatcher: safeDispatcher(),
+    } as RequestInit & { dispatcher: unknown })
     // A redirect is not a success — the receiver should be given a final URL.
     if (res.status >= 300 && res.status < 400) return { ok: false, status: res.status }
     return { ok: res.ok, status: res.status }

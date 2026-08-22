@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { assertPublicUrl, isPrivateAddress } from './net-guard'
+import { assertPublicUrl, guardedAgent, isPrivateAddress, safeDispatcher } from './net-guard'
 
 /**
  * Every case here is a way to make the server fetch something it should not.
@@ -107,5 +107,25 @@ describe('assertPublicUrl', () => {
   it('allows standard web ports explicitly', async () => {
     await expect(assertPublicUrl('https://example.com:443/')).resolves.toBeTruthy()
     await expect(assertPublicUrl('http://example.com:80/')).resolves.toBeTruthy()
+  })
+})
+
+
+describe('guardedAgent — the connect-time control', () => {
+  it('refuses a socket to a private address even when asked directly', async () => {
+    // The pre-check can be bypassed by DNS rebinding; this cannot, because the
+    // validation happens inside the resolution the connection actually uses.
+    const res = await fetch('http://127.0.0.1:9/', {
+      dispatcher: guardedAgent(),
+      signal: AbortSignal.timeout(4000),
+    } as RequestInit & { dispatcher: unknown }).then(
+      () => 'connected',
+      (e: Error) => `refused: ${e.message}`,
+    )
+    expect(res).toMatch(/refused/i)
+  })
+
+  it('reuses one dispatcher rather than leaking a socket pool per request', () => {
+    expect(safeDispatcher()).toBe(safeDispatcher())
   })
 })

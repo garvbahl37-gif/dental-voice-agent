@@ -1,5 +1,7 @@
 import { lookup } from 'node:dns/promises'
+import { lookup as lookupCb } from 'node:dns'
 import { isIP } from 'node:net'
+import { Agent } from 'undici'
 
 /**
  * Stopping user-supplied URLs being used to reach inside our own network.
@@ -27,6 +29,13 @@ import { isIP } from 'node:net'
  *
  * Redirects are followed manually for the same reason: a public URL that 302s
  * to the metadata endpoint defeats a check done only on the original address.
+ *
+ * And the check happens **again at connect time**, which is the part that is
+ * easy to leave out. Validating with one DNS lookup and then letting `fetch`
+ * perform its own is a time-of-check/time-of-use gap: a hostile nameserver can
+ * answer the first query with a public address and the second with 127.0.0.1.
+ * `guardedAgent` validates inside the socket's own resolution, so the address
+ * that is approved is the address that is dialled.
  */
 
 const BLOCKED_HOSTNAMES = new Set([
@@ -141,7 +150,9 @@ export async function safeFetchHtml(
       redirect: 'manual',
       headers: { 'user-agent': 'VaaniBot/1.0 (+clinic knowledge import)' },
       signal: AbortSignal.timeout(timeoutMs),
-    })
+      // The address is re-validated inside the socket's own resolution.
+      dispatcher: safeDispatcher(),
+    } as RequestInit & { dispatcher: Agent })
 
     if (res.status >= 300 && res.status < 400) {
       const location = res.headers.get('location')
@@ -168,4 +179,48 @@ export async function safeFetchHtml(
     }
   }
   return { ok: false, html: '', finalUrl: current }
+}
+
+
+/**
+ * A dispatcher that refuses to open a socket to a private address.
+ *
+ * This is the control, and `assertPublicUrl` is the early, friendly check in
+ * front of it. Validation happens inside the resolver the connection actually
+ * uses, which closes the rebinding window that a separate pre-check leaves
+ * open — there is no second lookup to poison.
+ */
+export function guardedAgent(): Agent {
+  return new Agent({
+    connect: {
+      lookup: (hostname, options, callback) => {
+        lookupCb(hostname, { ...options, all: true }, (err, addresses) => {
+          if (err) return callback(err, '', 0)
+          const list = Array.isArray(addresses) ? addresses : [addresses]
+          // Every answer must be public. A name with one public and one private
+          // record is still an attack.
+          for (const a of list) {
+            if (isPrivateAddress(a.address)) {
+              return callback(
+                new BlockedAddressError(`${hostname} resolves inside a private network`),
+                '',
+                0,
+              )
+            }
+          }
+          const first = list[0]!
+          return options.all
+            ? (callback as unknown as (e: Error | null, a: typeof list) => void)(null, list)
+            : callback(null, first.address, first.family)
+        })
+      },
+    },
+  })
+}
+
+/** One shared dispatcher — creating an Agent per request leaks sockets. */
+let sharedAgent: Agent | null = null
+export function safeDispatcher(): Agent {
+  sharedAgent ??= guardedAgent()
+  return sharedAgent
 }
