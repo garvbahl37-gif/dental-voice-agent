@@ -151,7 +151,7 @@ export default function Settings() {
             }
           }}
         >
-          <input className="kb-input" required placeholder="What is it for? e.g. Dentrix sync"
+          <input className="kb-input" required autoComplete="off" placeholder="What is it for? e.g. Dentrix sync"
             value={keyName} onChange={(e) => setKeyName(e.target.value)} />
           <select className="kb-input st-select" value={keyScope}
             onChange={(e) => setKeyScope(e.target.value as 'read' | 'write')} aria-label="Access level">
@@ -206,7 +206,7 @@ export default function Settings() {
             }
           }}
         >
-          <input className="kb-input" type="url" required placeholder="https://your-system.in/vaani"
+          <input className="kb-input" type="url" required autoComplete="url" placeholder="https://your-system.in/vaani"
             value={hookUrl} onChange={(e) => setHookUrl(e.target.value)} />
           <div className="st-events">
             {EVENTS.map(([id, label]) => (

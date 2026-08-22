@@ -114,7 +114,7 @@ export default function Knowledge() {
             className="kb-input"
             type="url"
             required
-            placeholder="https://your-practice.in"
+            autoComplete="url" placeholder="https://your-practice.in"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             aria-label="Practice website address"

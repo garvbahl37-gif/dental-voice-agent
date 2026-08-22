@@ -84,24 +84,28 @@ export default function Start() {
 
             <label className="ob-label" htmlFor="name">Practice name</label>
             <input id="name" className="kb-input" required value={practiceName} minLength={3}
-              onChange={(e) => setPracticeName(e.target.value)} placeholder="Smile Dental Care" />
+              autoComplete="organization" onChange={(e) => setPracticeName(e.target.value)}
+              placeholder="Smile Dental Care" />
 
             <div className="ob-row">
               <div>
                 <label className="ob-label" htmlFor="area">Area</label>
                 <input id="area" className="kb-input" value={area}
-                  onChange={(e) => setArea(e.target.value)} placeholder="Bandra West" />
+                  autoComplete="address-level3" onChange={(e) => setArea(e.target.value)}
+                  placeholder="Bandra West" />
               </div>
               <div>
                 <label className="ob-label" htmlFor="city">City</label>
                 <input id="city" className="kb-input" value={city}
-                  onChange={(e) => setCity(e.target.value)} placeholder="Mumbai" />
+                  autoComplete="address-level2" onChange={(e) => setCity(e.target.value)}
+                  placeholder="Mumbai" />
               </div>
             </div>
 
             <label className="ob-label" htmlFor="phone">Practice phone</label>
-            <input id="phone" className="kb-input" value={phone} inputMode="tel"
-              onChange={(e) => setPhone(e.target.value)} placeholder="+91 22 2655 1200" />
+            <input id="phone" className="kb-input" value={phone} inputMode="tel" type="tel"
+              autoComplete="tel" onChange={(e) => setPhone(e.target.value)}
+              placeholder="+91 22 2655 1200" />
             <p className="ob-hint">
               Used as the number the agent gives out, and where urgent calls are sent.
             </p>
@@ -123,7 +127,8 @@ export default function Start() {
 
             <label className="ob-label" htmlFor="owner">Your name</label>
             <input id="owner" className="kb-input" required value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)} placeholder="Dr. Ananya Sharma" />
+              autoComplete="name" onChange={(e) => setOwnerName(e.target.value)}
+              placeholder="Dr. Ananya Sharma" />
 
             <label className="ob-label" htmlFor="email">Email</label>
             <input id="email" className="kb-input" type="email" required autoComplete="username"
@@ -160,7 +165,8 @@ export default function Start() {
 
             <label className="ob-label" htmlFor="site">Website address</label>
             <input id="site" className="kb-input" type="url" value={website}
-              onChange={(e) => setWebsite(e.target.value)} placeholder="https://your-practice.in" />
+              autoComplete="url" onChange={(e) => setWebsite(e.target.value)}
+              placeholder="https://your-practice.in" />
             <p className="ob-hint">It skips blog posts and images, and you can remove anything it picks up.</p>
 
             {error && <p role="alert" className="db-empty kb-bad ob-error">{error}</p>}
