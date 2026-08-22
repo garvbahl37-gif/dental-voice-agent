@@ -1,5 +1,5 @@
 import { Modality, Type, type LiveConnectConfig, type FunctionDeclaration } from '@google/genai'
-import type { Lang } from '@vaani/shared'
+import { accentFor, type Lang } from '@vaani/shared'
 import { TOOL_DEFS, pronunciationGuide, speechVocabulary } from '@vaani/agent'
 
 /**
@@ -96,9 +96,15 @@ export function buildLiveConfig(opts: LiveConfigOptions): LiveConnectConfig {
     systemInstruction: `${systemInstruction}\n\n${pronunciationGuide()}`,
     speechConfig: {
       voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
-      // The accent. Same voice either way, but pinned to the language she is
-      // actually speaking rather than reading Hindi with an English mouth.
-      languageCode: lang === 'en-IN' ? 'en-IN' : 'hi-IN',
+      /**
+       * The accent.
+       *
+       * Same voice throughout, pinned to the language actually being spoken
+       * rather than reading Tamil with an English mouth. Hinglish takes the
+       * Hindi accent because that is what Hinglish is — Hindi speech that
+       * borrows English words.
+       */
+      languageCode: accentFor(lang),
     },
 
     inputAudioTranscription: {

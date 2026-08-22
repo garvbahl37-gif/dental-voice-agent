@@ -1,6 +1,6 @@
 'use client'
 
-import type { Lang, TurnMetrics } from '@vaani/shared'
+import { LANG_LABEL, type Lang, type TurnMetrics } from '@vaani/shared'
 import type { Turn } from './Transcript'
 import type { BookedAppointment, PatientCard, ToolActivity } from './PracticePanel'
 
@@ -30,11 +30,6 @@ export interface CallSummary {
   lang: Lang
 }
 
-const LANG_LABEL: Record<Lang, string> = {
-  'en-IN': 'English',
-  'hi-IN': 'हिन्दी',
-  'hi-Latn-IN': 'Hinglish',
-}
 
 export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNew: () => void }) {
   const { patient, bookings, triage, turns, metrics, durationSec, lang } = summary

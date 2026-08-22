@@ -56,3 +56,48 @@ describe('detectLang', () => {
     expect(r.lang).toBe('hi-Latn-IN')
   })
 })
+
+/**
+ * The regional languages.
+ *
+ * Every script except Devanagari identifies its language on sight, so those
+ * cases are cheap. Hindi and Marathi are the ones worth testing: they share an
+ * alphabet, so the only thing separating them is vocabulary, and getting it
+ * wrong means answering a Marathi caller in Hindi — which reads as the agent
+ * not listening rather than as a detection bug.
+ */
+describe('detectLang — regional languages', () => {
+  const unambiguous: [string, string][] = [
+    ['ta-IN', 'எனக்கு நாளை ஒரு அப்பாயிண்ட்மென்ட் வேண்டும்'],
+    ['te-IN', 'నాకు రేపు అపాయింట్‌మెంట్ కావాలి'],
+    ['kn-IN', 'ನನಗೆ ನಾಳೆ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬೇಕು'],
+    ['ml-IN', 'എനിക്ക് നാളെ ഒരു അപ്പോയിന്റ്മെന്റ് വേണം'],
+    ['bn-IN', 'আমার আগামীকাল একটি অ্যাপয়েন্টমেন্ট দরকার'],
+    ['gu-IN', 'મારે કાલે એપોઇન્ટમેન્ટ જોઈએ છે'],
+    ['pa-IN', 'ਮੈਨੂੰ ਕੱਲ੍ਹ ਇੱਕ ਅਪਾਇੰਟਮੈਂਟ ਚਾਹੀਦੀ ਹੈ'],
+  ]
+
+  for (const [lang, text] of unambiguous) {
+    it(`detects ${lang} from its script alone`, () => {
+      const r = detectLang(text)
+      expect(r.lang).toBe(lang)
+      expect(r.confidence).toBeGreaterThan(0.9)
+    })
+  }
+
+  it('separates Marathi from Hindi despite the shared script', () => {
+    const r = detectLang('मला उद्या एक अपॉइंटमेंट हवी आहे')
+    expect(r.lang).toBe('mr-IN')
+  })
+
+  it('still reads Hindi as Hindi, not Marathi', () => {
+    const r = detectLang('मुझे कल एक अपॉइंटमेंट चाहिए, मैं सुबह आ सकता हूँ')
+    expect(r.lang).toBe('hi-IN')
+  })
+
+  it('falls back to Hindi when Devanagari carries no distinguishing words', () => {
+    // Ties go to Hindi: it is the larger population, so it is the cheaper error.
+    const r = detectLang('ठीक')
+    expect(r.lang).toBe('hi-IN')
+  })
+})

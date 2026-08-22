@@ -1,8 +1,14 @@
 # Vaani — AI front desk for dental practices
 
 A multilingual voice agent that answers the phone for a dental practice. It speaks
-English, Hindi, and — the case that actually matters in India — **Hinglish**, the
-code-switched register most callers use.
+eleven Indian languages — English, Hindi, Marathi, Gujarati, Bengali, Tamil, Telugu,
+Kannada, Malayalam, Punjabi, and the case that actually matters in India,
+**Hinglish**, the code-switched register most callers use.
+
+Each language was verified against Gemini Live rather than assumed: every one is
+greeted in its own script, with its own accent, and Marathi comes back as Marathi
+rather than as the Hindi that shares its alphabet. A caller can switch mid-call and
+the desk follows.
 
 It books, reschedules and cancels against real chair availability, answers questions
 from a grounded knowledge base, triages dental emergencies to a safe escalation path,
@@ -167,6 +173,33 @@ switches to Hindi the agent switches with them and *stays* switched, and the acc
 follows — `speechConfig.languageCode` is repinned and the session reconnects on its
 resumption handle at a turn boundary, so it is never cut mid-sentence. Same voice
 throughout; a voice that changes identity mid-call breaks the illusion instantly.
+
+Eleven languages, listed in the console header in their own scripts:
+
+| | | |
+|---|---|---|
+| English | हिन्दी Hindi | Hinglish |
+| मराठी Marathi | ગુજરાતી Gujarati | বাংলা Bengali |
+| தமிழ் Tamil | తెలుగు Telugu | ಕನ್ನಡ Kannada |
+| മലയാളം Malayalam | ਪੰਜਾਬੀ Punjabi | |
+
+Three details make the difference between "supports Tamil" and *speaking* Tamil:
+
+- **The accent is fixed when the session opens**, so the chosen language travels in the
+  WebSocket URL rather than in a message. A message has to win a race against the
+  connect to matter, and it was losing it — the greeting, the one moment a wrong
+  language is most obvious, came out in English.
+- **Register is specified per language.** A real receptionist says "appointment",
+  "cleaning" and "X-ray" in English inside a Tamil sentence. Pure-Tamil coinages for
+  clinical words are correct and sound like a news bulletin, so the prompt asks for the
+  spoken form, not the literary one.
+- **Hindi and Marathi share an alphabet**, so script alone cannot separate them.
+  Detection falls back to grammar — *मी*, *आहे*, *तुम्ही* against *मैं*, *है*, *आप* —
+  and ties go to Hindi as the cheaper error.
+
+Clinical refusals and emergency triage scripts are hand-written in all eleven, not
+translated at runtime. Those are the sentences a caller hears at the two moments that
+matter most, and a test asserts each one is present and in the right script.
 
 **Clinical safety is three layers, and the last one has no bypass.** Prompt rails,
 `triage_symptoms` owning every urgency decision, and a post-generation guard sitting

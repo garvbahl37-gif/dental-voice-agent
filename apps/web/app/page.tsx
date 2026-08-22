@@ -252,7 +252,7 @@ export default function Landing() {
             ['3', 'branches, each with its own hours and diary'],
             ['6', 'dentists, matched to what you ask for'],
             ['12', 'treatments, under the names patients use'],
-            ['3', 'languages, switchable mid-sentence'],
+            ['11', 'languages, switchable mid-sentence'],
           ].map(([n, k]) => (
             <div key={k} className="lp-ledger-cell">
               <span className="lp-ledger-n">{n}</span>
@@ -483,7 +483,7 @@ export default function Landing() {
       <footer className="lp-wrap lp-foot">
         <span>Vaani · a front desk for dental practices · {year}</span>
         <span>
-          <a href="/console">Console</a> · Mumbai · English, हिन्दी, Hinglish
+          <a href="/console">Console</a> · Mumbai · 11 languages, Hinglish included
         </span>
       </footer>
     </div>

@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { createServer } from 'node:http'
+import { createServer, type IncomingMessage } from 'node:http'
 import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { WebSocketServer } from 'ws'
 import { LiveSession, LIVE_VOICE } from '@vaani/live'
@@ -17,7 +17,7 @@ import {
   speakable,
   systemPrompt,
 } from '@vaani/agent'
-import type { Lang, ServerEvent } from '@vaani/shared'
+import { LangSchema, type Lang, type ServerEvent } from '@vaani/shared'
 import { WsTransport } from './ws-transport'
 import { handleStatus, handleTransferResult, handleVoice } from './telephony'
 import { handleTwilioStream } from './twilio-stream'
@@ -255,13 +255,25 @@ function consoleUpgradeAllowed(req: import('node:http').IncomingMessage): boolea
   return !CONFIGURED && isLoopback(req.socket.remoteAddress)
 }
 
-wss.on('connection', async (socket) => {
+wss.on('connection', async (socket, req: IncomingMessage) => {
+  /**
+   * The language rides on the URL, not on a message.
+   *
+   * `speechConfig.languageCode` is fixed when the Live session connects, so the
+   * greeting is spoken in whatever we connect with — and a message has to win a
+   * race against that connect to matter. A query parameter is known at the
+   * upgrade, before any of this runs, so there is no race to lose. A bad or
+   * absent value simply falls back to the default rather than failing the call.
+   */
+  const requested = new URL(req.url ?? '/', 'http://localhost').searchParams.get('lang')
+  const parsedLang = LangSchema.safeParse(requested)
   // Random, not sequential. The id is also the CRM record key, and `s1_`,
   // `s2_`, … made every past call's record trivially guessable at /crm/call/:id.
   const sessionId = randomUUID()
   const transport = new WsTransport(socket)
 
-  let lang: Lang = 'en-IN'
+
+  let lang: Lang = parsedLang.success ? parsedLang.data : 'en-IN'
   let patientId: string | null = null
   const convo = newConversation(lang)
 
@@ -375,10 +387,27 @@ wss.on('connection', async (socket) => {
 
   transport.onAudioFrame((pcm) => session.pushAudio(pcm))
   transport.onEvent((e) => {
-    if (e.type === 'control.set_lang') {
-      lang = e.lang
-      session.setLang(e.lang)
+    /**
+     * A language the caller *chose*, which is not the same as one we detected.
+     *
+     * It sets the conversation's language outright rather than going through
+     * `observeLanguage`, whose two-turns-in-a-row debounce exists to resist
+     * noisy detection — there is nothing to resist here. Updating the session's
+     * accent alone was not enough: the prompt is built from the conversation
+     * state, so leaving that at the default had the agent being told to speak
+     * English in a Tamil accent, and the prompt won.
+     */
+    const chooseLang = (next: Lang): void => {
+      lang = next
+      convo.language = next
+      convo.languageHistory = [next]
+      session.setLang(next)
     }
+
+    // A fallback for clients that do not put the language in the URL; the
+    // console does, so by here the session is usually already in it.
+    if (e.type === 'session.start' && e.lang) chooseLang(e.lang)
+    if (e.type === 'control.set_lang') chooseLang(e.lang)
     if (e.type === 'session.end') {
       finishCall()
       void session.close()

@@ -57,8 +57,14 @@ export type PhraseKey =
  * Note these are not translations of one another — they are what a receptionist
  * in each register would actually say. A literal Hindi translation of an
  * English service script sounds like a form letter read aloud.
+ *
+ * **Partial by design.** This cache belongs to the earlier cascaded pipeline,
+ * which is no longer on the live path, and it covers the three registers it was
+ * written for. Writing eleven of each would mean inventing wording in languages
+ * nothing currently synthesises — a cache miss is a synthesis call, which is
+ * exactly what the live path does anyway.
  */
-export const PHRASES: Record<PhraseKey, Record<Lang, string>> = {
+export const PHRASES: Record<PhraseKey, Partial<Record<Lang, string>>> = {
   greeting: {
     // Spec §2.1: a real receptionist does not say "thank you for calling, how
     // may I assist you today". She says who she is and stops.
@@ -343,7 +349,14 @@ export class CachedTts implements TtsProvider {
   }
 }
 
-/** Look up the canonical text for a phrase key in a language. */
-export function phrase(key: PhraseKey, lang: Lang): string {
+/**
+ * The canonical text for a phrase key, or nothing.
+ *
+ * Returns undefined for a language this cache was never written for, which the
+ * caller treats as a miss and synthesises normally. Falling back to English
+ * would be worse than a miss: a Tamil caller would get a cached English
+ * sentence in place of the Tamil one the model would have produced.
+ */
+export function phrase(key: PhraseKey, lang: Lang): string | undefined {
   return PHRASES[key][lang]
 }

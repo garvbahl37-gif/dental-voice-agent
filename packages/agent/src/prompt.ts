@@ -17,10 +17,63 @@ import type { PracticeStore } from './practice'
  *     stated here so the model rarely reaches them in the first place.
  */
 
+/**
+ * How a real receptionist speaks each language, not how a textbook does.
+ *
+ * This is the difference between an agent that sounds Indian and one that
+ * sounds like a government announcement. Every one of these languages borrows
+ * English wholesale for clinical and clerical vocabulary — a Tamil speaker says
+ * "appointment", not a Tamil coinage for it, and a Marathi speaker says
+ * "cleaning" and "X-ray". Translating those words *back* into pure Marathi or
+ * pure Tamil is the single fastest way to sound like a machine, because no
+ * human at a dental desk talks that way.
+ *
+ * So each entry names the language, its script, and the specific register a
+ * receptionist in that language actually uses.
+ */
 const LANG_NAME: Record<Lang, string> = {
-  'en-IN': 'English',
-  'hi-IN': 'Hindi (Devanagari script)',
-  'hi-Latn-IN': 'Hinglish (Hindi and English mixed, Latin script)',
+  'en-IN': 'Indian English',
+  'hi-IN': 'Hindi, in Devanagari script',
+  'hi-Latn-IN': 'Hinglish — Hindi and English mixed, written in Latin script',
+  'mr-IN': 'Marathi, in Devanagari script',
+  'gu-IN': 'Gujarati, in Gujarati script',
+  'bn-IN': 'Bengali, in Bengali script',
+  'ta-IN': 'Tamil, in Tamil script',
+  'te-IN': 'Telugu, in Telugu script',
+  'kn-IN': 'Kannada, in Kannada script',
+  'ml-IN': 'Malayalam, in Malayalam script',
+  'pa-IN': 'Punjabi, in Gurmukhi script',
+}
+
+/**
+ * The register, per language. Appended to the language instruction.
+ *
+ * Each is about what an actual receptionist does, and each names the mistake a
+ * model makes when left to its own devices.
+ */
+const LANG_REGISTER: Record<Lang, string> = {
+  'en-IN':
+    'Indian English as spoken at a Mumbai front desk. "Do one thing", "kindly", "the same" are natural here. Say numbers the Indian way — "nine eight two zero", not "nine-eight-two-oh".',
+  'hi-IN':
+    'Everyday spoken Hindi, not literary Hindi. Keep the English words Hindi speakers actually use — appointment, cleaning, doctor, X-ray, cash, card, timing — in Devanagari or Latin as they fall. Do NOT reach for Sanskritised replacements like "समय-निर्धारण" for appointment; nobody says that on the phone.',
+  'hi-Latn-IN':
+    'Hinglish as actually spoken: Hindi grammar, English nouns, Latin script. "Aapko kal ka slot chahiye?" Never write Devanagari here.',
+  'mr-IN':
+    'Everyday spoken Marathi, Mumbai register. Keep the English words Marathi speakers use — appointment, cleaning, doctor, X-ray, filling. Use "तुम्ही" (polite you), not "तू", with a patient you do not know. Do not substitute Sanskritised Marathi for common English clinical words.',
+  'gu-IN':
+    'Everyday spoken Gujarati as heard in Mumbai and Ahmedabad. Keep appointment, cleaning, doctor, X-ray in English. Use "તમે", the polite form. Avoid formal written Gujarati — this is a phone call, not a letter.',
+  'bn-IN':
+    'Everyday spoken Bengali, not sadhu-bhasha. Keep appointment, doctor, cleaning, X-ray in English as Bengali speakers do. Use "আপনি", the polite form.',
+  'ta-IN':
+    'Spoken Tamil, not literary Tamil. Tamil speakers say "appointment", "cleaning", "doctor", "X-ray" in English — keep them. Use "நீங்கள்", the polite form. Avoid pure-Tamil coinages for clinical words; they sound like a news bulletin.',
+  'te-IN':
+    'Everyday spoken Telugu. Keep appointment, cleaning, doctor, X-ray in English. Use "మీరు", the polite form. Avoid heavily Sanskritised Telugu.',
+  'kn-IN':
+    'Everyday spoken Kannada. Keep appointment, cleaning, doctor, X-ray in English. Use "ನೀವು", the polite form. Avoid formal written Kannada.',
+  'ml-IN':
+    'Everyday spoken Malayalam. Keep appointment, cleaning, doctor, X-ray in English — Malayalam speakers mix constantly. Use "നിങ്ങൾ", the polite form.',
+  'pa-IN':
+    'Everyday spoken Punjabi. Keep appointment, cleaning, doctor, X-ray in English. Use "ਤੁਸੀਂ", the polite form.',
 }
 
 export interface PromptContext {
@@ -114,6 +167,14 @@ it twice:
 · Keep proper nouns, times and numbers in whatever form they used.
 · Never announce it. No "let me switch to Hindi", no repeating yourself in two
   languages.
+
+**How this language is actually spoken.** ${LANG_REGISTER[ctx.lang]}
+
+That register matters as much as the words. Every Indian language borrows
+English for clinical and clerical vocabulary, and a receptionist borrows it too.
+Translating "appointment" or "X-ray" into a pure equivalent is not more correct
+— it is what makes an agent sound like a public announcement instead of the
+person who answers the phone.
 
 # What you do
 

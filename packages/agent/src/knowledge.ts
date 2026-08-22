@@ -19,7 +19,15 @@ export interface KbDoc {
   id: string
   title: string
   keywords: string[]
-  text: Record<Lang, string>
+  /**
+   * Hand-written in the three registers this was authored for.
+   *
+   * Partial rather than complete: the remaining languages fall back to the
+   * English wording, and the tool tells the model to render it in the caller's
+   * own language. That is a better answer than a machine translation baked in
+   * here, and far better than eleven copies nobody maintains.
+   */
+  text: Partial<Record<Lang, string>>
 }
 
 const CURATED: KbDoc[] = [
@@ -285,7 +293,7 @@ export function searchKnowledge(query: string, lang: Lang): KbHit | null {
         // Morphology: "timings" vs "timing", "located" vs "location".
         score += 1
         matched++
-      } else if (doc.text['en-IN'].toLowerCase().includes(term)) {
+      } else if ((doc.text['en-IN'] ?? '').toLowerCase().includes(term)) {
         // Body mentions add weight but never corroborate on their own — that
         // is the loophole the distinct-term rule exists to close.
         score += 0.5
@@ -293,7 +301,9 @@ export function searchKnowledge(query: string, lang: Lang): KbHit | null {
     }
 
     if (score > (best?.score ?? 0)) {
-      best = { id: doc.id, title: doc.title, text: doc.text[lang], score, matched, exact, distinctive }
+      // English is the source of truth; the model renders it in the caller's language.
+      const text = doc.text[lang] ?? doc.text['en-IN'] ?? ''
+      best = { id: doc.id, title: doc.title, text, score, matched, exact, distinctive }
     }
   }
 

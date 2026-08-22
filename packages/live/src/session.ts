@@ -1,5 +1,5 @@
 import { GoogleGenAI, type LiveServerMessage, type Session as GenAISession } from '@google/genai'
-import { base64ToPcm, pcmToBase64, type Lang, type ServerEvent } from '@vaani/shared'
+import { accentFor, base64ToPcm, pcmToBase64, type Lang, type ServerEvent } from '@vaani/shared'
 import { detectLang } from '@vaani/providers/lang-detect'
 import type { ToolCall, ToolDef } from '@vaani/providers/types'
 import { buildLiveConfig, LIVE_MODEL, LIVE_OUTPUT_RATE } from './config'
@@ -29,10 +29,19 @@ import { buildLiveConfig, LIVE_MODEL, LIVE_OUTPUT_RATE } from './config'
  */
 const STUB_CHARS = 20
 
+/** Named for the mid-call nudge that tells the model the caller has switched. */
 const LANG_NAME: Record<Lang, string> = {
   'en-IN': 'English',
   'hi-IN': 'Hindi',
   'hi-Latn-IN': 'Hinglish (Hindi grammar, English nouns)',
+  'mr-IN': 'Marathi',
+  'gu-IN': 'Gujarati',
+  'bn-IN': 'Bengali',
+  'ta-IN': 'Tamil',
+  'te-IN': 'Telugu',
+  'kn-IN': 'Kannada',
+  'ml-IN': 'Malayalam',
+  'pa-IN': 'Punjabi',
 }
 
 export interface ToolRunner {
@@ -479,11 +488,13 @@ export class LiveSession {
      * boundary and carried by the resumption handle, which keeps the
      * conversation rather than restarting it.
      *
-     * Only an English↔Hindi move is worth it. Hindi and Hinglish share an
-     * accent, so switching between those changes nothing audible.
+     * Only a real change of accent is worth it. Hindi and Hinglish share one,
+     * so switching between those changes nothing audible — but Tamil and
+     * Malayalam do not, and an earlier version of this collapsed every Indian
+     * language into a single "hi" bucket, which left a caller who switched to
+     * Tamil being answered in Tamil words with a Hindi mouth.
      */
-    const accent = (l: Lang) => (l === 'en-IN' ? 'en' : 'hi')
-    if (accent(from) !== accent(lang)) this.pendingAccentSwitch = true
+    if (accentFor(from) !== accentFor(lang)) this.pendingAccentSwitch = true
 
     const name = LANG_NAME[lang]
     console.log(`[${this.opts.sessionId}] language ${from} → ${lang}`)

@@ -1,4 +1,4 @@
-import type { Lang } from '@vaani/shared'
+import { SCRIPT_RANGES, type Lang } from '@vaani/shared'
 
 /**
  * Language detection for the register Indian callers actually speak.
@@ -11,7 +11,75 @@ import type { Lang } from '@vaani/shared'
  * Classifying that as either pure Hindi or pure English produces a reply in
  * the wrong register, which is the single most jarring thing a bilingual agent
  * can do. So Hinglish is its own label, and mixed input is detected as mixed.
+ *
+ * The regional languages are easy by comparison — Tamil, Telugu, Bengali,
+ * Gujarati, Kannada, Malayalam and Gurmukhi each have their own Unicode block,
+ * so the script settles it. The one genuine ambiguity is **Hindi and Marathi,
+ * which share Devanagari**, and no amount of looking at characters separates
+ * them. That is decided by a handful of words that exist in one and not the
+ * other, below.
  */
+
+/**
+ * Marathi words that are not Hindi.
+ *
+ * Chosen from grammar rather than vocabulary — pronouns, verb endings and
+ * postpositions — because a Marathi speaker discussing dentistry borrows the
+ * same English nouns a Hindi speaker does, so the nouns tell you nothing.
+ * "मी" (I), "तुम्ही" (you), "आहे" (is) and "-ला/-ने" case markers are Marathi
+ * on sight.
+ */
+const MARATHI_MARKERS = [
+  'मी', 'तू', 'तुम्ही', 'आम्ही', 'आहे', 'आहेत', 'आहात', 'नाही', 'होते', 'होता',
+  'माझ', 'माझी', 'माझा', 'तुमच', 'तुमची', 'तुमचा', 'त्यांना', 'मला', 'तुला',
+  'पाहिजे', 'करायच', 'कशी', 'कसा', 'कधी', 'कुठे', 'किती', 'का', 'आणि', 'पण',
+  'उद्या', 'आज', 'सकाळी', 'संध्याकाळी', 'दुपारी', 'नमस्कार', 'धन्यवाद',
+  'दात', 'दुखत', 'साफ', 'ठीक', 'बरं', 'हवं', 'हवी',
+]
+
+/** Hindi words that are not Marathi, for the same reason in reverse. */
+const HINDI_DEVANAGARI_MARKERS = [
+  'मैं', 'आप', 'हूँ', 'हूं', 'है', 'हैं', 'था', 'थी', 'नहीं', 'मुझे', 'आपका',
+  'आपकी', 'चाहिए', 'क्या', 'कब', 'कहाँ', 'कैसे', 'कितना', 'और', 'लेकिन',
+  'कल', 'आज', 'सुबह', 'शाम', 'नमस्ते', 'धन्यवाद', 'दाँत', 'दर्द', 'सफाई',
+  'ठीक', 'अच्छा', 'बहुत',
+]
+
+/**
+ * Which language is this Devanagari?
+ *
+ * Counts distinctive markers on both sides rather than stopping at the first
+ * match, because a Marathi sentence can legitimately contain a word Hindi also
+ * uses. Ties go to Hindi: it is far commoner, and a Marathi speaker answered in
+ * Hindi is mildly annoyed, while the reverse is a stranger experience.
+ */
+function devanagariLanguage(text: string): { lang: Lang; confidence: number } {
+  let marathi = 0
+  let hindi = 0
+  for (const m of MARATHI_MARKERS) if (text.includes(m)) marathi++
+  for (const m of HINDI_DEVANAGARI_MARKERS) if (text.includes(m)) hindi++
+
+  if (marathi > hindi) {
+    return { lang: 'mr-IN', confidence: Math.min(0.97, 0.8 + marathi * 0.04) }
+  }
+  return { lang: 'hi-IN', confidence: hindi > 0 ? Math.min(0.99, 0.85 + hindi * 0.03) : 0.8 }
+}
+
+/**
+ * Languages whose script is theirs alone.
+ *
+ * Order does not matter — the blocks do not overlap — so the first match is the
+ * answer and there is nothing to disambiguate.
+ */
+const UNAMBIGUOUS_SCRIPTS: Array<[Lang, RegExp]> = [
+  ['gu-IN', SCRIPT_RANGES.gujarati],
+  ['bn-IN', SCRIPT_RANGES.bengali],
+  ['ta-IN', SCRIPT_RANGES.tamil],
+  ['te-IN', SCRIPT_RANGES.telugu],
+  ['kn-IN', SCRIPT_RANGES.kannada],
+  ['ml-IN', SCRIPT_RANGES.malayalam],
+  ['pa-IN', SCRIPT_RANGES.gurmukhi],
+]
 
 /**
  * High-frequency romanised Hindi function words — grammar, not vocabulary.
@@ -79,16 +147,21 @@ export function detectLang(text: string, hint?: Lang): DetectionResult {
     return { lang: hint ?? 'en-IN', confidence: 0, codeSwitched: false }
   }
 
-  // Devanagari script is unambiguous — no need to guess.
-  const devanagariChars = (trimmed.match(/[ऀ-ॿ]/g) ?? []).length
   const latinChars = (trimmed.match(/[A-Za-z]/g) ?? []).length
 
-  if (devanagariChars > 0 && latinChars === 0) {
-    return { lang: 'hi-IN', confidence: 0.99, codeSwitched: false }
+  // A script that belongs to exactly one language settles it outright.
+  for (const [lang, range] of UNAMBIGUOUS_SCRIPTS) {
+    if (range.test(trimmed)) {
+      return { lang, confidence: 0.99, codeSwitched: latinChars > 0 }
+    }
   }
-  if (devanagariChars > 0 && latinChars > 0) {
+
+  // Devanagari narrows it to two, and the words decide which.
+  const devanagariChars = (trimmed.match(SCRIPT_RANGES.devanagari) ?? []).length
+  if (devanagariChars > 0) {
+    const { lang, confidence } = devanagariLanguage(trimmed)
     // Both scripts in one utterance is code-switching by definition.
-    return { lang: 'hi-IN', confidence: 0.9, codeSwitched: true }
+    return { lang, confidence: latinChars > 0 ? confidence - 0.05 : confidence, codeSwitched: latinChars > 0 }
   }
 
   const words = trimmed.toLowerCase().split(/[^a-z']+/).filter(Boolean)

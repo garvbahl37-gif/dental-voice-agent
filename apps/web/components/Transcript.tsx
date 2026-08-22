@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import type { Lang, WordMark } from '@vaani/shared'
+import { LANG_CHIP, htmlLang, scriptOf, type Lang, type WordMark } from '@vaani/shared'
 
 /**
  * The transcript.
@@ -62,7 +62,8 @@ export function Transcript({ turns, startedAt }: Props) {
 
 function Row({ turn, startedAt }: { turn: Turn; startedAt: number | null }) {
   const caller = turn.speaker === 'caller'
-  const deva = turn.lang === 'hi-IN'
+  // The `lang` attribute picks the face; no per-script classes to maintain.
+  const indic = scriptOf(turn.lang) !== 'latin'
 
   return (
     <div style={{ ...s.row, alignItems: caller ? 'flex-start' : 'flex-end' }}>
@@ -75,20 +76,19 @@ function Row({ turn, startedAt }: { turn: Turn; startedAt: number | null }) {
         </span>
         {turn.lang !== 'en-IN' && (
           <span className="mono" style={s.chip}>
-            {turn.lang === 'hi-IN' ? 'हिन्दी' : 'Hinglish'}
+            {LANG_CHIP[turn.lang]}
           </span>
         )}
       </div>
 
       <div
-        className={deva ? 'deva' : undefined}
-        lang={deva ? 'hi' : 'en'}
+        lang={htmlLang(turn.lang)}
         style={{
           ...s.bubble,
           background: caller ? 'var(--caller-soft)' : 'var(--agent-soft)',
           borderColor: caller ? 'var(--caller-line)' : 'var(--agent-line)',
           borderRadius: caller ? '4px 14px 14px 14px' : '14px 4px 14px 14px',
-          fontFamily: caller ? 'var(--font-ui)' : 'var(--font-display)',
+          fontFamily: indic ? 'inherit' : caller ? 'var(--font-ui)' : 'var(--font-display)',
           fontSize: caller ? 15.5 : 17,
           opacity: turn.interim ? 0.62 : 1,
           textAlign: caller ? 'left' : 'right',

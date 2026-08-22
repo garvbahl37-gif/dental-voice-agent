@@ -1,3 +1,4 @@
+import type { Lang } from '@vaani/shared'
 /**
  * Hinglish → mixed-script normalisation for TTS.
  *
@@ -141,7 +142,11 @@ export function hinglishForSpeech(input: string): Transliteration {
  * Only Hinglish needs work: Devanagari and English are already in the script
  * whose phonetics the voice will apply.
  */
-export function forSpeech(text: string, lang: 'en-IN' | 'hi-IN' | 'hi-Latn-IN'): string {
+export function forSpeech(text: string, lang: Lang): string {
+  // Transliteration only has meaning for the Hindi registers; every other
+  // language already arrives in its own script and needs nothing done to it.
+  if (lang !== 'en-IN' && lang !== 'hi-IN' && lang !== 'hi-Latn-IN') return text
+
   if (lang !== 'hi-Latn-IN') return text
   if (HAS_DEVANAGARI.test(text) && !/[A-Za-z]/.test(text)) return text
   return hinglishForSpeech(text).text

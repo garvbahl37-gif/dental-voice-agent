@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AgentState, Lang, ServerEvent, TurnMetrics, WordMark } from '@vaani/shared'
-import { BUDGETS } from '@vaani/shared'
+import { ALL_LANGS, BUDGETS, LANG_ENGLISH, LANG_LABEL, htmlLang } from '@vaani/shared'
 import { VoiceClient } from '@/lib/voice-client'
 import { VoiceBlob } from '@/components/VoiceBlob'
 import { Transcript, type Turn, type Utterance } from '@/components/Transcript'
@@ -59,11 +59,6 @@ function unreachableMessage(): string {
   return 'Voice server not reachable at ' + SERVER_URL + '. Start it with ./scripts/dev.sh'
 }
 
-const LANG_LABEL: Record<Lang, string> = {
-  'en-IN': 'English',
-  'hi-IN': 'हिन्दी',
-  'hi-Latn-IN': 'Hinglish',
-}
 
 export default function Console() {
   const [status, setStatus] = useState<'idle' | 'connecting' | 'live' | 'ended' | 'error'>('idle')
@@ -321,6 +316,11 @@ export default function Console() {
       onStatus: setStatus,
     })
     client.current = vc
+    // Whatever is selected in the header opens the session, so the greeting is
+    // already in that language. `lang` is a dependency for exactly this reason:
+    // without it the callback closes over the language the page loaded with, and
+    // picking Tamil still opened the call in English.
+    vc.useLang(lang)
     try {
       await vc.connect()
       setStartedAt(Date.now())
@@ -332,7 +332,7 @@ export default function Console() {
       )
       setStatus('error')
     }
-  }, [handleEvent, handlePlayback])
+  }, [handleEvent, handlePlayback, lang])
 
   const [lastCall, setLastCall] = useState<CallSummary | null>(null)
 
@@ -366,7 +366,6 @@ export default function Console() {
     setLevels({ mic: 0, agent: 0 })
     setStartedAt(null)
     setElapsed(0)
-    setLang('en-IN')
     setError(null)
     setStatus('idle')
   }, [startedAt, turns, patient, bookings, tools, triage, metrics, lang])
@@ -400,7 +399,36 @@ export default function Console() {
           </div>
 
           <div style={s.pillRow}>
-            <span style={s.pill}>{LANG_LABEL[lang]}</span>
+            {/*
+              Named in each language's own script, because nobody scans a list
+              of English names looking for their language — a Tamil speaker
+              finds தமிழ், not "Tamil".
+
+              Choosing mid-call is allowed: the accent lives in a connect-time
+              setting, so the server reconnects on its resumption handle at the
+              next turn boundary rather than cutting anyone off. Choosing before
+              the call simply opens the session in that language.
+            */}
+            <label style={s.langWrap}>
+              <span style={s.srOnly}>Language</span>
+              <select
+                value={lang}
+                onChange={(e) => {
+                  const next = e.target.value as Lang
+                  setLang(next)
+                  client.current?.setLang(next)
+                }}
+                style={s.langSelect}
+                lang={htmlLang(lang)}
+              >
+                {ALL_LANGS.map((l) => (
+                  <option key={l} value={l} lang={htmlLang(l)}>
+                    {LANG_LABEL[l]}
+                    {LANG_LABEL[l] === LANG_ENGLISH[l] ? '' : ` · ${LANG_ENGLISH[l]}`}
+                  </option>
+                ))}
+              </select>
+            </label>
             {tier && (
               <span className="mono" style={{ ...s.pill, fontSize: 10 }}>
                 {tier.llm}
@@ -452,9 +480,9 @@ export default function Console() {
           {turns.length === 0 && (
             <div style={s.pitch}>
               <h2 style={s.pitchLead}>
-                Answers in English, Hindi,
+                Answers in eleven Indian languages,
                 <br />
-                or both in one sentence.
+                or two in one sentence.
               </h2>
               <p style={s.pitchBody}>
                 Interrupt mid-sentence and the reply stops where you cut in — nothing is
@@ -556,6 +584,22 @@ const s: Record<string, React.CSSProperties> = {
     lineHeight: 1,
   },
   sub: { margin: '7px 0 0', fontSize: 13, color: 'var(--ink-muted)' },
+  langWrap: { display: 'inline-flex', alignItems: 'center' },
+  srOnly: {
+    position: 'absolute', width: 1, height: 1, overflow: 'hidden',
+    clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
+  },
+  langSelect: {
+    font: 'inherit',
+    fontSize: 12.5,
+    padding: '6px 12px',
+    borderRadius: 'var(--r-pill)',
+    border: '1px solid var(--hairline-strong)',
+    background: 'var(--surface)',
+    color: 'var(--ink)',
+    cursor: 'pointer',
+    maxWidth: 190,
+  },
   pillRow: { display: 'flex', gap: 8, flexShrink: 0 },
   pill: {
     fontSize: 12,

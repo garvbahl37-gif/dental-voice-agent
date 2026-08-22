@@ -1,4 +1,4 @@
-import type { ClientEvent, ServerEvent } from '@vaani/shared'
+import type { ClientEvent, Lang, ServerEvent } from '@vaani/shared'
 
 /**
  * The browser half of a Vaani call.
@@ -23,6 +23,9 @@ export interface VoiceClientHandlers {
 }
 
 export class VoiceClient {
+  /** Chosen before the call, so the greeting itself is in the right language. */
+  private startLang: Lang | undefined
+
   private ws: WebSocket | null = null
   private micCtx: AudioContext | null = null
   private playCtx: AudioContext | null = null
@@ -123,11 +126,15 @@ export class VoiceClient {
 
   private openSocket(): Promise<void> {
     return new Promise((resolve, reject) => {
-      const ws = new WebSocket(this.url)
+      // The language travels in the URL so the server has it at the upgrade,
+      // before the Live session connects and fixes the accent for the call.
+      const url = new URL(this.url)
+      if (this.startLang) url.searchParams.set('lang', this.startLang)
+      const ws = new WebSocket(url.toString())
       ws.binaryType = 'arraybuffer'
       this.ws = ws
       ws.onopen = () => {
-        this.send({ type: 'session.start', channel: 'web' })
+        this.send({ type: 'session.start', channel: 'web', lang: this.startLang })
         resolve()
       }
       ws.onerror = () => {
@@ -236,6 +243,25 @@ export class VoiceClient {
 
   private send(event: ClientEvent): void {
     if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(event))
+  }
+
+  /**
+   * The caller picked a language.
+   *
+   * The accent lives in speechConfig.languageCode, which can only be set when
+   * the session opens — so the server reconnects on its resumption handle at
+   * the next turn boundary rather than cutting anyone off mid-sentence.
+   */
+  setLang(lang: Lang): void {
+    // Remembered as well as sent: if the socket is not open yet, this is the
+    // language the session should be opened with.
+    this.startLang = lang
+    this.send({ type: 'control.set_lang', lang })
+  }
+
+  /** Set before connect(), so the opening greeting is already in this language. */
+  useLang(lang: Lang): void {
+    this.startLang = lang
   }
 
   /** Kept for API compatibility; Live detects interruption from audio itself. */

@@ -38,9 +38,24 @@
   --alert: #b3352a;
   --alert-soft: #fbeceb;
 
-  --font-display: var(--font-fraunces), Georgia, serif;
-  --font-ui: var(--font-familjen), system-ui, sans-serif;
-  --font-mono: var(--font-mono-face), ui-monospace, monospace;
+  /*
+   * Every Indian script, appended to every stack.
+   *
+   * CSS font fallback is per glyph, not per element: Latin comes from Fraunces
+   * or Familjen, and a Tamil or Malayalam glyph those faces do not carry falls
+   * through to its own Noto face automatically. That matters because this app
+   * mixes scripts inside a single line — "Smile Dental Care, வணக்கம்!" is one
+   * sentence — and because the console styles inline, which would override any
+   * :lang() rule. Relying on the OS to have a Tamil face is not a plan; it
+   * holds on macOS and gives tofu on Windows.
+   */
+  --indic: var(--font-noto-deva), var(--font-noto-gujr), var(--font-noto-beng),
+    var(--font-noto-taml), var(--font-noto-telu), var(--font-noto-knda),
+    var(--font-noto-mlym), var(--font-noto-guru);
+
+  --font-display: var(--font-fraunces), Georgia, var(--indic), serif;
+  --font-ui: var(--font-familjen), system-ui, var(--indic), sans-serif;
+  --font-mono: var(--font-mono-face), ui-monospace, var(--indic), monospace;
   --font-deva: var(--font-noto-deva), var(--font-familjen), sans-serif;
 
   --r-sm: 6px;
@@ -81,13 +96,32 @@ body:has([data-shell='console']) {
   overflow: hidden;
 }
 
-/* Devanagari needs its own stack and more leading; Latin faces render matras
-   badly or fall back inconsistently across platforms. */
+/*
+ * Each Indian script gets its own family and more leading.
+ *
+ * Latin faces render matras badly, stack Tamil and Malayalam vowel signs
+ * wrongly, or fall back to tofu — all of which read as a broken app rather than
+ * a missing font. Selected by the `lang` attribute, so the right face follows
+ * the text without any class bookkeeping in the components.
+ */
 :lang(hi),
+:lang(mr),
 .deva {
   font-family: var(--font-deva);
   line-height: 1.75;
 }
+
+/* Leading only — the faces already resolve through the stacks above. Indian
+   scripts stack matras and vowel signs above and below the line, so they need
+   more room than the Latin default before they start colliding. */
+:lang(gu),
+:lang(bn),
+:lang(pa) { line-height: 1.75; }
+
+:lang(ta),
+:lang(te),
+:lang(kn),
+:lang(ml) { line-height: 1.8; }
 
 button {
   font: inherit;

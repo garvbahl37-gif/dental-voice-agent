@@ -28,12 +28,28 @@ describe('cacheKey', () => {
 })
 
 describe('PHRASES', () => {
-  it('covers every phrase in every supported language', () => {
+  /**
+   * The three registers this cache was written for, not all eleven.
+   *
+   * It belongs to the earlier cascaded pipeline and is no longer on the live
+   * path. A missing entry is a cache miss, which means a normal synthesis call
+   * — so the languages added since are deliberately absent rather than filled
+   * with wording nobody wrote.
+   */
+  const CACHED_LANGS = ['en-IN', 'hi-IN', 'hi-Latn-IN'] as const
+
+  it('covers every phrase in the registers it was written for', () => {
     for (const key of PHRASE_KEYS) {
-      for (const lang of ALL_LANGS) {
+      for (const lang of CACHED_LANGS) {
         expect(PHRASES[key][lang], `${key}/${lang}`).toBeTruthy()
       }
     }
+  })
+
+  it('returns undefined for a language it never covered, rather than English', () => {
+    // Serving a cached English line to a Tamil caller would be worse than a
+    // miss — the model would otherwise have answered in Tamil.
+    expect(PHRASES.greeting['ta-IN']).toBeUndefined()
   })
 
   it('writes Hindi in Devanagari and Hinglish in Latin script', () => {
