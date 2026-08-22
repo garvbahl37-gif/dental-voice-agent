@@ -133,6 +133,15 @@ const http = createServer(async (req, res) => {
   }
 
   if (url === '/health') {
+    /**
+     * Readable by anyone, deliberately.
+     *
+     * It carries no caller data, and the console probes it before opening a
+     * socket so a sleeping server wakes rather than failing the handshake.
+     * Restricting it to configured origins meant local development — which has
+     * no configured origins — could not start a call at all.
+     */
+    res.setHeader('access-control-allow-origin', '*')
     return json(res, { ok: true, practice: practice.name, engine: 'gemini-live', voice: LIVE_VOICE })
   }
   if (url === '/providers') {
