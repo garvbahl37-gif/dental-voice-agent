@@ -261,3 +261,65 @@ button:disabled {
   .tx-in { animation: none; }
   .tx-dot { animation: none; opacity: 0.5; }
 }
+
+/* ── The language picker ────────────────────────────────────────────────────
+   The one control in the header, so it should read as actionable next to the
+   passive status pills without shouting over the page title.
+
+   `appearance: none` is the whole point: the native control brings its own
+   double-arrow and, on focus, a blue ring drawn in the browser's palette
+   rather than this one — which is what made it look bolted on. */
+.lang-select {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+  background-color: var(--surface);
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  box-shadow: var(--shadow-sm);
+  /* Room on the right for the chevron, and a little optical padding on the
+     left so the script — which may be Devanagari or Tamil — is not crowded. */
+  padding: 7px 32px 7px 15px;
+  max-width: 210px;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    background-color 160ms ease;
+
+  /* A chevron in turmeric, matching the accent the rest of the desk uses. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b8730a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+}
+
+.lang-select:hover {
+  border-color: var(--agent-line);
+  background-color: var(--agent-soft);
+}
+
+/* The halo replaces the browser's blue ring. Drawn as a shadow rather than an
+   outline so it hugs the pill's radius instead of boxing it. */
+.lang-select:focus-visible {
+  outline: none;
+  border-color: var(--agent);
+  box-shadow: 0 0 0 3px rgba(184, 115, 10, 0.16);
+}
+
+/* A click should not flash the keyboard ring, but the control must still show
+   it is the one being changed. */
+.lang-select:focus:not(:focus-visible) {
+  outline: none;
+  border-color: var(--agent-line);
+}
+
+/* Firefox renders the open list from these; other engines use the OS. */
+.lang-select option {
+  background: var(--surface);
+  color: var(--ink);
+}

@@ -430,7 +430,7 @@ export default function Console() {
                   setLang(next)
                   client.current?.setLang(next)
                 }}
-                style={s.langSelect}
+                className="lang-select"
                 lang={htmlLang(lang)}
               >
                 {ALL_LANGS.map((l) => (
@@ -601,17 +601,7 @@ const s: Record<string, React.CSSProperties> = {
     position: 'absolute', width: 1, height: 1, overflow: 'hidden',
     clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
   },
-  langSelect: {
-    font: 'inherit',
-    fontSize: 12.5,
-    padding: '6px 12px',
-    borderRadius: 'var(--r-pill)',
-    border: '1px solid var(--hairline-strong)',
-    background: 'var(--surface)',
-    color: 'var(--ink)',
-    cursor: 'pointer',
-    maxWidth: 190,
-  },
+
   pillRow: { display: 'flex', gap: 8, flexShrink: 0 },
   pill: {
     fontSize: 12,
