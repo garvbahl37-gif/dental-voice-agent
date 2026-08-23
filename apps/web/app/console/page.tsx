@@ -80,6 +80,8 @@ export default function Console() {
   const [error, setError] = useState<string | null>(null)
 
   const client = useRef<VoiceClient | null>(null)
+  /** A call is being opened; a second click must not open another. */
+  const starting = useRef(false)
   /** utteranceId → the turn it belongs to, so clauses group into one bubble. */
   const utteranceTurn = useRef<Map<string, string>>(new Map())
 
@@ -295,6 +297,23 @@ export default function Console() {
   }, [])
 
   const start = useCallback(async () => {
+    /**
+     * One call at a time, enforced here rather than only on the button.
+     *
+     * Waking a sleeping host takes the better part of a minute, and for all of
+     * it the page looks idle — so clicking again is a reasonable thing to do.
+     * Each click used to open its own session, and the one left behind kept its
+     * socket and its audio context: two greetings playing over each other,
+     * which is heard as the agent echoing herself.
+     */
+    if (starting.current) return
+    starting.current = true
+
+    // Whatever came before is over. Tearing it down releases its microphone and
+    // its audio contexts, which the browser caps.
+    await client.current?.disconnect().catch(() => {})
+    client.current = null
+
     setError(null)
     setWaking(false)
     setLastCall(null)
@@ -318,6 +337,8 @@ export default function Console() {
     if (!(await wakeServer(() => setWaking(true)))) {
       setError(unreachableMessage())
       setStatus('error')
+      setWaking(false)
+      starting.current = false
       return
     }
     setWaking(false)
@@ -343,6 +364,8 @@ export default function Console() {
           : 'Microphone access is needed to take a call.',
       )
       setStatus('error')
+    } finally {
+      starting.current = false
     }
   }, [handleEvent, handlePlayback, lang])
 
@@ -523,7 +546,7 @@ export default function Console() {
               <span style={s.endGlyph}>■</span> End call
             </button>
           ) : (
-            <button onClick={start} disabled={status === 'connecting'} style={s.startBtn}>
+            <button onClick={start} disabled={waking || status === 'connecting'} style={s.startBtn}>
               {waking ? 'Waking the server…' : status === 'connecting' ? 'Connecting…' : 'Take a call'}
             </button>
           )}
