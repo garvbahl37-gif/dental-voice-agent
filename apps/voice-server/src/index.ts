@@ -2,22 +2,9 @@ import 'dotenv/config'
 import { createServer, type IncomingMessage } from 'node:http'
 import { randomUUID, timingSafeEqual } from 'node:crypto'
 import { WebSocketServer } from 'ws'
-import { LiveSession, LIVE_VOICE } from '@vaani/live'
-import {
-  CallLog,
-  DentalTools,
-  PracticeStore,
-  buildCallRecord,
-  describeConversation,
-  extractFacts,
-  learn,
-  newConversation,
-  noteAsked,
-  observeLanguage,
-  speakable,
-  systemPrompt,
-} from '@vaani/agent'
-import { LangSchema, voiceGender, type Lang, type ServerEvent } from '@vaani/shared'
+import { LIVE_VOICE } from '@vaani/live'
+import { CallLog, PracticeStore } from '@vaani/agent'
+import { LangSchema, voiceGender } from '@vaani/shared'
 
 /**
  * Whether the agent speaks of herself as a woman.
@@ -29,6 +16,7 @@ import { LangSchema, voiceGender, type Lang, type ServerEvent } from '@vaani/sha
  */
 const AGENT_GENDER = voiceGender(LIVE_VOICE, process.env.GEMINI_LIVE_VOICE_GENDER)
 import { WsTransport } from './ws-transport'
+import { runVoiceSession } from '@vaani/session-host'
 import { handleStatus, handleTransferResult, handleVoice } from './telephony'
 import { handleTwilioStream } from './twilio-stream'
 import { startOutboundWorker } from './outbound-worker'
@@ -277,184 +265,20 @@ wss.on('connection', async (socket, req: IncomingMessage) => {
    */
   const requested = new URL(req.url ?? '/', 'http://localhost').searchParams.get('lang')
   const parsedLang = LangSchema.safeParse(requested)
-  // Random, not sequential. The id is also the CRM record key, and `s1_`,
-  // `s2_`, … made every past call's record trivially guessable at /crm/call/:id.
-  const sessionId = randomUUID()
-  const transport = new WsTransport(socket)
 
-
-  let lang: Lang = parsedLang.success ? parsedLang.data : 'en-IN'
-  let patientId: string | null = null
-  const convo = newConversation(lang)
-
-  let finished = false
-  const startedAt = Date.now()
-  const toolsUsed: string[] = []
-  const transcript: { speaker: 'caller' | 'priya'; text: string; at: number }[] = []
-  let triage: { band: string; reason: string } | undefined
-
-  if (!GEMINI_KEY) {
-    transport.send({
-      type: 'error',
-      code: 'no_key',
-      message: 'GEMINI_API_KEY is not set. Gemini Live is the engine — nothing works without it.',
-      recoverable: false,
-    })
-    socket.close()
-    return
-  }
-
-  /**
-   * Everything the agent says passes the clinical guard and the narration
-   * filter before it reaches the console. Live is fluent, not grounded: it will
-   * happily invent a doctor, so this layer matters more now, not less.
-   */
-  const send = (event: ServerEvent): void => {
-    if (event.type === 'tts.begin') {
-      const spoken = speakable(event.text)
-      if (!spoken) return
-      event = { ...event, text: spoken }
-    }
-    record(event)
-    transport.send(event)
-  }
-
-  const record = (event: ServerEvent): void => {
-    if (event.type === 'stt.final') {
-      convo.turn += 1
-      observeLanguage(convo, event.lang, 0.9)
-      lang = convo.language
-      session?.setLang(lang)
-
-      const found = extractFacts(event.text)
-      if (found.name) learn(convo, 'name', found.name)
-      if (found.phone) learn(convo, 'phone', found.phone)
-      if (found.preferredTime) learn(convo, 'preferredTime', found.preferredTime)
-    }
-    if (event.type === 'tts.begin') {
-      // Live re-sends a growing transcript for one reply; keep the latest.
-      const last = transcript.at(-1)
-      if (last?.speaker === 'priya' && event.text.startsWith(last.text.slice(0, 12))) {
-        last.text = event.text
-      } else {
-        transcript.push({ speaker: 'priya', text: event.text, at: Date.now() })
-      }
-      const t = event.text.toLowerCase()
-      if (/\bname\b/.test(t) && t.includes('?')) noteAsked(convo, 'name')
-      if (/(mobile|number|phone)/.test(t) && t.includes('?')) noteAsked(convo, 'mobile number')
-    }
-    if (event.type === 'stt.final' && event.text.trim()) {
-      transcript.push({ speaker: 'caller', text: event.text.trim(), at: Date.now() })
-    }
-    if (event.type === 'tool.call') toolsUsed.push(event.name)
-    if (event.type === 'ui.event') {
-      const p = event.payload as Record<string, string>
-      if (event.event === 'triage.escalated') triage = { band: p.band!, reason: p.reason! }
-      if (event.event === 'patient.identified') {
-        convo.caller.isReturning = true
-        if (p.name) learn(convo, 'name', p.name, 'lookup')
-        if (p.phone) learn(convo, 'phone', p.phone, 'lookup')
-      }
-      if (event.event === 'appointment.booked' && p.id) convo.bookedAppointments.push(p.id)
-    }
-  }
-
-  const tools = new DentalTools({
+  await runVoiceSession({
+    // Random, not sequential. The id is also the CRM record key, and `s1_`,
+    // `s2_`, … made every past call's record trivially guessable at /crm/call/:id.
+    sessionId: randomUUID(),
+    transport: new WsTransport(socket),
+    lang: parsedLang.success ? parsedLang.data : 'en-IN',
     practice,
-    lang: () => lang,
-    emit: send,
-    patientId: () => patientId,
-    setPatient: (id) => {
-      patientId = id
-    },
-  })
-
-  const session = new LiveSession({
-    sessionId,
+    callLog,
     apiKey: GEMINI_KEY,
-    systemInstruction: systemPrompt({ practice, lang, gender: AGENT_GENDER, known: describeConversation(convo) }),
-    buildInstructions: (current) =>
-      systemPrompt({ practice, lang: current, gender: AGENT_GENDER, known: describeConversation(convo) }),
-    lang,
     voice: LIVE_VOICE,
     gender: AGENT_GENDER,
-    tools,
-    practiceName: practice.name,
-    agentName: 'the front desk',
-    send,
-    sendAudio: (pcm) => transport.sendAudio(pcm),
-    onClose: () => socket.close(),
-    // Live heard a different language. Record it and steer the session, so the
-    // switch survives past a single turn.
-    onLanguageHeard: (heard) => {
-      observeLanguage(convo, heard, 0.95)
-      if (convo.language !== lang) {
-        lang = convo.language
-        session.setLang(lang)
-        send({ type: 'lang.detected', lang, confidence: 0.95, codeSwitched: false })
-      }
-    },
+    close: () => socket.close(),
   })
-
-  transport.onAudioFrame((pcm) => session.pushAudio(pcm))
-  transport.onEvent((e) => {
-    /**
-     * A language the caller *chose*, which is not the same as one we detected.
-     *
-     * It sets the conversation's language outright rather than going through
-     * `observeLanguage`, whose two-turns-in-a-row debounce exists to resist
-     * noisy detection — there is nothing to resist here. Updating the session's
-     * accent alone was not enough: the prompt is built from the conversation
-     * state, so leaving that at the default had the agent being told to speak
-     * English in a Tamil accent, and the prompt won.
-     */
-    const chooseLang = (next: Lang): void => {
-      lang = next
-      convo.language = next
-      convo.languageHistory = [next]
-      session.setLang(next)
-    }
-
-    // A fallback for clients that do not put the language in the URL; the
-    // console does, so by here the session is usually already in it.
-    if (e.type === 'session.start' && e.lang) chooseLang(e.lang)
-    if (e.type === 'control.set_lang') chooseLang(e.lang)
-    if (e.type === 'session.end') {
-      finishCall()
-      void session.close()
-    }
-  })
-  const finishCall = (): void => {
-    if (finished) return
-    finished = true
-    const record = buildCallRecord({
-      sessionId, startedAt, state: convo, practice,
-      bookedIds: convo.bookedAppointments, toolsUsed, triage, transcript,
-    })
-    callLog.add(record)
-    console.log(
-      `[${sessionId}] ${record.outcome} · ${record.turns} caller turns · ` +
-        `${record.durationSec}s · ${record.followUps.length} follow-up(s)`,
-    )
-  }
-
-  transport.onClose(() => {
-    finishCall()
-    void session.close()
-  })
-
-  console.log(`[${sessionId}] connected — gemini-live, voice ${LIVE_VOICE}`)
-  try {
-    await session.start()
-  } catch (err) {
-    console.error(`[${sessionId}] live connect failed:`, err)
-    transport.send({
-      type: 'error',
-      code: 'live_connect_failed',
-      message: err instanceof Error ? err.message : String(err),
-      recoverable: false,
-    })
-  }
 })
 
 /**

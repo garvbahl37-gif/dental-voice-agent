@@ -14,7 +14,24 @@ import {
 } from '@/components/PracticePanel'
 import { CallSummaryView, type CallSummary } from '@/components/CallSummary'
 
-const SERVER_URL = process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? 'ws://localhost:8787'
+/**
+ * Where a call is hosted.
+ *
+ * Empty means this deployment: the call runs in a route beside the console, so
+ * there is no second box to wake. That is the whole point — a free host that
+ * sleeps made the first visitor of the day wait the better part of a minute
+ * before hearing anything, which is a bad way to meet a demo.
+ *
+ * An explicit URL points at the standalone server instead. `./scripts/dev.sh`
+ * sets it, because `next dev` cannot serve a WebSocket route.
+ */
+const SERVER_URL = process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? ''
+
+function sessionUrl(): string {
+  if (SERVER_URL) return `${SERVER_URL}/session`
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${proto}://${window.location.host}/api/session`
+}
 
 /**
  * Why the line is dead, in the words that apply where you are standing.
@@ -31,6 +48,8 @@ const SERVER_URL = process.env.NEXT_PUBLIC_VOICE_SERVER_URL ?? 'ws://localhost:8
  * misconfiguration still surfaces as an error rather than an endless wait.
  */
 async function wakeServer(onSlow: () => void): Promise<boolean> {
+  // Only a separate box can be asleep; a same-origin route is already awake.
+  if (!SERVER_URL) return true
   const http = SERVER_URL.replace(/^ws/, 'http')
   const deadline = Date.now() + 90_000
   let announced = false
@@ -51,10 +70,10 @@ async function wakeServer(onSlow: () => void): Promise<boolean> {
 }
 
 function unreachableMessage(): string {
+  if (!SERVER_URL) return 'Could not open the line. Check your connection and try again.'
   const remote = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
-  const localTarget = SERVER_URL.includes('localhost')
-  if (remote && localTarget) {
-    return 'This console is not pointed at a voice server. Set NEXT_PUBLIC_VOICE_SERVER_URL to a deployed one, or run ./scripts/dev.sh locally.'
+  if (remote && SERVER_URL.includes('localhost')) {
+    return 'This console is pointed at a voice server on localhost, which a deployed page cannot reach. Unset NEXT_PUBLIC_VOICE_SERVER_URL to use this deployment, or point it at a reachable server.'
   }
   return 'Voice server not reachable at ' + SERVER_URL + '. Start it with ./scripts/dev.sh'
 }
@@ -343,7 +362,7 @@ export default function Console() {
     }
     setWaking(false)
 
-    const vc = new VoiceClient(`${SERVER_URL}/session`, {
+    const vc = new VoiceClient(sessionUrl(), {
       onEvent: handleEvent,
       onLevel: (mic, agent) => setLevels({ mic, agent }),
       onStatus: setStatus,

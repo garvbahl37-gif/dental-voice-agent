@@ -20,7 +20,8 @@
     "@vaani/db": "workspace:*",
     "@vaani/telephony": "workspace:*",
     "@vaani/outbound": "workspace:*",
-    "@vaani/knowledge": "workspace:*"
+    "@vaani/knowledge": "workspace:*",
+    "@vaani/session-host": "workspace:*"
   },
   "devDependencies": {
     "@types/ws": "^8.5.13"
