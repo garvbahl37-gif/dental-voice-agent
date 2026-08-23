@@ -223,3 +223,9 @@ export async function runVoiceSession(opts: VoiceSessionOptions): Promise<void> 
     })
   }
 }
+
+export { handleVoice, handleStatus, handleTransferResult, loadStreamContext, transferTwiml } from './twilio-webhooks'
+export type { TelephonyDeps } from './twilio-webhooks'
+export { handleTwilioStream } from './twilio-stream'
+export { startOutboundWorker, outboundPass, twilioPlaceCall } from './outbound'
+export { runNodeWebhook } from './node-webhook'

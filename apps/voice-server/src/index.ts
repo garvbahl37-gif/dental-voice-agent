@@ -16,10 +16,14 @@ import { LangSchema, voiceGender } from '@vaani/shared'
  */
 const AGENT_GENDER = voiceGender(LIVE_VOICE, process.env.GEMINI_LIVE_VOICE_GENDER)
 import { WsTransport } from './ws-transport'
-import { runVoiceSession } from '@vaani/session-host'
-import { handleStatus, handleTransferResult, handleVoice } from './telephony'
-import { handleTwilioStream } from './twilio-stream'
-import { startOutboundWorker } from './outbound-worker'
+import {
+  handleStatus,
+  handleTransferResult,
+  handleTwilioStream,
+  handleVoice,
+  runVoiceSession,
+  startOutboundWorker,
+} from '@vaani/session-host'
 
 /**
  * The voice server.

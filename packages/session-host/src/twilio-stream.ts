@@ -14,7 +14,7 @@ import type { CallTurn } from '@vaani/db'
 import { outboundPrompt, type CampaignKind } from '@vaani/outbound'
 import { connect, emitWebhookDetached } from '@vaani/db'
 import { geminiEmbedder, retrieve } from '@vaani/knowledge'
-import { loadStreamContext } from './telephony'
+import { loadStreamContext } from './twilio-webhooks'
 
 /**
  * One phone call, from the media socket to the model and back.

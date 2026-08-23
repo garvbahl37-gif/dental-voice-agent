@@ -27,7 +27,7 @@ const PEARL_NUMBER = '+912226559999'
 let t: TestDb
 let smile: OrgRepo
 let pearl: OrgRepo
-let handlers: typeof import('./telephony')
+let handlers: typeof import('./twilio-webhooks')
 
 beforeEach(async () => {
   process.env.TWILIO_AUTH_TOKEN = TOKEN
@@ -46,7 +46,7 @@ beforeEach(async () => {
   smile = new OrgRepo(t.db, a.orgId)
   pearl = new OrgRepo(t.db, b.orgId)
 
-  handlers = await import('./telephony')
+  handlers = await import('./twilio-webhooks')
 })
 
 afterEach(async () => {
@@ -261,7 +261,7 @@ describe('loadStreamContext — the media socket carries no proof of its own', (
     const ctx = await handlers.loadStreamContext({ orgId: smile.orgId, callId: call!.id })
     expect(ctx).not.toBeNull()
     expect(ctx!.adapter.name).toBe('Smile Dental Care')
-    expect(ctx!.adapter.providers.some((p) => p.name === 'Dr. Kavita Iyer')).toBe(true)
+    expect(ctx!.adapter.providers.some((p: { name: string }) => p.name === 'Dr. Kavita Iyer')).toBe(true)
   })
 
   it('refuses a call id paired with the wrong org', async () => {
@@ -279,5 +279,90 @@ describe('loadStreamContext — the media socket carries no proof of its own', (
 
   it('refuses parameters with no tenant at all', async () => {
     expect(await handlers.loadStreamContext({})).toBeNull()
+  })
+})
+
+/**
+ * The same handlers, reached through a Web `Request`.
+ *
+ * The phone line runs in a serverless route now, which speaks `Request` and
+ * `Response` rather than Node's streams. The signature check is the security
+ * boundary for the whole line, so what matters is that it survives the
+ * adaptation intact — a forged request must still be refused after passing
+ * through it, and a genuine one must still verify against the URL Twilio
+ * actually signed rather than whatever internal address the platform used.
+ */
+describe('through the serverless adapter', () => {
+  /** A Twilio POST as a Web Request, signed unless told otherwise. */
+  function webRequest(params: Record<string, string>, opts: { sign?: boolean } = {}) {
+    const signed = 'https://voice.test/api/twilio/voice'
+    const body = new URLSearchParams(params).toString()
+    return new Request('http://internal.local/api/twilio/voice', {
+      method: 'POST',
+      // The forwarded headers are what the signature must be checked against.
+      headers: {
+        host: 'internal.local',
+        'x-forwarded-host': 'voice.test',
+        'x-forwarded-proto': 'https',
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-twilio-signature':
+          opts.sign === false ? 'bogus' : twilioSignature(TOKEN, signed, params),
+      },
+      body,
+    })
+  }
+
+  it('answers a genuine call', async () => {
+    const { runNodeWebhook } = await import('./node-webhook')
+    const res = await runNodeWebhook(webRequest(inbound(SMILE_NUMBER)), (req, rs) =>
+      handlers.handleVoice(req, rs, { streamUrl: STREAM_URL }),
+    )
+    expect(res.status).toBe(200)
+    const twiml = await res.text()
+    expect(twiml).toContain('<Stream')
+    expect(twiml).toContain(STREAM_URL)
+  })
+
+  it('refuses a forged one', async () => {
+    const { runNodeWebhook } = await import('./node-webhook')
+    const res = await runNodeWebhook(webRequest(inbound(SMILE_NUMBER), { sign: false }), (req, rs) =>
+      handlers.handleVoice(req, rs, { streamUrl: STREAM_URL }),
+    )
+    expect(res.status).toBe(403)
+  })
+
+  it('checks the signature against the forwarded address, not the internal one', async () => {
+    // Signed for the internal host the platform used rather than the public one
+    // Twilio saw. Accepting this would mean the check could be sidestepped by
+    // anyone who could guess the internal address.
+    const params = inbound(SMILE_NUMBER)
+    const wrong = new Request('http://internal.local/api/twilio/voice', {
+      method: 'POST',
+      headers: {
+        host: 'internal.local',
+        'x-forwarded-host': 'voice.test',
+        'x-forwarded-proto': 'https',
+        'content-type': 'application/x-www-form-urlencoded',
+        'x-twilio-signature': twilioSignature(
+          TOKEN,
+          'http://internal.local/api/twilio/voice',
+          params,
+        ),
+      },
+      body: new URLSearchParams(params).toString(),
+    })
+    const { runNodeWebhook } = await import('./node-webhook')
+    const res = await runNodeWebhook(wrong, (req, rs) =>
+      handlers.handleVoice(req, rs, { streamUrl: STREAM_URL }),
+    )
+    expect(res.status).toBe(403)
+  })
+
+  it('sets the content type TwiML needs', async () => {
+    const { runNodeWebhook } = await import('./node-webhook')
+    const res = await runNodeWebhook(webRequest(inbound(SMILE_NUMBER)), (req, rs) =>
+      handlers.handleVoice(req, rs, { streamUrl: STREAM_URL }),
+    )
+    expect(res.headers.get('content-type')).toContain('xml')
   })
 })

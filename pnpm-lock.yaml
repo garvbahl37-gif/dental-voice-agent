@@ -253,12 +253,27 @@ importers:
       '@vaani/core':
         specifier: workspace:*
         version: link:../core
+      '@vaani/db':
+        specifier: workspace:*
+        version: link:../db
+      '@vaani/knowledge':
+        specifier: workspace:*
+        version: link:../knowledge
       '@vaani/live':
         specifier: workspace:*
         version: link:../live
+      '@vaani/outbound':
+        specifier: workspace:*
+        version: link:../outbound
+      '@vaani/providers':
+        specifier: workspace:*
+        version: link:../providers
       '@vaani/shared':
         specifier: workspace:*
         version: link:../shared
+      '@vaani/telephony':
+        specifier: workspace:*
+        version: link:../telephony
 
   packages/shared:
     dependencies:

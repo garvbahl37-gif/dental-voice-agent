@@ -25,9 +25,8 @@ receptionist and carries on — it never claims to be a person.
 | Set up a practice | [/start](https://dental-voice-agent-pi.vercel.app/start) — creates a real, isolated tenant |
 | The dashboard | [/login](https://dental-voice-agent-pi.vercel.app/login) — `owner@smile.example` |
 
-The voice server sleeps when idle on Render's free tier, so the first call after a quiet
-spell waits ~40 seconds on "Waking the server…" before it connects. That wait is the
-free tier, not a fault — the console says so rather than failing the handshake.
+Everything runs on Vercel, console and calls alike, so there is nothing to wake: a call
+opens its socket in about a second and the first audio arrives around two.
 
 ![The landing page](docs/screenshots/landing.png)
 
@@ -102,38 +101,34 @@ cp .env.example .env          # set GEMINI_API_KEY
 
 ## Deploying it
 
-Two processes, because they have different shapes. The console is static and
-goes anywhere — it is on Vercel. **A call is one long-lived WebSocket holding a
-Gemini Live session, so the voice server is a stateful process and cannot run on
-serverless hosting.** It needs a host that keeps a socket open.
-
-A `Dockerfile` is here, with `render.yaml` and `fly.toml` for the two easiest:
-
-```bash
-# Render — connect the repo; it reads render.yaml
-# Fly
-fly launch --copy-config --no-deploy && fly secrets set GEMINI_API_KEY=… && fly deploy
-```
-
-The deployed pair:
-
-| | where | why |
-|---|---|---|
-| Console | Vercel | static, and its build command is `next build` — Vercel's Turbo autodetect trips on the agent↔core cycle |
-| Voice server | Render (Singapore) | holds the call socket; free tier sleeps when idle |
-
-Then set, on the voice server:
+One deployment. A call is a long-lived WebSocket holding a Gemini Live session,
+which used to mean a stateful box of its own — Vercel Functions hold sockets now,
+so the call runs in a route beside the console and is warmed by the same traffic.
 
 ```
-GEMINI_API_KEY=…
-VAANI_ALLOWED_ORIGINS=https://your-console.vercel.app
+GEMINI_API_KEY=…          the engine; nothing works without it
+DATABASE_URL=…            Postgres, for tenants and history
+TWILIO_AUTH_TOKEN=…       only if you are wiring a phone number
+CRON_SECRET=…             only if you are running outbound campaigns
 ```
 
-and on the console: `NEXT_PUBLIC_VOICE_SERVER_URL=wss://your-voice-server.onrender.com`.
+| route | what it is |
+|---|---|
+| `/api/session` | the browser call — a WebSocket |
+| `/api/twilio/stream` | the phone call's audio, both directions |
+| `/api/twilio/voice` · `/status` · `/transfer` | Twilio's webhooks, signature-checked |
+| `/api/cron/outbound` | one pass of the dialler, on a schedule |
+| `/api/health` | readable without credentials; says whether the engine is keyed |
 
-Both are required. The server fails closed — with neither an allowed origin nor
-an admin token it answers loopback only, which is local development and nothing
-else.
+**The one thing this costs.** A function has a `maxDuration`, so a call has a
+ceiling — 300 seconds on the Hobby plan. That is generous for a demo and wrong
+for a real front desk, so `apps/voice-server` is still here: the same call code
+(`@vaani/session-host`) behind a plain Node server, with a `Dockerfile`,
+`render.yaml` and `fly.toml`. Run it if you need calls longer than five minutes,
+and point the console at it with `NEXT_PUBLIC_VOICE_SERVER_URL`.
+
+It is also what local development uses, because `next dev` cannot serve a
+WebSocket route — `./scripts/dev.sh` starts both.
 
 Open <http://localhost:3000>, then <http://localhost:3000/console> to take a call.
 
