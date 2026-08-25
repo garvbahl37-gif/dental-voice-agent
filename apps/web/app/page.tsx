@@ -4,6 +4,10 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import './landing.css'
 import { useCountUp, useMotion } from './use-motion'
 import { LanguageRiver, SectionHead, Spoken, Waveform } from './motion-parts'
+import { Nav } from './nav'
+import { Refusals } from './refusals'
+import { Channels } from './channels'
+import { Triage } from './triage'
 
 /**
  * The landing page.
@@ -192,31 +196,7 @@ export default function Landing() {
 
   return (
     <div className="lp">
-      <nav className="lp-nav">
-        <div className="lp-wrap lp-nav-inner">
-          <a className="lp-mark" href="#top">
-            <span className="lp-mark-name">Vaani</span>
-            <span className="lp-mark-sub">front desk</span>
-          </a>
-          <div className="lp-nav-links">
-            <a className="lp-nav-link" href="#does">
-              What it does
-            </a>
-            <a className="lp-nav-link" href="#limits">
-              What it won&rsquo;t do
-            </a>
-            <a className="lp-nav-link" href="#channels">
-              Where it answers
-            </a>
-            <a className="lp-nav-link" href="/login">
-              Sign in
-            </a>
-            <a className="lp-btn lp-btn-primary lp-btn-sm" href="/start">
-              Set up your practice
-            </a>
-          </div>
-        </div>
-      </nav>
+      <Nav />
 
       <header id="top" className="lp-wrap lp-hero">
         <div>
@@ -345,61 +325,7 @@ export default function Landing() {
             reaches the caller&rsquo;s ear.
           </SectionHead>
 
-          <ul className="lp-limit-list">
-            {[
-              [
-                <>
-                  <s>Diagnose</s> anything
-                </>,
-                <>
-                  &ldquo;Is this a cavity or just sensitivity?&rdquo; gets a slot with a dentist,
-                  never an opinion. <em>It does not speculate about a mouth it cannot see.</em>
-                </>,
-              ],
-              [
-                <>
-                  <s>Prescribe</s> or advise on medicine
-                </>,
-                <>
-                  No painkiller names, no dosages, no antibiotics, not even the obvious ones.{' '}
-                  <em>Not for a patient who insists, and not in Hindi when the same question comes
-                  back rephrased.</em>
-                </>,
-              ],
-              [
-                <>
-                  <s>Invent</s> a price
-                </>,
-                <>
-                  Fees come from your list or they do not get said. A quoted number a patient
-                  repeats at the counter is worse than no number at all.
-                </>,
-              ],
-              [
-                <>
-                  <s>Guess</s> at availability
-                </>,
-                <>
-                  It would rather say &ldquo;let me check&rdquo; and take a beat than fill silence
-                  with a slot that turns out to be taken.
-                </>,
-              ],
-              [
-                <>
-                  <s>Pretend</s> to be a person
-                </>,
-                <>
-                  Asked directly, it says it is the practice&rsquo;s assistant and offers to put a
-                  human on. <em>It has no name and does not perform one.</em>
-                </>,
-              ],
-            ].map(([k, v], i) => (
-              <li key={i} className="lp-limit" data-reveal style={{ '--i': i } as React.CSSProperties}>
-                <span className="lp-limit-k">{k}</span>
-                <span className="lp-limit-v">{v}</span>
-              </li>
-            ))}
-          </ul>
+          <Refusals />
         </div>
       </section>
 
@@ -415,31 +341,7 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="lp-urgent-card">
-            <span className="lp-urgent-tag">Recognised, in any of the three</span>
-            <ul className="lp-trigger-list">
-              {[
-                ['bleeding that won’t stop', false],
-                ['खून नहीं रुक रहा', true],
-                ['knocked-out tooth', false],
-                ['चेहरा सूज गया है', true],
-                ['swelling with fever', false],
-                ['bahut tez dard, so nahi paa raha', false],
-                ['jaw injury', false],
-                ['दाँत टूट गया है', true],
-              ].map(([t, deva], ti) => (
-                <li
-                  key={t as string}
-                  className={`lp-trigger${deva ? ' lp-deva' : ''}`}
-                  lang={deva ? 'hi' : 'en'}
-                  data-reveal
-                  style={{ '--i': ti } as React.CSSProperties}
-                >
-                  {t as string}
-                </li>
-              ))}
-            </ul>
-          </div>
+          <Triage />
         </div>
       </section>
 
@@ -453,38 +355,7 @@ export default function Landing() {
             pipe changes.
           </SectionHead>
 
-          <div className="lp-channels">
-            {[
-              [
-                'Live',
-                'Browser',
-                'Speak to it now from this page. Same engine that runs the phone line.',
-                true,
-              ],
-              [
-                'Next',
-                'Phone line',
-                'Your existing number, forwarded. Answers on the first ring, hands off to reception when asked.',
-                false,
-              ],
-              [
-                'Next',
-                'WhatsApp',
-                'The same booking flow in text, for patients who would rather type than talk.',
-                false,
-              ],
-            ].map(([state, name, copy, live], ci) => (
-              <div key={name as string} className="lp-channel" data-reveal style={{ '--i': ci } as React.CSSProperties}>
-                <span
-                  className={`lp-channel-state ${live ? 'lp-state-live' : 'lp-state-next'}`}
-                >
-                  {state as string}
-                </span>
-                <h4>{name as string}</h4>
-                <p>{copy as string}</p>
-              </div>
-            ))}
-          </div>
+          <Channels />
         </div>
       </section>
 

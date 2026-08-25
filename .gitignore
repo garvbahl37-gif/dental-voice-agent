@@ -27,3 +27,8 @@ voice-samples/
 .DS_Store
 .vercel
 .env.local
+
+# Screenshots taken while checking a page in a browser. Useful for a minute,
+# never worth keeping — and binaries committed once stay in history forever.
+/*.png
+/.playwright-mcp/
