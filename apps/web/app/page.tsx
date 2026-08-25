@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import './landing.css'
+import { useCountUp, useMotion } from './use-motion'
+import { LanguageRiver, Spoken, Waveform } from './motion-parts'
 
 /**
  * The landing page.
@@ -183,6 +185,9 @@ function LiveCall() {
 // ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Landing() {
+  useMotion()
+  useCountUp()
+
   const [year] = useState(() => new Date().getFullYear())
 
   return (
@@ -216,20 +221,34 @@ export default function Landing() {
       <header id="top" className="lp-wrap lp-hero">
         <div>
           {/* The claim, made by the type rather than about it. */}
+          {/* The claim, made by the type rather than about it: the script
+              changes mid-sentence, and the sentence arrives as it is spoken. */}
           <h1 className="lp-h1">
-            Your phone rings in <span className="lp-en">English</span>. Or in{' '}
-            <span className="lp-deva" lang="hi">
-              हिन्दी
-            </span>
-            . Or, halfway through, in both.
+            <Spoken
+              words={[
+                { t: 'Your' },
+                { t: 'phone' },
+                { t: 'rings' },
+                { t: 'in' },
+                { t: 'English.', cls: 'lp-en' },
+                { t: 'Or' },
+                { t: 'in' },
+                { t: 'हिन्दी.', cls: 'lp-deva', lang: 'hi' },
+                { t: 'Or,' },
+                { t: 'halfway' },
+                { t: 'through,' },
+                { t: 'in' },
+                { t: 'both.' },
+              ]}
+            />
           </h1>
 
-          <p className="lp-hero-lede">
+          <p className="lp-hero-lede" data-reveal style={{ '--i': 8 } as React.CSSProperties}>
             A front desk that picks up on the first ring, in whichever language the caller
             reaches for, and books straight into your diary while they are still on the line.
           </p>
 
-          <div className="lp-cta-row">
+          <div className="lp-cta-row" data-reveal style={{ '--i': 9 } as React.CSSProperties}>
             <a className="lp-btn lp-btn-primary" href="/start">
               Set up your practice →
             </a>
@@ -237,13 +256,16 @@ export default function Landing() {
               Hear it first
             </a>
           </div>
-          <p className="lp-cta-note">
+          <p className="lp-cta-note" data-reveal style={{ '--i': 10 } as React.CSSProperties}>
             Runs in the browser. Needs a microphone, no sign-up.
           </p>
         </div>
 
         <LiveCall />
+        <Waveform />
       </header>
+
+      <LanguageRiver />
 
       {/* What is actually loaded — countable, and checkable in the console. */}
       <div className="lp-ledger-band">
@@ -253,9 +275,11 @@ export default function Landing() {
             ['6', 'dentists, matched to what you ask for'],
             ['12', 'treatments, under the names patients use'],
             ['11', 'languages, switchable mid-sentence'],
-          ].map(([n, k]) => (
-            <div key={k} className="lp-ledger-cell">
-              <span className="lp-ledger-n">{n}</span>
+          ].map(([n, k], i) => (
+            <div key={k} className="lp-ledger-cell" data-reveal style={{ '--i': i } as React.CSSProperties}>
+              <span className="lp-ledger-n" data-count={n}>
+                {n}
+              </span>
               <span className="lp-ledger-k">{k}</span>
             </div>
           ))}
@@ -265,14 +289,14 @@ export default function Landing() {
       <section id="does" className="lp-band">
         <div className="lp-wrap">
           <p className="lp-eyebrow">What it does</p>
-          <h2 className="lp-h2">Everything the desk does between patients</h2>
+          <h2 className="lp-h2" data-reveal>Everything the desk does between patients</h2>
           <p className="lp-lede">
             Not a menu tree and not a chatbot reading a script. It listens, works out what the
             caller wants from how they said it, and acts on your real data.
           </p>
 
           <div className="lp-cards">
-            <article className="lp-card">
+            <article className="lp-card" data-reveal style={{ '--i': 0 } as React.CSSProperties}>
               <h3>Books against the real diary</h3>
               <p>
                 Every slot it offers is read from your calendar at the moment it speaks, matched
@@ -285,7 +309,7 @@ export default function Landing() {
               </p>
             </article>
 
-            <article className="lp-card">
+            <article className="lp-card" data-reveal style={{ '--i': 1 } as React.CSSProperties}>
               <h3>Understands what people call things</h3>
               <p>
                 <em>Safai</em>, cleaning, descaling and scaling are one treatment. So are cap and
@@ -297,7 +321,7 @@ export default function Landing() {
               </p>
             </article>
 
-            <article className="lp-card">
+            <article className="lp-card" data-reveal style={{ '--i': 2 } as React.CSSProperties}>
               <h3>Answers only from your practice</h3>
               <p>
                 Timings, fees, parking, which branch has digital X-ray, whether a dentist speaks
@@ -318,7 +342,7 @@ export default function Landing() {
       <section id="limits" className="lp-band lp-limits">
         <div className="lp-wrap">
           <p className="lp-eyebrow">What it won&rsquo;t do</p>
-          <h2 className="lp-h2">The refusals are the product</h2>
+          <h2 className="lp-h2" data-reveal>The refusals are the product</h2>
           <p className="lp-lede">
             A receptionist who improvises about your patients&rsquo; health is a liability, not a
             feature. These are hard stops, not tendencies — each one is enforced before anything
@@ -387,7 +411,7 @@ export default function Landing() {
         <div className="lp-wrap lp-urgent">
           <div>
             <p className="lp-eyebrow">Emergencies</p>
-            <h2 className="lp-h2">It stops selling appointments and starts helping</h2>
+            <h2 className="lp-h2" data-reveal>It stops selling appointments and starts helping</h2>
             <p className="lp-lede">
               When a caller describes something that cannot wait for Tuesday, booking stops. It
               gives the branch&rsquo;s emergency line, tells them what to do in the meantime in
@@ -424,7 +448,7 @@ export default function Landing() {
       <section id="channels" className="lp-band">
         <div className="lp-wrap">
           <p className="lp-eyebrow">Where it answers</p>
-          <h2 className="lp-h2">One desk, wherever the patient reaches you</h2>
+          <h2 className="lp-h2" data-reveal>One desk, wherever the patient reaches you</h2>
           <p className="lp-lede">
             The conversation, the diary and the practice&rsquo;s knowledge stay the same. Only the
             pipe changes.
@@ -450,8 +474,8 @@ export default function Landing() {
                 'The same booking flow in text, for patients who would rather type than talk.',
                 false,
               ],
-            ].map(([state, name, copy, live]) => (
-              <div key={name as string} className="lp-channel">
+            ].map(([state, name, copy, live], ci) => (
+              <div key={name as string} className="lp-channel" data-reveal style={{ '--i': ci } as React.CSSProperties}>
                 <span
                   className={`lp-channel-state ${live ? 'lp-state-live' : 'lp-state-next'}`}
                 >
@@ -467,7 +491,7 @@ export default function Landing() {
 
       <section className="lp-close">
         <div className="lp-wrap">
-          <h2 className="lp-h2">Call the desk yourself</h2>
+          <h2 className="lp-h2" data-reveal>Call the desk yourself</h2>
           <p className="lp-lede">
             Try to trip it up. Switch to Hindi mid-sentence, talk over it, change your mind about
             the branch, ask it what to take for the pain.

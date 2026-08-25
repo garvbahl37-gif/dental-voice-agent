@@ -141,9 +141,13 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
+  justify-content: center;
   font-size: 14.5px;
   font-weight: 600;
   padding: 13px 26px;
+  /* A thumb needs 44px. The padding alone gave 40, which is fine under a
+     mouse and a miss under a thumb. */
+  min-height: 44px;
   border-radius: var(--r-pill);
   text-decoration: none;
   border: 1px solid transparent;
@@ -187,11 +191,13 @@
 /* ── Hero ────────────────────────────────────────────────────────────────── */
 
 .lp-hero {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 0.86fr);
   gap: clamp(32px, 5vw, 72px);
   align-items: center;
-  padding-block: clamp(52px, 8vw, 92px) clamp(56px, 8vw, 96px);
+  /* The extra room at the foot is where the level meter lives. */
+  padding-block: clamp(52px, 8vw, 92px) clamp(112px, 11vw, 152px);
 }
 
 @media (max-width: 940px) {
@@ -860,5 +866,222 @@
   .lp-btn:hover,
   .lp-card:hover {
     transform: none;
+  }
+}
+
+/* ══ Motion ═══════════════════════════════════════════════════════════════════
+
+   The page should feel like a line that is open: something is always quietly
+   moving, nothing is ever demanding. Every effect below is either a voice
+   metaphor (level bars, a sentence arriving word by word) or the plainest
+   possible reveal. Nothing spins, nothing bounces, nothing slides in from the
+   side — those read as slide-deck transitions, and this is a page about
+   answering the phone properly.
+
+   The hiding rules all hang off `.lp-motion`, which JavaScript sets. Without
+   it every element below is at its finished state, so a reader with no JS gets
+   the whole page rather than a blank one.                                     */
+
+/* ── Reveal on scroll ─────────────────────────────────────────────────────── */
+
+.lp-motion [data-reveal] {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.lp-motion [data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+  /* Long enough to be felt, short enough not to be waited for. The overshoot
+     in the curve is slight — it settles rather than springs. */
+  transition:
+    opacity 520ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 520ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+
+/* ── The hero sentence, arriving ──────────────────────────────────────────── */
+
+.lp-word {
+  display: inline-block;
+}
+
+.lp-motion .lp-word {
+  opacity: 0;
+  transform: translateY(0.42em);
+  animation: lp-word-in 620ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  /* Words land a little faster than they would be spoken; a real cadence is
+     too slow to read as motion and too fast to read as speech. */
+  animation-delay: calc(120ms + var(--i) * 52ms);
+}
+
+@keyframes lp-word-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── The level meter behind the hero ──────────────────────────────────────── */
+
+.lp-wave {
+  position: absolute;
+  /* Sits inside the hero, clear of the river below it — the two are separate
+     ideas and reading as one blurred band helps neither. */
+  inset: auto 0 18px 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 3px;
+  height: 72px;
+  pointer-events: none;
+  /* Faded at both ends so it reads as ambient rather than as a chart with
+     edges. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  opacity: 0.34;
+}
+
+.lp-wave-bar {
+  flex: 1 1 0;
+  min-width: 1px;
+  height: var(--h);
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--agent-line), var(--agent));
+  transform-origin: bottom;
+  transform: scaleY(0.24);
+}
+
+.lp-motion .lp-wave-bar {
+  animation: lp-level 2.6s ease-in-out infinite;
+  /* Neighbouring bars must not move together, or it reads as a pulse rather
+     than as sound. */
+  animation-delay: calc(var(--i) * -137ms);
+}
+
+@keyframes lp-level {
+  0%,
+  100% {
+    transform: scaleY(0.22);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* ── The eleven scripts, moving past ──────────────────────────────────────── */
+
+.lp-river {
+  overflow: hidden;
+  border-block: 1px solid var(--hairline);
+  padding-block: 18px;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+.lp-river-track {
+  display: flex;
+  width: max-content;
+}
+
+.lp-motion .lp-river-track {
+  animation: lp-drift 46s linear infinite;
+}
+
+/* Slow enough to read a script as it passes; the point is legibility, not
+   speed. Pauses on hover so a curious reader can actually look. */
+.lp-river:hover .lp-river-track {
+  animation-play-state: paused;
+}
+
+.lp-river-run {
+  display: flex;
+  align-items: baseline;
+  gap: clamp(28px, 5vw, 60px);
+  padding-inline: clamp(14px, 2.5vw, 30px);
+}
+
+.lp-river-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.lp-river-native {
+  font-size: clamp(19px, 2.2vw, 27px);
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.lp-river-en {
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+@keyframes lp-drift {
+  /* Exactly half, because the row is rendered twice — any other value shows
+     the seam. */
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* ── The ledger figures ───────────────────────────────────────────────────── */
+
+.lp-ledger-n {
+  font-variant-numeric: tabular-nums;
+  /* Counting changes the digit count, and a number that reflows its own row
+     while counting looks broken. */
+}
+
+/* ── Buttons that answer the pointer ──────────────────────────────────────── */
+
+.lp-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.28) 50%, transparent 62%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.lp-motion .lp-btn-primary:hover::after {
+  /* One pass, on hover. A sheen that loops on its own is a casino, not a
+     product. */
+  animation: lp-sheen 720ms ease-out;
+}
+
+@keyframes lp-sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* ── Asked not to move ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  /* Belt and braces: the class is never added, but if it were, nothing here
+     may leave content invisible. */
+  .lp [data-reveal],
+  .lp .lp-word {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .lp-river-track,
+  .lp-wave-bar {
+    animation: none !important;
+  }
+  .lp-wave {
+    display: none;
   }
 }
