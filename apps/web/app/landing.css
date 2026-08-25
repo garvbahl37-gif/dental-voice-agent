@@ -465,60 +465,7 @@
   color: var(--ink);
 }
 
-/* ── Ledger: what is actually loaded ─────────────────────────────────────── */
-
-.lp-ledger-band {
-  border-top: 1px solid var(--hairline);
-  border-bottom: 1px solid var(--hairline);
-  background: var(--bg-tint);
-}
-
-.lp-ledger {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
 @media (max-width: 720px) {
-  .lp-ledger {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .lp-ledger-cell:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--hairline);
-  }
-  .lp-ledger-cell:nth-child(2n) {
-    border-right: none;
-  }
-}
-
-.lp-ledger-cell {
-  padding: 26px 24px 26px 0;
-  border-right: 1px solid var(--hairline);
-}
-
-.lp-ledger-cell + .lp-ledger-cell {
-  padding-left: 24px;
-}
-
-.lp-ledger-cell:last-child {
-  border-right: none;
-}
-
-.lp-ledger-n {
-  font-family: var(--font-display);
-  font-size: 30px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1;
-  display: block;
-  margin-bottom: 7px;
-}
-
-.lp-ledger-k {
-  font-size: 12.5px;
-  line-height: 1.45;
-  color: var(--ink-muted);
-  display: block;
-  max-width: 22ch;
 }
 
 /* ── Capability cards ────────────────────────────────────────────────────── */
@@ -893,74 +840,6 @@
   }
 }
 
-/* ── The eleven scripts, moving past ──────────────────────────────────────── */
-
-.lp-river {
-  overflow: hidden;
-  border-block: 1px solid var(--hairline);
-  padding-block: 18px;
-  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-}
-
-.lp-river-track {
-  display: flex;
-  width: max-content;
-}
-
-.lp-motion .lp-river-track {
-  animation: lp-drift 46s linear infinite;
-}
-
-/* Slow enough to read a script as it passes; the point is legibility, not
-   speed. Pauses on hover so a curious reader can actually look. */
-.lp-river:hover .lp-river-track {
-  animation-play-state: paused;
-}
-
-.lp-river-run {
-  display: flex;
-  align-items: baseline;
-  gap: clamp(28px, 5vw, 60px);
-  padding-inline: clamp(14px, 2.5vw, 30px);
-}
-
-.lp-river-item {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 10px;
-  white-space: nowrap;
-}
-
-.lp-river-native {
-  font-size: clamp(19px, 2.2vw, 27px);
-  font-weight: 500;
-  color: var(--ink);
-  line-height: 1.5;
-}
-
-.lp-river-en {
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-@keyframes lp-drift {
-  /* Exactly half, because the row is rendered twice — any other value shows
-     the seam. */
-  to {
-    transform: translateX(-50%);
-  }
-}
-
-/* ── The ledger figures ───────────────────────────────────────────────────── */
-
-.lp-ledger-n {
-  font-variant-numeric: tabular-nums;
-  /* Counting changes the digit count, and a number that reflows its own row
-     while counting looks broken. */
-}
 
 /* ── Buttons that answer the pointer ──────────────────────────────────────── */
 
@@ -1001,7 +880,6 @@
     transform: none !important;
     animation: none !important;
   }
-  .lp-river-track,
   .lp-wave-bar {
     animation: none !important;
   }
@@ -2186,5 +2064,195 @@
   .lp-tri-reply {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* ══ The register ═════════════════════════════════════════════════════════════
+
+   A page from the ruled book every Indian clinic keeps at its front desk. The
+   structure is the content: columns because a register has columns, rules
+   because a register is ruled, a time in the first column because that is what
+   a receptionist writes first.
+
+   It replaced a marquee of language names. The strip carried the same eleven
+   facts and proved none of them — a scrolling list of the word "Tamil" is
+   decoration; a Tamil sentence in the 09:04 row, next to the slot it produced,
+   is evidence. Nothing here loops, and nothing moves for its own sake.        */
+
+.rg {
+  border-block: 1px solid var(--hairline);
+  background: var(--bg-tint);
+  padding-block: clamp(28px, 4vw, 44px);
+  padding-inline: var(--lp-gutter);
+}
+
+.rg-head {
+  max-width: var(--lp-measure);
+  margin: 0 auto clamp(18px, 2.4vw, 26px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 16px;
+}
+
+.rg-title {
+  font-family: var(--font-display);
+  font-size: clamp(19px, 2.3vw, 25px);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.rg-note {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+/* ── The columns ──────────────────────────────────────────────────────────── */
+
+.rg-cols,
+.rg-row {
+  display: grid;
+  grid-template-columns: 62px minmax(120px, 0.72fr) minmax(0, 1.7fr) minmax(150px, 0.9fr);
+  gap: clamp(10px, 2vw, 26px);
+  max-width: var(--lp-measure);
+  margin-inline: auto;
+}
+
+.rg-cols {
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--hairline-strong);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.rg-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: var(--lp-measure);
+  margin-inline: auto;
+}
+
+.rg-row {
+  align-items: baseline;
+  padding-block: 13px;
+  /* The rule under each entry. A register's lines are printed before anything
+     is written on them, so they stay put whether the row has arrived or not. */
+  border-bottom: 1px solid var(--hairline);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 420ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rg-row.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.rg-at {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.rg-who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.rg-tongue {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* What they said, set larger than anything around it: the scripts are the
+   point of the whole panel. */
+.rg-said {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: clamp(14.5px, 1.6vw, 17px);
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.rg-wanted {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.rg-out {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+  padding-left: 11px;
+  border-left: 2px solid var(--hairline-strong);
+}
+
+/* A booking is the ordinary outcome. The other two are what a practice is
+   actually worried about, so they are the ones that carry colour. */
+.rg-booked {
+  border-left-color: var(--agent-line);
+}
+
+.rg-escalated {
+  border-left-color: var(--alert);
+  color: var(--alert);
+}
+
+.rg-declined {
+  border-left-color: var(--hairline-strong);
+  font-style: italic;
+}
+
+.rg-foot {
+  /* Aligned to the register it annotates, not centred under it: a note about
+     a table belongs at the table's left edge, where the eye returns. */
+  max-width: var(--lp-measure);
+  margin: clamp(16px, 2vw, 22px) auto 0;
+  padding-right: 26%;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+/* Under a phone the four columns become two blocks — a register read down
+   rather than across, which is how anyone reads one on paper anyway. */
+@media (max-width: 780px) {
+  .rg-cols {
+    display: none;
+  }
+  .rg-row {
+    grid-template-columns: 58px minmax(0, 1fr);
+    gap: 4px 12px;
+    padding-block: 15px;
+  }
+  .rg-who {
+    grid-column: 2;
+  }
+  .rg-said {
+    grid-column: 2;
+    margin-top: 4px;
+  }
+  .rg-out {
+    grid-column: 2;
+    margin-top: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rg-row {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

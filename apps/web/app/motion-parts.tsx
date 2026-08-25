@@ -1,6 +1,5 @@
 'use client'
 
-import { ALL_LANGS, LANG_LABEL, LANG_ENGLISH, htmlLang } from '@vaani/shared'
 
 /**
  * The page's two moving fixtures.
@@ -38,43 +37,6 @@ export function Waveform() {
           style={{ '--h': `${h}%`, '--i': i } as React.CSSProperties}
         />
       ))}
-    </div>
-  )
-}
-
-/**
- * The eleven languages, moving past.
- *
- * Each in its own script, which is the whole point — a list of English names
- * would say the same thing and show none of it. The row is duplicated so the
- * loop has no seam, and the copy is hidden from assistive technology so the
- * languages are announced once rather than twice.
- */
-export function LanguageRiver() {
-  const run = ALL_LANGS.map((l) => (
-    <span key={l} className="lp-river-item">
-      <span className="lp-river-native" lang={htmlLang(l)}>
-        {LANG_LABEL[l]}
-      </span>
-      <span className="lp-river-en">{LANG_ENGLISH[l]}</span>
-    </span>
-  ))
-
-  return (
-    <div className="lp-river" role="group" aria-label="The languages it answers in">
-      <div className="lp-river-track">
-        <div className="lp-river-run">{run}</div>
-        <div className="lp-river-run" aria-hidden>
-          {ALL_LANGS.map((l) => (
-            <span key={l} className="lp-river-item">
-              <span className="lp-river-native" lang={htmlLang(l)}>
-                {LANG_LABEL[l]}
-              </span>
-              <span className="lp-river-en">{LANG_ENGLISH[l]}</span>
-            </span>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

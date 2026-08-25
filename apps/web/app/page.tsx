@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import './landing.css'
-import { useCountUp, useMotion } from './use-motion'
-import { LanguageRiver, SectionHead, Spoken, Waveform } from './motion-parts'
+import { useMotion } from './use-motion'
+import { SectionHead, Spoken, Waveform } from './motion-parts'
+import { Register } from './register'
 import { Intro } from './intro'
 import { Nav } from './nav'
 import { Refusals } from './refusals'
@@ -191,7 +192,6 @@ function LiveCall() {
 
 export default function Landing() {
   useMotion()
-  useCountUp()
 
   const [year] = useState(() => new Date().getFullYear())
 
@@ -247,26 +247,7 @@ export default function Landing() {
         <Waveform />
       </header>
 
-      <LanguageRiver />
-
-      {/* What is actually loaded — countable, and checkable in the console. */}
-      <div className="lp-ledger-band">
-        <div className="lp-wrap lp-ledger">
-          {[
-            ['3', 'branches, each with its own hours and diary'],
-            ['6', 'dentists, matched to what you ask for'],
-            ['12', 'treatments, under the names patients use'],
-            ['11', 'languages, switchable mid-sentence'],
-          ].map(([n, k], i) => (
-            <div key={k} className="lp-ledger-cell" data-reveal style={{ '--i': i } as React.CSSProperties}>
-              <span className="lp-ledger-n" data-count={n}>
-                {n}
-              </span>
-              <span className="lp-ledger-k">{k}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Register />
 
       <section id="does" className="lp-band">
         <div className="lp-wrap">
