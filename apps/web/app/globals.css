@@ -16,6 +16,11 @@
   --bg: #fbfaf7;
   --bg-tint: #f4f1ea;
   --surface: #ffffff;
+  /* The light ink, for type on a dark ground. Named because it was being
+     written as a literal in one place and referenced as a token in four
+     others, where it silently resolved to whatever colour happened to be
+     inherited — which on the dark intro meant dark text on dark. */
+  --paper: #f6f3ec;
   --hairline: #e9e4da;
   --hairline-strong: #d8d1c4;
 

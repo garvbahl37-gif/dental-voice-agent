@@ -66,23 +66,6 @@
 
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
 
-.lp-nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: rgba(251, 250, 247, 0.86);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--hairline);
-}
-
-.lp-nav-inner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  height: 62px;
-}
-
 .lp-mark {
   display: flex;
   align-items: baseline;
@@ -598,7 +581,7 @@
 
 .lp-limits {
   background: var(--ink);
-  color: #f6f3ec;
+  color: var(--paper);
   border-top: none;
 }
 
@@ -607,7 +590,7 @@
 }
 
 .lp-limits .lp-h2 {
-  color: #f6f3ec;
+  color: var(--paper);
 }
 
 .lp-limits .lp-lede {
@@ -1077,7 +1060,7 @@
   overflow: hidden;
   /* A page-coloured wash at the top, so a white card on a cream page has an
      edge without needing a heavier border. */
-  background: linear-gradient(180deg, var(--paper) 0%, var(--surface) 46%);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--surface) 46%);
 }
 
 /* The rule that grows. It is the card's one moving part, and it moves only on
@@ -1179,6 +1162,11 @@
   top: 0;
   z-index: 30;
   padding: 0;
+  /* The bar itself paints nothing. Everything visible belongs to the shell
+     inside it, which is what becomes a pill on scroll — a background here
+     stayed rectangular behind that pill and read as a stray line under it. */
+  background: transparent;
+  border: 0;
   transition: padding 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1210,6 +1198,24 @@
 
 .lp-nav.is-lifted {
   padding: 10px var(--lp-gutter);
+}
+
+/*
+ * A scrim above the pill.
+ *
+ * Content scrolling under a floating bar is correct; content sliced across its
+ * top edge is not — a line of Tamil cut in half above the nav reads as a
+ * rendering fault. This fades the few pixels above the pill back into the page
+ * so things pass under it rather than being cropped by it.
+ */
+.lp-nav.is-lifted::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 100%;
+  background: linear-gradient(180deg, var(--bg) 34%, rgba(251, 250, 247, 0) 100%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .lp-nav.is-lifted .lp-nav-shell {
@@ -1800,5 +1806,239 @@
 @media (prefers-reduced-motion: reduce) {
   .lp-ch-path.is-live {
     animation: none;
+  }
+}
+
+/* ══ Section ground ═══════════════════════════════════════════════════════════
+
+   Every band sat on the same cream with a hairline between, so five sections
+   read as one long column with lines ruled across it. A 1px rule is not enough
+   separation for a section — the eye needs a change of ground.
+
+   The rhythm alternates: page, tint, dark, page, tint, page. The dark band is
+   the anchor, and the tints on either side of it stop the page reading as one
+   surface. Where the ground changes there is no rule: two devices doing the
+   same job is one too many.                                                   */
+
+.lp-tint {
+  background: var(--bg-tint);
+  border-top: 0;
+}
+
+/* The joins.
+   A flat band butted against another flat band is a stripe. A few pixels of
+   gradient at each edge makes the change read as a fold in one surface rather
+   than as two surfaces stacked. */
+.lp-tint::before,
+.lp-tint::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 44px;
+  pointer-events: none;
+}
+
+.lp-tint::before {
+  top: 0;
+  background: linear-gradient(180deg, var(--bg), transparent);
+}
+
+.lp-tint::after {
+  bottom: 0;
+  background: linear-gradient(0deg, var(--bg), transparent);
+}
+
+.lp-band {
+  position: relative;
+}
+
+/* The dark band supplies its own separation; the tint above it should meet it
+   cleanly rather than fading into cream against black. */
+.lp-tint:has(+ .lp-limits)::after,
+.lp-limits + .lp-band::before {
+  display: none;
+}
+
+/* The closing section takes the tint, so the page ends on a change of ground
+   rather than trailing off on the same one it has been on since the channels.
+   The rule goes: the level meter already marks the boundary. */
+.lp-close {
+  border-top: 0;
+  background: var(--bg-tint);
+}
+
+/* ══ The opening ══════════════════════════════════════════════════════════════
+
+   Two seconds, and it has to earn them: a line opens, the same greeting arrives
+   in ten scripts faster than anyone could read them — which is the claim — and
+   it resolves on the name. Then it lifts, rather than cutting, so the page
+   underneath is revealed rather than switched to.                             */
+
+.lp-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  background: var(--ink);
+  /* Lifts as one surface. A fade alone reads as a slow page; the rise is what
+     makes it a curtain. */
+  animation: lp-intro-in 420ms ease both;
+}
+
+.lp-intro.is-leaving {
+  animation: lp-intro-out 620ms cubic-bezier(0.7, 0, 0.84, 0) forwards;
+}
+
+@keyframes lp-intro-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lp-intro-out {
+  to {
+    opacity: 0;
+    transform: translateY(-14px);
+    /* Clipped from the bottom up, so the page appears to be underneath it
+       rather than behind it. */
+    clip-path: inset(0 0 100% 0);
+  }
+}
+
+.lp-intro-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  padding: 32px;
+  text-align: center;
+}
+
+/* ── The meter ────────────────────────────────────────────────────────────── */
+
+.lp-intro-meter {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 34px;
+  opacity: 0.75;
+}
+
+.lp-intro-bar {
+  width: 2px;
+  height: var(--h);
+  border-radius: 2px;
+  background: var(--agent-line);
+  transform-origin: bottom;
+  animation: lp-intro-level 1.15s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -71ms);
+}
+
+@keyframes lp-intro-level {
+  0%,
+  100% {
+    transform: scaleY(0.28);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+/* ── The greeting ─────────────────────────────────────────────────────────── */
+
+.lp-intro-say {
+  display: grid;
+  place-items: center;
+  min-height: 1.4em;
+  /* Fixed height so ten scripts of different depths do not jog the layout as
+     they replace each other. */
+  height: clamp(46px, 7vw, 74px);
+}
+
+.lp-intro-word {
+  grid-area: 1 / 1;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 5.6vw, 60px);
+  line-height: 1.2;
+  color: var(--paper);
+  animation: lp-intro-word 240ms ease both;
+}
+
+@keyframes lp-intro-word {
+  from {
+    opacity: 0;
+    transform: translateY(9px) scale(0.985);
+    filter: blur(3px);
+  }
+}
+
+/* ── The line that opens ──────────────────────────────────────────────────── */
+
+.lp-intro-rule {
+  width: clamp(150px, 26vw, 260px);
+  height: 1px;
+  background: rgba(246, 243, 236, 0.16);
+  overflow: hidden;
+}
+
+.lp-intro-rule-fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  background: var(--agent);
+  transform: scaleX(0);
+  /* Runs the length of the sequence, so it reads as the thing being waited
+     for rather than as decoration. */
+  animation: lp-intro-rule 1950ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes lp-intro-rule {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* ── The name ─────────────────────────────────────────────────────────────── */
+
+.lp-intro-mark {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  animation: lp-intro-mark 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: 1250ms;
+}
+
+@keyframes lp-intro-mark {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.lp-intro-name {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.6vw, 27px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+}
+
+.lp-intro-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(246, 243, 236, 0.45);
+}
+
+/* Never mounted under reduced motion, but if it ever were, it must not move
+   and must not trap anyone behind it. */
+@media (prefers-reduced-motion: reduce) {
+  .lp-intro {
+    display: none;
   }
 }

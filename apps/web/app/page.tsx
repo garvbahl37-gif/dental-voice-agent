@@ -4,6 +4,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import './landing.css'
 import { useCountUp, useMotion } from './use-motion'
 import { LanguageRiver, SectionHead, Spoken, Waveform } from './motion-parts'
+import { Intro } from './intro'
 import { Nav } from './nav'
 import { Refusals } from './refusals'
 import { Channels } from './channels'
@@ -196,6 +197,7 @@ export default function Landing() {
 
   return (
     <div className="lp">
+      <Intro />
       <Nav />
 
       <header id="top" className="lp-wrap lp-hero">
@@ -329,7 +331,7 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="lp-band">
+      <section className="lp-band lp-tint">
         <div className="lp-wrap lp-urgent">
           <div>
             <p className="lp-eyebrow">Emergencies</p>
