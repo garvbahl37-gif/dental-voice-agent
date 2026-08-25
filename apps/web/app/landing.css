@@ -616,9 +616,11 @@
 
 .lp-limit-list {
   list-style: none;
-  margin: 42px 0 0;
+  /* The section head already closes with a rule; a second one 42px below it
+     read as a mistake rather than as structure. The list starts straight
+     under it and each row carries its own. */
+  margin: 0;
   padding: 0;
-  border-top: 1px solid rgba(246, 243, 236, 0.14);
 }
 
 .lp-limit {
@@ -1084,4 +1086,167 @@
   .lp-wave {
     display: none;
   }
+}
+
+/* ── A section's opening ──────────────────────────────────────────────────────
+
+   Heading left, lede right, both sitting on one rule. The headings are set to a
+   20ch measure because that is where a display face reads best — but a 20ch
+   heading alone in a 1180px container leaves half the row empty, and the eye
+   reads that emptiness as the section having nothing to say. The lede fills it
+   and the rule ties the two together.                                         */
+
+.lp-sechead {
+  display: grid;
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr);
+  gap: clamp(20px, 5vw, 76px);
+  /* Baselines, not tops: the heading is large and the lede is small, and
+     aligning their tops makes the lede look dropped. */
+  align-items: end;
+  padding-bottom: clamp(22px, 2.6vw, 32px);
+  border-bottom: 1px solid var(--lp-rule, var(--hairline));
+  margin-bottom: clamp(34px, 4vw, 52px);
+}
+
+.lp-sechead .lp-h2 {
+  margin-bottom: 0;
+}
+
+.lp-sechead .lp-lede {
+  /* It is a column now, not a paragraph under a heading. */
+  max-width: 46ch;
+  padding-bottom: 4px;
+}
+
+@media (max-width: 860px) {
+  .lp-sechead {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 16px;
+  }
+}
+
+/* ── Depth ────────────────────────────────────────────────────────────────────
+
+   The cards were flat rectangles with a shadow, which is the shape every card
+   on every SaaS page has. What distinguishes these is what is *in* them — a
+   real quoted line the desk would say — so the card is built to lead the eye to
+   that quote rather than to decorate around it.                               */
+
+.lp-card {
+  position: relative;
+  overflow: hidden;
+  /* A page-coloured wash at the top, so a white card on a cream page has an
+     edge without needing a heavier border. */
+  background: linear-gradient(180deg, var(--paper) 0%, var(--surface) 46%);
+}
+
+/* The rule that grows. It is the card's one moving part, and it moves only on
+   intent — a rule that animates on its own is a progress bar nobody asked for. */
+.lp-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: linear-gradient(180deg, var(--agent), var(--agent-line));
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-card:hover::before,
+.lp-card:focus-within::before {
+  transform: scaleY(1);
+}
+
+.lp-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--agent-line);
+}
+
+/* ── The refusals ─────────────────────────────────────────────────────────────
+
+   A row per hard stop. On the dark ground these were flat text in two columns;
+   the hover state is what makes it read as a list of enforced rules rather than
+   a table of copy.                                                            */
+
+.lp-limits {
+  /* The rule under the section head has to lift off the dark ground. */
+  --lp-rule: rgba(255, 255, 255, 0.16);
+}
+
+.lp-limit {
+  position: relative;
+  transition: background 220ms ease;
+}
+
+.lp-limit::after {
+  content: '';
+  position: absolute;
+  inset: 0 -18px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+  opacity: 0;
+  transition: opacity 220ms ease;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.lp-limit:hover::after {
+  opacity: 1;
+}
+
+/* The struck word carries the meaning, so it is what changes on hover. */
+.lp-limit s {
+  transition: color 220ms ease, text-decoration-color 220ms ease;
+}
+
+.lp-limit:hover s {
+  color: var(--agent-line);
+  text-decoration-color: var(--agent);
+}
+
+/* ── The emergency phrases ────────────────────────────────────────────────────
+
+   They arrive one after another. A triage list filling in reads as recognition
+   happening; the whole set appearing at once reads as a tag cloud.            */
+
+.lp-motion .lp-trigger[data-reveal] {
+  transform: translateY(8px) scale(0.97);
+}
+
+.lp-motion .lp-trigger[data-reveal].is-in {
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+
+/* ── The closing invitation ───────────────────────────────────────────────────
+
+   The page opened on a live line and closes on one: the same level meter, at
+   the foot, behind the one remaining call to action.                          */
+
+.lp-close {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+}
+
+.lp-close .lp-h2,
+.lp-close .lp-lede {
+  margin-inline: auto;
+}
+
+.lp-close .lp-eyebrow {
+  color: var(--agent);
+}
+
+.lp-close .lp-wave {
+  /* Wider and fainter than the hero's — it is a closing note, not the theme. */
+  height: 116px;
+  opacity: 0.2;
+  inset: auto 0 0 0;
+}
+
+.lp-close .lp-cta-row {
+  justify-content: center;
 }

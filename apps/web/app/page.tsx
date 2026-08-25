@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import './landing.css'
 import { useCountUp, useMotion } from './use-motion'
-import { LanguageRiver, Spoken, Waveform } from './motion-parts'
+import { LanguageRiver, SectionHead, Spoken, Waveform } from './motion-parts'
 
 /**
  * The landing page.
@@ -288,12 +288,10 @@ export default function Landing() {
 
       <section id="does" className="lp-band">
         <div className="lp-wrap">
-          <p className="lp-eyebrow">What it does</p>
-          <h2 className="lp-h2" data-reveal>Everything the desk does between patients</h2>
-          <p className="lp-lede">
+          <SectionHead eyebrow="What it does" title="Everything the desk does between patients">
             Not a menu tree and not a chatbot reading a script. It listens, works out what the
             caller wants from how they said it, and acts on your real data.
-          </p>
+          </SectionHead>
 
           <div className="lp-cards">
             <article className="lp-card" data-reveal style={{ '--i': 0 } as React.CSSProperties}>
@@ -341,13 +339,11 @@ export default function Landing() {
           the limits deserve the loudest surface on the page, not a footnote. */}
       <section id="limits" className="lp-band lp-limits">
         <div className="lp-wrap">
-          <p className="lp-eyebrow">What it won&rsquo;t do</p>
-          <h2 className="lp-h2" data-reveal>The refusals are the product</h2>
-          <p className="lp-lede">
+          <SectionHead eyebrow="What it won&rsquo;t do" title="The refusals are the product">
             A receptionist who improvises about your patients&rsquo; health is a liability, not a
             feature. These are hard stops, not tendencies — each one is enforced before anything
             reaches the caller&rsquo;s ear.
-          </p>
+          </SectionHead>
 
           <ul className="lp-limit-list">
             {[
@@ -398,7 +394,7 @@ export default function Landing() {
                 </>,
               ],
             ].map(([k, v], i) => (
-              <li key={i} className="lp-limit">
+              <li key={i} className="lp-limit" data-reveal style={{ '--i': i } as React.CSSProperties}>
                 <span className="lp-limit-k">{k}</span>
                 <span className="lp-limit-v">{v}</span>
               </li>
@@ -431,11 +427,13 @@ export default function Landing() {
                 ['bahut tez dard, so nahi paa raha', false],
                 ['jaw injury', false],
                 ['दाँत टूट गया है', true],
-              ].map(([t, deva]) => (
+              ].map(([t, deva], ti) => (
                 <li
                   key={t as string}
                   className={`lp-trigger${deva ? ' lp-deva' : ''}`}
                   lang={deva ? 'hi' : 'en'}
+                  data-reveal
+                  style={{ '--i': ti } as React.CSSProperties}
                 >
                   {t as string}
                 </li>
@@ -447,12 +445,13 @@ export default function Landing() {
 
       <section id="channels" className="lp-band">
         <div className="lp-wrap">
-          <p className="lp-eyebrow">Where it answers</p>
-          <h2 className="lp-h2" data-reveal>One desk, wherever the patient reaches you</h2>
-          <p className="lp-lede">
+          <SectionHead
+            eyebrow="Where it answers"
+            title="One desk, wherever the patient reaches you"
+          >
             The conversation, the diary and the practice&rsquo;s knowledge stay the same. Only the
             pipe changes.
-          </p>
+          </SectionHead>
 
           <div className="lp-channels">
             {[
@@ -489,14 +488,22 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* The last thing on the page is an invitation, so it gets the level
+          meter back — the page opened on a live line and closes on one. */}
       <section className="lp-close">
+        <Waveform />
         <div className="lp-wrap">
-          <h2 className="lp-h2" data-reveal>Call the desk yourself</h2>
-          <p className="lp-lede">
+          <p className="lp-eyebrow" data-reveal>
+            No sign-up
+          </p>
+          <h2 className="lp-h2" data-reveal style={{ '--i': 1 } as React.CSSProperties}>
+            Call the desk yourself
+          </h2>
+          <p className="lp-lede" data-reveal style={{ '--i': 2 } as React.CSSProperties}>
             Try to trip it up. Switch to Hindi mid-sentence, talk over it, change your mind about
             the branch, ask it what to take for the pain.
           </p>
-          <div className="lp-cta-row">
+          <div className="lp-cta-row" data-reveal style={{ '--i': 3 } as React.CSSProperties}>
             <a className="lp-btn lp-btn-primary" href="/console">
               Take a call →
             </a>

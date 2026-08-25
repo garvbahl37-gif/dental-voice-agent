@@ -117,3 +117,38 @@ export function Spoken({ words }: { words: Word[] }) {
     </>
   )
 }
+
+/**
+ * A section's opening.
+ *
+ * The heading and its lede sit side by side, on a shared baseline, over a
+ * rule. Stacked and narrow — which is what they were — a 20ch heading leaves
+ * half the page empty beside it, and the eye reads that emptiness as the
+ * section having nothing to say. Splitting them uses the measure the container
+ * already has and gives every section the same opening beat.
+ */
+export function SectionHead({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string
+  title: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="lp-sechead">
+      <div>
+        <p className="lp-eyebrow" data-reveal>
+          {eyebrow}
+        </p>
+        <h2 className="lp-h2" data-reveal style={{ '--i': 1 } as React.CSSProperties}>
+          {title}
+        </h2>
+      </div>
+      <p className="lp-lede" data-reveal style={{ '--i': 2 } as React.CSSProperties}>
+        {children}
+      </p>
+    </div>
+  )
+}
