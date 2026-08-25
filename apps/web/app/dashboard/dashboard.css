@@ -401,8 +401,11 @@
 .kb-input:focus,
 .kb-input:focus-visible {
   outline: none;
-  border-color: var(--caller);
-  box-shadow: 0 0 0 3px rgba(47, 75, 124, 0.16);
+  /* The interaction accent, not `--caller`. That token means "the person on
+     the phone" and was standing in as a focus colour, which is why every form
+     in a turmeric app rang blue. */
+  border-color: var(--agent);
+  box-shadow: 0 0 0 3px rgba(184, 115, 10, 0.16);
 }
 
 /* Chrome paints its own yellow fill on an autofilled field, which reads as an

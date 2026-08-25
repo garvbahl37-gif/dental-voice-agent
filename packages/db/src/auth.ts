@@ -116,6 +116,26 @@ const SESSION_DAYS = 14
  * the hash comparison either way. Short-circuiting on "no such user" turns the
  * login form into an oracle for which addresses have accounts at which clinic.
  */
+/**
+ * Whether this address already owns an account anywhere.
+ *
+ * Accounts are keyed per tenant, which is right for staff — a receptionist may
+ * one day work at two practices. It is wrong at sign-up, because `signIn` looks
+ * an address up by email alone and takes the first row: an owner who signed up
+ * twice would land in whichever practice the database happened to return, with
+ * no way to reach the other, and no screen anywhere to tell them a second one
+ * exists. Signing up is therefore refused for an address already in use, and
+ * the ambiguity never gets created.
+ */
+export async function emailInUse(db: Database, email: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email.trim().toLowerCase()))
+    .limit(1)
+  return Boolean(row)
+}
+
 export async function signIn(
   db: Database,
   input: { email: string; password: string; orgId?: string },

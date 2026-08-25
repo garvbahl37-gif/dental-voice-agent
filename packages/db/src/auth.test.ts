@@ -3,6 +3,7 @@ import { createTestDb, type TestDb } from './testing'
 import {
   atLeast,
   createUser,
+  emailInUse,
   hashPassword,
   hashToken,
   purgeExpiredSessions,
@@ -219,5 +220,54 @@ describe('sessions', () => {
     await purgeExpiredSessions(t.db)
     expect(await resolveSession(t.db, live)).not.toBeNull()
     expect(await t.db.select().from(sessions)).toHaveLength(1)
+  })
+})
+
+/**
+ * One address, one account.
+ *
+ * Accounts are keyed per tenant, which is right for staff. It is wrong for the
+ * address used to *create* a practice: `signIn` matches on email alone and
+ * takes the first row, so an owner who signed up twice would land in whichever
+ * practice the database returned first, with no screen anywhere telling them a
+ * second one exists.
+ */
+describe('emailInUse', () => {
+  it('is false for an address nobody has used', async () => {
+    expect(await emailInUse(t.db, 'nobody@example.test')).toBe(false)
+  })
+
+  it('is true once an account exists', async () => {
+    await createUser(t.db, {
+      orgId: smileId,
+      email: 'owner@smile.example',
+      name: 'Owner',
+      password: 'a-strong-password',
+      role: 'owner',
+    })
+    expect(await emailInUse(t.db, 'owner@smile.example')).toBe(true)
+  })
+
+  it('sees an address in any tenant, not just one', async () => {
+    // This is the whole point: the ambiguity is across organisations.
+    await createUser(t.db, {
+      orgId: pearlId,
+      email: 'shared@example.test',
+      name: 'Owner',
+      password: 'a-strong-password',
+      role: 'owner',
+    })
+    expect(await emailInUse(t.db, 'shared@example.test')).toBe(true)
+  })
+
+  it('ignores case and surrounding space, as sign-in does', async () => {
+    await createUser(t.db, {
+      orgId: smileId,
+      email: 'mixed@example.test',
+      name: 'Owner',
+      password: 'a-strong-password',
+      role: 'owner',
+    })
+    expect(await emailInUse(t.db, '  MIXED@Example.TEST ')).toBe(true)
   })
 })

@@ -332,17 +332,18 @@ export default function Landing() {
       </section>
 
       <section className="lp-band lp-tint">
-        <div className="lp-wrap lp-urgent">
-          <div>
-            <p className="lp-eyebrow">Emergencies</p>
-            <h2 className="lp-h2" data-reveal>It stops selling appointments and starts helping</h2>
-            <p className="lp-lede">
-              When a caller describes something that cannot wait for Tuesday, booking stops. It
-              gives the branch&rsquo;s emergency line, tells them what to do in the meantime in
-              their own language, and flags the call for a human before the line even drops.
-            </p>
-          </div>
+        <div className="lp-wrap">
+          <SectionHead
+            eyebrow="Emergencies"
+            title="It stops selling appointments and starts helping"
+          >
+            When a caller describes something that cannot wait for Tuesday, booking stops. It
+            gives the branch&rsquo;s emergency line, tells them what to do in the meantime in
+            their own language, and flags the call for a human before the line even drops.
+          </SectionHead>
 
+          {/* Full width, and drivable. It is the highest-stakes thing the desk
+              does, so it gets the room to be shown rather than described. */}
           <Triage />
         </div>
       </section>

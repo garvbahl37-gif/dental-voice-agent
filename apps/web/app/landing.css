@@ -1554,178 +1554,6 @@
   }
 }
 
-/* ══ Triage ═══════════════════════════════════════════════════════════════════
-
-   The trigger words were chips in a box, which showed the vocabulary and none
-   of the behaviour. This is the behaviour: the phrase lands, and the five
-   things that follow it light in the order they actually fire.               */
-
-.lp-triage {
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.lp-triage-line {
-  padding: clamp(18px, 2.4vw, 26px);
-  /* The alert ground, kept to the incoming phrase only — an emergency is the
-     caller's, not the whole panel's. */
-  background: linear-gradient(180deg, rgba(192, 80, 58, 0.07), rgba(192, 80, 58, 0.02));
-  border-bottom: 1px solid var(--hairline);
-}
-
-.lp-triage-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--alert, #c0503a);
-}
-
-.lp-triage-ring {
-  position: relative;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--alert, #c0503a);
-}
-
-.lp-motion .lp-triage-ring::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: var(--alert, #c0503a);
-  animation: lp-ring 1.9s ease-out infinite;
-}
-
-@keyframes lp-ring {
-  0% {
-    transform: scale(1);
-    opacity: 0.55;
-  }
-  100% {
-    transform: scale(3.2);
-    opacity: 0;
-  }
-}
-
-.lp-triage-said {
-  margin: 12px 0 0;
-  font-family: var(--font-display);
-  font-size: clamp(18px, 2.3vw, 25px);
-  line-height: 1.4;
-  color: var(--ink);
-  animation: lp-said-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes lp-said-in {
-  from {
-    opacity: 0;
-    transform: translateY(9px);
-  }
-}
-
-/* ── The five steps ───────────────────────────────────────────────────────── */
-
-.lp-triage-steps {
-  list-style: none;
-  margin: 0;
-  padding: clamp(14px, 2vw, 20px) clamp(18px, 2.4vw, 26px) clamp(18px, 2.4vw, 26px);
-  counter-reset: step;
-}
-
-.lp-triage-step {
-  position: relative;
-  display: grid;
-  grid-template-columns: 20px minmax(0, auto) minmax(0, 1fr);
-  align-items: baseline;
-  gap: 12px;
-  padding: 11px 0;
-  opacity: 0.34;
-  transition: opacity 420ms ease;
-}
-
-/* The thread between the marks. It is what makes five rows read as one
-   sequence rather than as a list of five separate facts. */
-.lp-triage-step:not(:last-child)::before {
-  content: '';
-  position: absolute;
-  left: 9px;
-  top: 26px;
-  bottom: -2px;
-  width: 1px;
-  background: var(--hairline);
-}
-
-.lp-triage-step.is-done {
-  opacity: 1;
-}
-
-.lp-triage-mark {
-  width: 11px;
-  height: 11px;
-  margin-left: 4px;
-  border-radius: 50%;
-  border: 1.5px solid var(--hairline-strong);
-  background: var(--surface);
-  transition: background 380ms ease, border-color 380ms ease, box-shadow 380ms ease;
-}
-
-.lp-triage-step.is-done .lp-triage-mark {
-  background: var(--agent);
-  border-color: var(--agent);
-}
-
-/* The step that just fired gets a halo, so the eye can follow the sequence
-   without reading every label. */
-.lp-triage-step.is-now .lp-triage-mark {
-  box-shadow: 0 0 0 5px rgba(184, 115, 10, 0.16);
-}
-
-/* The last step is the one that matters most — a person is involved. */
-.lp-triage-step:last-child.is-done .lp-triage-mark {
-  background: var(--alert, #c0503a);
-  border-color: var(--alert, #c0503a);
-}
-
-.lp-triage-k {
-  font-weight: 600;
-  font-size: 14px;
-  color: var(--ink);
-  white-space: nowrap;
-}
-
-.lp-triage-v {
-  font-size: 13.5px;
-  line-height: 1.55;
-  color: var(--ink-muted);
-}
-
-@media (max-width: 620px) {
-  .lp-triage-step {
-    grid-template-columns: 20px minmax(0, 1fr);
-  }
-  .lp-triage-v {
-    grid-column: 2;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .lp-triage-said,
-  .lp-triage-ring::after {
-    animation: none;
-  }
-  .lp-triage-step {
-    opacity: 1;
-  }
-}
-
 /* ══ One desk, three pipes ════════════════════════════════════════════════════
 
    The fan-out is the claim in the heading, drawn. The live line carries
@@ -2040,5 +1868,323 @@
 @media (prefers-reduced-motion: reduce) {
   .lp-intro {
     display: none;
+  }
+}
+
+/* ══ The emergency showcase ═══════════════════════════════════════════════════
+
+   The page's only device mockup, and its only section a visitor can drive.
+   That is deliberate: this is the moment the desk stops being a booking tool,
+   and a claim that important should be demonstrable rather than described.
+
+   Three parts, in reading order: what the caller said, the handset it is
+   happening in, and the path that runs while it does.                        */
+
+.lp-tri {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.92fr);
+  grid-template-areas:
+    'pick pick'
+    'phone steps';
+  gap: clamp(18px, 3vw, 38px);
+  align-items: start;
+}
+
+/* ── Picking a case ───────────────────────────────────────────────────────── */
+
+.lp-tri-pick {
+  grid-area: pick;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.lp-tri-pick-k {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-right: 4px;
+}
+
+.lp-tri-chip {
+  min-height: 34px;
+  padding: 7px 14px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.lp-tri-chip:hover {
+  border-color: var(--alert);
+  color: var(--ink);
+}
+
+.lp-tri-chip.is-on {
+  background: var(--alert);
+  border-color: var(--alert);
+  color: #fff;
+}
+
+/* ── The handset ──────────────────────────────────────────────────────────── */
+
+.lp-tri-phone {
+  grid-area: phone;
+  border-radius: 26px;
+  padding: 9px;
+  background: linear-gradient(160deg, #2a2723, var(--ink));
+  box-shadow:
+    0 24px 50px -22px rgba(26, 24, 21, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.lp-tri-screen {
+  border-radius: 18px;
+  background: var(--surface);
+  padding: 14px;
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.lp-tri-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.lp-tri-band {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--r-pill);
+}
+
+.lp-band-red {
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+
+.lp-band-amber {
+  background: var(--agent-soft);
+  color: var(--agent);
+}
+
+.lp-tri-ring {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.lp-motion .lp-tri-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: lp-tri-ring 1.9s ease-out infinite;
+}
+
+@keyframes lp-tri-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+
+.lp-tri-clock {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.lp-tri-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: lp-tri-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes lp-tri-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.lp-tri-said {
+  margin: 0;
+  align-self: flex-start;
+  max-width: 92%;
+  padding: 11px 14px;
+  border-radius: 4px 14px 14px 14px;
+  background: var(--bg-tint);
+  border: 1px solid var(--hairline);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+/* Held back until the path has run. The wait is the product deciding, and
+   showing the answer before the decision would undo the whole point. */
+.lp-tri-reply {
+  align-self: flex-end;
+  max-width: 94%;
+  padding: 11px 14px;
+  border-radius: 14px 4px 14px 14px;
+  background: var(--agent-soft);
+  border: 1px solid var(--agent-line);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 420ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lp-tri-reply.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.lp-tri-who {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--agent);
+}
+
+.lp-tri-reply p {
+  margin: 5px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* ── The path ─────────────────────────────────────────────────────────────── */
+
+.lp-tri-steps {
+  grid-area: steps;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lp-tri-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 11px;
+  padding: 13px 0;
+  opacity: 0.32;
+  transition: opacity 380ms ease;
+}
+
+/* The thread between the marks — five rows read as one sequence, not five
+   separate facts. */
+.lp-tri-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 9px;
+  top: 28px;
+  bottom: -4px;
+  width: 1px;
+  background: var(--hairline);
+}
+
+.lp-tri-step.is-done {
+  opacity: 1;
+}
+
+.lp-tri-mark {
+  width: 11px;
+  height: 11px;
+  margin-left: 4px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hairline-strong);
+  background: var(--surface);
+  transition: background 340ms ease, border-color 340ms ease, box-shadow 340ms ease;
+}
+
+.lp-tri-step.is-done .lp-tri-mark {
+  background: var(--agent);
+  border-color: var(--agent);
+}
+
+.lp-tri-step.is-now .lp-tri-mark {
+  box-shadow: 0 0 0 5px rgba(184, 115, 10, 0.16);
+}
+
+/* The last step is the one that matters most: a person is now involved. */
+.lp-tri-step:last-child.is-done .lp-tri-mark {
+  background: var(--alert);
+  border-color: var(--alert);
+}
+
+.lp-tri-k {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.lp-tri-v {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 900px) {
+  .lp-tri {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'pick'
+      'phone'
+      'steps';
+  }
+}
+
+@media (max-width: 620px) {
+  .lp-tri-step {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+  .lp-tri-v {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-tri-thread,
+  .lp-tri-ring::after {
+    animation: none;
+  }
+  .lp-tri-step {
+    opacity: 1;
+  }
+  .lp-tri-reply {
+    opacity: 1;
+    transform: none;
   }
 }

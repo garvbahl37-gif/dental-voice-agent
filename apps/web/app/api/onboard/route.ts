@@ -1,4 +1,12 @@
-import { connect, createUser, seedOrganization, signIn, slugAvailable, type SeedOrg } from '@vaani/db'
+import {
+  connect,
+  createUser,
+  emailInUse,
+  seedOrganization,
+  signIn,
+  slugAvailable,
+  type SeedOrg,
+} from '@vaani/db'
 import { crawlSite, geminiEmbedder } from '@vaani/knowledge'
 import { cookies } from 'next/headers'
 import { SESSION_COOKIE } from '@/lib/session'
@@ -85,6 +93,22 @@ export async function POST(req: Request): Promise<Response> {
 
   if (!(await slugAvailable(db, slug))) {
     return Response.json({ error: SLUG_TAKEN }, { status: 409 })
+  }
+
+  /**
+   * Checked before anything is written.
+   *
+   * `signIn` looks an address up by email alone and takes the first match, so
+   * one address owning two practices means landing in an arbitrary one with no
+   * way to reach the other. Refusing here is also what stops a duplicate from
+   * creating the organisation and *then* failing on the user, which would leave
+   * a tenant nobody can sign in to.
+   */
+  if (await emailInUse(db, email)) {
+    return Response.json(
+      { error: 'That email already has an account. Sign in instead.' },
+      { status: 409 },
+    )
   }
 
   let orgId: string

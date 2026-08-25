@@ -1,0 +1,174 @@
+/*
+ * Signing in and signing up.
+ *
+ * One card, two modes, and a segmented control that moves between them rather
+ * than swapping two static states — the movement is what tells someone the two
+ * forms are the same object seen differently, not two different pages.
+ */
+
+.au-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: clamp(20px, 5vw, 48px);
+  background:
+    radial-gradient(120% 90% at 50% -10%, var(--agent-soft) 0%, transparent 58%),
+    var(--bg);
+}
+
+.au-card {
+  width: min(440px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  padding: clamp(26px, 5vw, 38px);
+  box-shadow: var(--shadow-lg);
+  /* Fields are 100% wide with padding; without this they overflow the card. */
+  box-sizing: border-box;
+}
+
+.au-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  margin-bottom: 22px;
+}
+
+.au-mark-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--agent);
+}
+
+/* ── The switch ───────────────────────────────────────────────────────────── */
+
+.au-switch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  background: var(--bg-tint);
+  margin-bottom: 24px;
+}
+
+.au-switch-pill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.au-switch-pill.is-right {
+  transform: translateX(100%);
+}
+
+.au-switch-tab {
+  position: relative;
+  z-index: 1;
+  min-height: 38px;
+  border: 0;
+  background: transparent;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.au-switch-tab.is-on {
+  color: var(--ink);
+}
+
+/* ── The form ─────────────────────────────────────────────────────────────── */
+
+.au-title {
+  font-family: var(--font-display);
+  font-size: clamp(25px, 4vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 0 0 7px;
+}
+
+.au-sub {
+  margin: 0 0 6px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.au-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  margin: 16px 0 6px;
+}
+
+.au-hint {
+  margin: 7px 0 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.au-error {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--alert);
+  background: var(--alert-soft);
+  border: 1px solid rgba(179, 53, 42, 0.24);
+  border-radius: var(--r-md);
+  padding: 10px 13px;
+}
+
+.au-go {
+  width: 100%;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.au-foot {
+  margin: 18px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.au-foot a,
+.au-link {
+  color: var(--agent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* A button, because it changes what is on screen rather than navigating —
+   but it reads as the link it sits inside a sentence as. */
+.au-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .au-switch-pill {
+    transition: none;
+  }
+}
