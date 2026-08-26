@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { CallView } from './call-view'
+import { DashboardSkeleton } from './skeleton'
 import '../landing.css'
 import './dashboard.css'
 
@@ -154,7 +155,7 @@ export default function Dashboard() {
   if (!data) {
     return (
       <div className="lp db-shell">
-        <p className="db-empty">Loading…</p>
+        <DashboardSkeleton />
       </div>
     )
   }

@@ -946,3 +946,97 @@
     animation: none;
   }
 }
+
+/* ══ Waiting ══════════════════════════════════════════════════════════════════
+
+   A block reading "Loading…" is the wrong shape, says nothing, and is replaced
+   by something a different size — so the page jumps at the moment the reader
+   first looks at it. These hold the shape of what is coming.
+
+   The sheen moves once across each block rather than pulsing: a pulse reads as
+   an alarm, a sweep reads as something being filled in.                       */
+
+.sk {
+  display: block;
+  background: var(--bg-tint);
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.62) 46%,
+    transparent 92%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  animation: sk-sweep 1.35s ease-in-out infinite;
+}
+
+@keyframes sk-sweep {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+.sk-tile {
+  padding: 16px 18px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.sk-rows {
+  margin-top: 18px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.sk-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 0.7fr 0.8fr;
+  gap: 16px;
+  align-items: center;
+  padding: 15px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sk-row:last-child,
+.sk-list-row:last-child {
+  border-bottom: 0;
+}
+
+.sk-list-row {
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sk-fact {
+  padding: 9px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.sk-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.sk-turn.is-right {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Still, and still the right shape. A sweep for someone who asked for no
+   motion is the one thing worse than a spinner. */
+@media (prefers-reduced-motion: reduce) {
+  .sk {
+    animation: none;
+    background-image: none;
+  }
+}

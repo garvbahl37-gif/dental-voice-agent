@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { CallSkeleton } from './skeleton'
 
 /**
  * One call, opened.
@@ -120,7 +121,7 @@ export function CallView({ id, onClose }: { id: string; onClose: () => void }) {
             {error}
           </p>
         )}
-        {!data && !error && <p className="db-empty">Opening…</p>}
+        {!data && !error && <CallSkeleton />}
 
         {c && (
           <>

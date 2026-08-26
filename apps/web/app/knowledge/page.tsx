@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ListSkeleton } from '../dashboard/skeleton'
 import '../landing.css'
 import '../dashboard/dashboard.css'
 
@@ -168,7 +169,7 @@ export default function Knowledge() {
           {docs && docs.length > 0 && <span className="db-count kb-count">{docs.length}</span>}
         </h2>
         {!docs ? (
-          <p className="db-empty">Loading…</p>
+          <ListSkeleton />
         ) : docs.length === 0 ? (
           <p className="db-empty">
             Nothing imported yet. Until you add something, the agent answers from the practice
