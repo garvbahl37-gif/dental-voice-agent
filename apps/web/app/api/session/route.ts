@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { experimental_upgradeWebSocket } from '@vercel/functions'
 import { CallLog, PracticeStore } from '@vaani/agent'
 import { LIVE_VOICE } from '@vaani/live'
-import { runVoiceSession } from '@vaani/session-host'
+import { readCookie, recorderForToken, runVoiceSession, SESSION_COOKIE } from '@vaani/session-host'
 import { LangSchema, voiceGender } from '@vaani/shared'
 import { VercelWsTransport, type VercelSocket } from '@/lib/vercel-transport'
 
@@ -55,11 +55,24 @@ export function GET(req: Request): Promise<Response> {
   const requested = new URL(req.url).searchParams.get('lang')
   const parsed = LangSchema.safeParse(requested)
 
+  /**
+   * Whose practice this call belongs to.
+   *
+   * Read from the session cookie on the upgrade, because a WebSocket carries
+   * no cookies of its own afterwards. A signed-in owner taking a call from the
+   * console is taking one of their practice's calls, and it should be in their
+   * dashboard alongside the ones the phone line took. An anonymous visitor has
+   * no practice to file against and nothing is written — the demo still works,
+   * it just leaves no trace, which is correct for a stranger.
+   */
+  const token = readCookie(req.headers.get('cookie'), SESSION_COOKIE)
+
   return experimental_upgradeWebSocket((ws) => {
     const socket = ws as unknown as VercelSocket
     const transport = new VercelWsTransport(socket)
 
     void runVoiceSession({
+      record: token ? recorderForToken(token) : undefined,
       // Random, not sequential: the id is also the call record's key.
       sessionId: randomUUID(),
       transport,

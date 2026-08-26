@@ -641,3 +641,308 @@
   font-size: 12.5px;
   word-break: break-all;
 }
+
+/* ══ One call, opened ═════════════════════════════════════════════════════════
+
+   The list could show that eleven calls were booked and not a word of any of
+   them, which made every number on the page something to take on faith. This
+   is where a number becomes checkable: what was said, and what the agent did
+   underneath it.                                                             */
+
+.db-row-open {
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+
+.db-row-open:hover,
+.db-row-open:focus-visible {
+  background: var(--bg-tint);
+  outline: none;
+}
+
+.db-row-open:focus-visible td:first-child {
+  box-shadow: inset 2px 0 0 var(--agent);
+}
+
+.cv-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(26, 24, 21, 0.34);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: flex-end;
+  animation: cv-fade 180ms ease both;
+}
+
+@keyframes cv-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A side panel, not a centred modal: the list stays visible beside it, so
+   moving between calls does not feel like leaving the page. */
+.cv {
+  width: min(660px, 100%);
+  height: 100%;
+  overflow-y: auto;
+  background: var(--bg);
+  border-left: 1px solid var(--hairline);
+  padding: clamp(20px, 3vw, 32px);
+  box-shadow: -24px 0 60px -30px rgba(26, 24, 21, 0.4);
+  animation: cv-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cv-in {
+  from {
+    transform: translateX(26px);
+    opacity: 0;
+  }
+}
+
+.cv-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.cv-eyebrow {
+  margin: 0 0 4px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.cv-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2.6vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cv-lang {
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--agent);
+}
+
+.cv-close {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease;
+}
+
+.cv-close:hover {
+  border-color: var(--hairline-strong);
+  color: var(--ink);
+}
+
+.cv-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+
+.cv-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.cv-fact-k {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.cv-fact-v {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cv-tone-booked {
+  color: var(--good, #2f6b4f);
+}
+
+.cv-tone-escalated,
+.cv-tone-alert {
+  color: var(--alert);
+}
+
+.cv-section {
+  margin-bottom: 28px;
+}
+
+.cv-h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 14px;
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* ── The conversation ─────────────────────────────────────────────────────── */
+
+.cv-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cv-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 88%;
+}
+
+.cv-turn.is-caller {
+  align-self: flex-start;
+}
+
+.cv-turn.is-desk {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.cv-who {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.cv-turn p {
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 4px 14px 14px 14px;
+  background: var(--surface);
+  font-size: 14.5px;
+  line-height: 1.55;
+  /* Indian scripts stack marks above and below the line and need the room. */
+}
+
+.cv-turn.is-desk p {
+  border-radius: 14px 4px 14px 14px;
+  background: var(--agent-soft);
+  border-color: var(--agent-line);
+  text-align: right;
+}
+
+/* ── The trace ────────────────────────────────────────────────────────────── */
+
+.cv-trace {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12.5px;
+}
+
+.cv-trace li {
+  display: grid;
+  grid-template-columns: 52px 130px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.cv-trace li.is-bad .cv-kind {
+  color: var(--alert);
+}
+
+.cv-at {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.cv-kind {
+  font-weight: 600;
+}
+
+.cv-detail {
+  color: var(--ink-muted);
+  overflow-wrap: anywhere;
+}
+
+.cv-detail em {
+  font-style: normal;
+  color: var(--ink-faint);
+}
+
+/* ── Closing something off ────────────────────────────────────────────────── */
+
+.db-resolve {
+  margin-top: 12px;
+  min-height: 34px;
+  padding: 7px 15px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.db-resolve:hover:not(:disabled) {
+  border-color: var(--agent);
+  color: var(--agent);
+  background: var(--agent-soft);
+}
+
+.db-resolve:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 620px) {
+  .cv-trace li {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .cv-detail {
+    grid-column: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cv-scrim,
+  .cv {
+    animation: none;
+  }
+}

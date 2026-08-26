@@ -17,6 +17,9 @@ import { LangSchema, voiceGender } from '@vaani/shared'
 const AGENT_GENDER = voiceGender(LIVE_VOICE, process.env.GEMINI_LIVE_VOICE_GENDER)
 import { WsTransport } from './ws-transport'
 import {
+  readCookie,
+  recorderForToken,
+  SESSION_COOKIE,
   handleStatus,
   handleTransferResult,
   handleTwilioStream,
@@ -282,6 +285,13 @@ wss.on('connection', async (socket, req: IncomingMessage) => {
     voice: LIVE_VOICE,
     gender: AGENT_GENDER,
     close: () => socket.close(),
+    // The same rule as the deployed route: a signed-in owner's console call is
+    // one of their practice's calls. Cookies ignore the port, so the console on
+    // :3000 sends its session here on :8787.
+    record: (() => {
+      const token = readCookie(req.headers.cookie, SESSION_COOKIE)
+      return token ? recorderForToken(token) : undefined
+    })(),
   })
 })
 

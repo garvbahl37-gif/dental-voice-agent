@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CallView } from './call-view'
 import '../landing.css'
 import './dashboard.css'
 
@@ -84,11 +85,45 @@ const pct = (n: number) => `${Math.round(n * 100)}%`
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
 
 export default function Dashboard() {
+  const [openCall, setOpenCall] = useState<string | null>(null)
+  const [resolving, setResolving] = useState<string | null>(null)
   const router = useRouter()
   const [data, setData] = useState<Payload | null>(null)
   const [days, setDays] = useState(7)
   const [showAll, setShowAll] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  /**
+   * Mark one handled, then reload.
+   *
+   * Reloaded rather than removed locally, because resolving one changes the
+   * headline counts too — a queue that empties while the number above it stays
+   * put reads as broken.
+   */
+  const resolve = useCallback(
+    async (id: string) => {
+      setResolving(id)
+      try {
+        const res = await fetch('/api/dashboard/escalation', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id }),
+        })
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string }
+          setError(body.error ?? 'Could not mark that handled.')
+          return
+        }
+        await load(days)
+      } catch {
+        setError('Could not reach the server.')
+      } finally {
+        setResolving(null)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [days],
+  )
 
   const load = useCallback(async (window: number) => {
     const res = await fetch(`/api/dashboard?days=${window}`)
@@ -210,6 +245,15 @@ export default function Dashboard() {
                 )}
                 {/* The line a receptionist reads before they pick up the phone. */}
                 <p className="db-brief-action">{e.brief.recommendedAction}</p>
+                {/* The queue was read-only, so it only ever grew. Closing one
+                    off is the difference between a list and a worklist. */}
+                <button
+                  className="db-resolve"
+                  disabled={resolving === e.id}
+                  onClick={() => void resolve(e.id)}
+                >
+                  {resolving === e.id ? 'Marking…' : 'Mark handled'}
+                </button>
               </li>
             ))}
             {queue.length > visible.length && (
@@ -310,7 +354,22 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {data.recent.map((c) => (
-                  <tr key={c.id}>
+                  /* The whole row opens it. A call you can see listed but not
+                     read makes every number above unauditable. */
+                  <tr
+                    key={c.id}
+                    className="db-row-open"
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Open the call from ${c.fromNumber ?? 'the console'}`}
+                    onClick={() => setOpenCall(c.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setOpenCall(c.id)
+                      }
+                    }}
+                  >
                     <td>{new Date(c.startedAt).toLocaleString('en-IN')}</td>
                     <td className="mono">{c.fromNumber ?? '—'}</td>
                     <td>{c.channel === 'twilio' ? 'phone' : c.channel}</td>
@@ -329,6 +388,8 @@ export default function Dashboard() {
           </div>
         )}
       </section>
+
+      {openCall && <CallView id={openCall} onClose={() => setOpenCall(null)} />}
     </div>
   )
 }

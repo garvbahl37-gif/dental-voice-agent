@@ -38,6 +38,35 @@ export interface VoiceSessionOptions {
   gender: VoiceGender
   /** Hang up on the caller's side. */
   close: () => void
+  /**
+   * Where the call gets written down, when there is somewhere to write it.
+   *
+   * A call taken from the console by a signed-in owner is one of their
+   * practice's calls and belongs in their dashboard — without this the console
+   * was a demo that left no trace, and the dashboard showed nothing until a
+   * phone number was wired up. Absent for an anonymous visitor, who has no
+   * practice to file anything against.
+   */
+  record?: CallRecorder
+}
+
+export interface CallRecorder {
+  /** Called once the line opens. Returns the id the call is filed under. */
+  begin(): Promise<string | null>
+  /** Called when it ends, with everything worth keeping. */
+  end(input: {
+    transcript: { speaker: 'caller' | 'priya'; text: string; at: number }[]
+    outcome: string
+    language: Lang
+    durationSec: number
+    triageBand?: string
+    toolsUsed: string[]
+    /** How long the caller waited for the first reply, and on average. */
+    firstResponseMs?: number
+    avgResponseMs?: number
+    /** How often they cut in. A high count means it is talking too long. */
+    bargeInCount: number
+  }): Promise<void>
 }
 
 export async function runVoiceSession(opts: VoiceSessionOptions): Promise<void> {
@@ -52,6 +81,16 @@ export async function runVoiceSession(opts: VoiceSessionOptions): Promise<void> 
   const toolsUsed: string[] = []
   const transcript: { speaker: 'caller' | 'priya'; text: string; at: number }[] = []
   let triage: { band: string; reason: string } | undefined
+  /**
+   * What the dashboard's quality tiles are made of.
+   *
+   * Gathered here because the session is the only place that sees them: the
+   * timings arrive as `metrics.turn` and the interruptions as `tts.cancel`, and
+   * without collecting them a console call showed a median first reply of zero,
+   * which reads as broken rather than as unmeasured.
+   */
+  const replyMs: number[] = []
+  let bargeIns = 0
 
   if (!apiKey) {
     transport.send({
@@ -107,6 +146,8 @@ export async function runVoiceSession(opts: VoiceSessionOptions): Promise<void> 
       transcript.push({ speaker: 'caller', text: event.text.trim(), at: Date.now() })
     }
     if (event.type === 'tool.call') toolsUsed.push(event.name)
+    if (event.type === 'metrics.turn' && event.e2eMs > 0) replyMs.push(event.e2eMs)
+    if (event.type === 'tts.cancel') bargeIns += 1
     if (event.type === 'ui.event') {
       const p = event.payload as Record<string, string>
       if (event.event === 'triage.escalated') triage = { band: p.band!, reason: p.reason! }
@@ -188,6 +229,7 @@ export async function runVoiceSession(opts: VoiceSessionOptions): Promise<void> 
   const finishCall = (): void => {
     if (finished) return
     finished = true
+    void writeDown()
     const rec = buildCallRecord({
       sessionId,
       startedAt,
@@ -205,10 +247,48 @@ export async function runVoiceSession(opts: VoiceSessionOptions): Promise<void> 
     )
   }
 
+  /**
+   * Filing the call, after it is over.
+   *
+   * Deliberately not awaited by anything the caller is waiting on: a slow or
+   * broken database must never hold a line open or delay a hang-up, and a call
+   * that happened is more important than the record of it.
+   */
+  const writeDown = async (): Promise<void> => {
+    if (!opts.record || !callId) return
+    try {
+      await opts.record.end({
+        transcript,
+        outcome: convo.bookedAppointments.length ? 'booked' : triage ? 'escalated' : 'answered',
+        language: lang,
+        durationSec: Math.round((Date.now() - startedAt) / 1000),
+        triageBand: triage?.band,
+        toolsUsed,
+        firstResponseMs: replyMs[0],
+        avgResponseMs: replyMs.length
+          ? Math.round(replyMs.reduce((a, b) => a + b, 0) / replyMs.length)
+          : undefined,
+        bargeInCount: bargeIns,
+      })
+    } catch (err) {
+      console.error(`[${sessionId}] could not file the call:`, err)
+    }
+  }
+
   transport.onClose(() => {
     finishCall()
     void session.close()
   })
+
+  let callId: string | null = null
+  if (opts.record) {
+    try {
+      callId = await opts.record.begin()
+    } catch (err) {
+      // A call that cannot be filed is still a call worth taking.
+      console.error(`[${sessionId}] could not open a call record:`, err)
+    }
+  }
 
   console.log(`[${sessionId}] connected — gemini-live, voice ${voice}`)
   try {
@@ -230,3 +310,4 @@ export { handleTwilioStream } from './twilio-stream'
 export { startOutboundWorker, outboundPass, twilioPlaceCall } from './outbound'
 export { runNodeWebhook } from './node-webhook'
 export { streamUrl, streamUrlFromEnv } from './stream-url'
+export { recorderForToken, readCookie, SESSION_COOKIE } from './recorder'
