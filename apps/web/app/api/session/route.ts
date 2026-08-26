@@ -1,8 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { experimental_upgradeWebSocket } from '@vercel/functions'
+import { experimental_upgradeWebSocket, waitUntil } from '@vercel/functions'
 import { CallLog, PracticeStore } from '@vaani/agent'
 import { LIVE_VOICE } from '@vaani/live'
-import { readCookie, recorderForToken, runVoiceSession, SESSION_COOKIE } from '@vaani/session-host'
+import {
+  readCookie,
+  recorderForToken,
+  runVoiceSession,
+  SESSION_COOKIE,
+  type CallRecorder,
+} from '@vaani/session-host'
 import { LangSchema, voiceGender } from '@vaani/shared'
 import { VercelWsTransport, type VercelSocket } from '@/lib/vercel-transport'
 
@@ -72,7 +78,7 @@ export function GET(req: Request): Promise<Response> {
     const transport = new VercelWsTransport(socket)
 
     void runVoiceSession({
-      record: token ? recorderForToken(token) : undefined,
+      record: token ? keptAlive(recorderForToken(token)) : undefined,
       // Random, not sequential: the id is also the call record's key.
       sessionId: randomUUID(),
       transport,
@@ -85,4 +91,24 @@ export function GET(req: Request): Promise<Response> {
       close: () => transport.close(),
     })
   })
+}
+
+/**
+ * Holds the function open until the call has been written down.
+ *
+ * The write is fire-and-forget by design — a slow database must never keep a
+ * caller on the line — but on a serverless host "later" can be after the
+ * function has been torn down. It was: the call row appeared, and the
+ * transcript and timings, written when the socket closed, never did. `waitUntil`
+ * is how the platform is told the work outlives the response.
+ */
+function keptAlive(inner: CallRecorder): CallRecorder {
+  return {
+    begin: () => inner.begin(),
+    end: (input) => {
+      const done = inner.end(input)
+      waitUntil(done)
+      return done
+    },
+  }
 }
