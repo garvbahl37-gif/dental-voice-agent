@@ -211,3 +211,54 @@ describe('narration must never be spoken (PRD §6)', () => {
   ]
   it.each(real)('keeps "%s"', (t) => expect(speakable(t)).toBe(t))
 })
+
+/**
+ * The way people actually say it.
+ *
+ * Every case here is a real phrasing that produced no band at all before —
+ * the rules wanted a qualifier ("won't stop") that nobody volunteers, or a
+ * spelling of दाँत that half of India does not use. A caller who says they are
+ * bleeding and is handled as routine is the worst failure this system has.
+ */
+describe('triage — how emergencies are actually phrased', () => {
+  it('hears plain bleeding in Hindi', () => {
+    // The exact sentence that was missed.
+    expect(triage('मेरा खून आ रहा है').band).toBe('red')
+    expect(triage('खून बह रहा है बहुत').band).toBe('red')
+    expect(triage('मुंह से खून निकल रहा है').band).toBe('red')
+  })
+
+  it('hears plain bleeding in Hinglish and English', () => {
+    expect(triage('khoon aa raha hai').band).toBe('red')
+    expect(triage('I am bleeding').band).toBe('red')
+    expect(triage('there is blood coming from the socket').band).toBe('red')
+  })
+
+  it('still hears bleeding that will not stop', () => {
+    expect(triage('the bleeding won’t stop').band).toBe('red')
+    expect(triage('खून बंद नहीं हो रहा').band).toBe('red')
+  })
+
+  it('alerts the practice for active bleeding', () => {
+    const r = triage('मेरा खून आ रहा है')
+    expect(r.alertPractice).toBe(true)
+    expect(r.bookWithinDays).toBe(0)
+  })
+
+  it('does not escalate gums that bleed when brushed', () => {
+    // Gingivitis is weeks old and is not why anyone rings out of hours.
+    expect(triage('my gums bleed when I brush').band).toBe('amber')
+    expect(triage('मसूड़ों से खून आता है ब्रश करते समय').band).toBe('amber')
+  })
+
+  it('still escalates bleeding gums with a red sign present', () => {
+    // Airway is read before either bleeding rule, so the worst sign wins.
+    expect(triage('gums bleeding and my face is swollen near the eye').band).toBe('red')
+  })
+
+  it('reads both spellings of दाँत', () => {
+    expect(triage('दाँत पूरा निकल गया है').band).toBe('red')
+    expect(triage('दांत पूरा निकल गया है').band).toBe('red')
+    expect(triage('दाँत टूट गया है').band).toBe('amber')
+  })
+})

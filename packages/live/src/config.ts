@@ -119,13 +119,27 @@ export function buildLiveConfig(opts: LiveConfigOptions): LiveConnectConfig {
 
     realtimeInputConfig: {
       automaticActivityDetection: {
-        // How long a pause runs before the caller's turn is treated as over.
-        // Long enough to survive a breath or a moment's thought about a date,
-        // short enough that the reply feels immediate. A phone line adds codec
-        // and network gaps on top of the human ones.
-        silenceDurationMs: channel === 'phone' ? 800 : 650,
-        // How much sustained sound opens a turn. Low, so the first syllable is
-        // heard rather than spent proving someone is talking.
+        /**
+         * How long a pause runs before the caller's turn is treated as over.
+         *
+         * This is paid on every single turn, and it was the largest thing
+         * standing between the caller finishing and hearing anything back —
+         * measured at roughly a third of a two-second gap. A receptionist does
+         * not wait two-thirds of a second to be sure you have stopped.
+         *
+         * Still long enough to survive a breath or a moment's thought about a
+         * date. A phone line keeps the longer window: codec and network gaps
+         * land on top of the human ones, and cutting a caller off mid-sentence
+         * is worse than a beat of delay.
+         */
+        silenceDurationMs: channel === 'phone' ? 800 : 600,
+        /**
+         * How much sustained sound opens a turn.
+         *
+         * Low, so the first syllable is heard rather than spent proving someone
+         * is talking — and so barge-in registers as soon as they cut in rather
+         * than after they have had to insist.
+         */
         prefixPaddingMs: 200,
       },
     },

@@ -1,5 +1,5 @@
 import type { Lang } from '@vaani/shared'
-import { DOCTORS } from './clinic-data'
+import { BRANCHES, DOCTORS } from './clinic-data'
 
 /**
  * The practice: providers, chairs, services, patients, and the slot solver.
@@ -200,6 +200,14 @@ function isoDaysFromNow(days: number): string {
 export class PracticeStore {
   readonly name = process.env.PRACTICE_NAME ?? 'Smile Dental Care, Bandra'
   readonly providers = PROVIDERS
+  /**
+   * Exposed so the prompt can carry hours and numbers.
+   *
+   * These are the facts a caller asks for most and that change least, and
+   * every one that is not in the prompt costs a lookup — which on a live call
+   * is a round trip the caller hears as silence.
+   */
+  readonly branches = BRANCHES
   readonly operatories = OPERATORIES
   readonly services = SERVICES
   patients: Patient[] = seedPatients()

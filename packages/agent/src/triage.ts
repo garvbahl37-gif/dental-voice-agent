@@ -66,20 +66,57 @@ const RULES: Rule[] = [
       /knocked\s+out/i,
       /tooth\s+(came|fell)\s+out\s+(completely|fully)/i,
       /(poora|pura)\s+daant\s+(nikal|toot)/i,
-      /दांत\s+(पूरा\s+)?(निकल|टूट)\s*गया/,
+      // Avulsion is the tooth *out*, not the tooth broken — 'दाँत टूट गया'
+      // is a fracture and belongs in amber, so 'पूरा' or 'निकल' is required.
+      /दा[ँं]त\s*निकल\s*गया/,
+      /दा[ँं]त\s*पूरा\s*(निकल|टूट)\s*गया/,
       /avuls/i,
+    ],
+  },
+  /**
+   * Gums that bleed when brushed, checked *before* active bleeding.
+   *
+   * This is gingivitis: extremely common, weeks or months old, and not why
+   * anyone is rung out of hours. It sits above the bleeding rule so that the
+   * broader rule below can be broad — first match wins, so the specific and
+   * chronic case has to be read first or it would be escalated as a haemorrhage.
+   */
+  {
+    band: 'amber',
+    reason: 'Bleeding gums — likely gingivitis, not acute',
+    alertPractice: false,
+    bookWithinDays: 3,
+    patterns: [
+      /(gum|gums|masoo?d|मसूड़|मसूढ़)\s*.{0,24}(bleed|blood|खून)/i,
+      /(bleed|blood|खून)\s*.{0,24}(gum|gums|masoo?d|मसूड़|मसूढ़)/i,
+      /(brush|manjan|मंजन|ब्रश)\s*.{0,24}(bleed|blood|खून)/i,
     ],
   },
   {
     band: 'red',
-    reason: 'Uncontrolled bleeding',
+    reason: 'Active or uncontrolled bleeding',
     alertPractice: true,
     bookWithinDays: 0,
     patterns: [
       /bleeding\s+(wo|will)n.t\s+stop/i,
       /can(no|')?t\s+stop\s+.*bleed/i,
-      /(khoon|blood)\s+.*(band nahi|ruk nahi)/i,
-      /खून\s+.*(बंद नहीं|रुक नहीं)/,
+      /(khoon|blood)\s+.*(band nahi|ruk nahi|nahi ruk|nahi band)/i,
+      /खून\s*.{0,20}(बंद\s*नहीं|रुक\s*नहीं|नहीं\s*रुक|नहीं\s*बंद)/,
+      /**
+       * Bleeding, stated plainly.
+       *
+       * "मेरा खून आ रहा है" is a caller telling you they are bleeding right
+       * now. The old rule wanted them to also say it would not stop, so this —
+       * the most direct way anyone says it — matched nothing at all and the
+       * call was handled as routine. Somebody ringing a dental practice to say
+       * they are bleeding is not describing something chronic; the gum case
+       * above has already been taken out.
+       */
+      /खून\s*(आ|बह|निकल)\s*रह/,
+      /(khoon|khun)\s+(aa|beh|beh\s*ra|nikal)\s*rah/i,
+      /\bblood\s+(is\s+)?(coming|flowing)/i,
+      /\bbleed(ing)?\b/i,
+      /ब्लीडिंग/,
     ],
   },
   {
@@ -116,7 +153,7 @@ const RULES: Rule[] = [
       /crown\s+(came|fell)\s+off/i,
       /filling\s+(came|fell)\s+out/i,
       /daant\s+(toot|tut)/i,
-      /दांत\s+टूट/,
+      /दा[ँं]त\s*टूट/,
     ],
   },
 ]
