@@ -164,7 +164,10 @@ export const TOOL_DEFS: ToolDef[] = [
   {
     name: 'search_knowledge',
     description:
-      'Answer questions about the practice: hours, address, parking, insurance, prices, doctors, aftercare.',
+      // Not hours or branch phone numbers: those are in the instruction, and a
+      // tool that advertises them gets called for them — the model reads this
+      // line as seriously as the prompt, so the two have to agree.
+      'Answer questions about the practice: address, parking, insurance, prices, doctor credentials, aftercare, policies.',
     parameters: {
       type: 'object',
       properties: { query: { type: 'string' } },
