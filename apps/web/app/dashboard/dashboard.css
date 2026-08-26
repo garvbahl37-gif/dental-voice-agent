@@ -1040,3 +1040,110 @@
     background-image: none;
   }
 }
+
+/* ══ Hierarchy ════════════════════════════════════════════════════════════════
+
+   The page was nineteen identical tiles in three rows, which gave "calls
+   answered" and "transferred" the same weight — and when everything is
+   emphasised nothing is. Three figures carry the week, one line carries the
+   rest of the shape of it, and the numbers you only check when you have a
+   question are set as a list.                                                */
+
+.db-sub {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.db-lead {
+  padding-block: clamp(22px, 3vw, 34px);
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: clamp(22px, 3vw, 32px);
+}
+
+.db-big {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(28px, 6vw, 72px);
+}
+
+.db-big-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.db-big-n {
+  font-family: var(--font-display);
+  font-size: clamp(38px, 6vw, 60px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.db-big-k {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* The shape of the week, in a sentence rather than five more cards. */
+.db-lead-line {
+  margin: clamp(18px, 2.4vw, 26px) 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink-muted);
+  max-width: 78ch;
+}
+
+.db-tone-good {
+  color: var(--good, #2f6b4f);
+}
+
+.db-tone-alert {
+  color: var(--alert);
+}
+
+.db-tone-warn {
+  color: var(--agent);
+}
+
+/* ── The detail ───────────────────────────────────────────────────────────── */
+
+.db-detail {
+  margin: 0;
+  border-top: 1px solid var(--hairline);
+}
+
+.db-detail-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: baseline;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.db-detail-row dt {
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.db-detail-row dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── The controls, given room ─────────────────────────────────────────────── */
+
+.db-head-right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}

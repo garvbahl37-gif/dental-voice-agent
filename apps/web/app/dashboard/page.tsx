@@ -182,8 +182,11 @@ export default function Dashboard() {
     <div className="lp db-shell">
       <header className="db-head">
         <div>
-          <div className="lp-mark-sub">{data.org.name ?? 'Practice'}</div>
-          <h1 className="db-title">Front desk</h1>
+          {/* The practice is the title. "Front desk" was the heading and the
+              practice a label above it, which is backwards: an owner knows
+              what this screen is and wants to see whose it is. */}
+          <h1 className="db-title">{data.org.name ?? 'Practice'}</h1>
+          <p className="db-sub">The front desk, and what it did while you were with a patient.</p>
         </div>
         <div className="db-head-right">
           <div className="db-range" role="group" aria-label="Time range">
@@ -268,73 +271,35 @@ export default function Dashboard() {
         )}
       </section>
 
-      <section className="db-section">
-        <h2 className="db-h2">Calls</h2>
+      {/* The lead.
+          Eight tiles of equal weight made "calls answered" and "transferred"
+          look equally important, so nothing looked important. Three figures
+          carry the week; everything else is detail and is set as detail. */}
+      <section className="db-lead">
         {noCalls ? (
           <p className="db-empty">
             No calls in this period yet. Point a phone number at the practice, or take one from the
             console, and the numbers start here.
           </p>
         ) : (
-          <div className="db-tiles">
-            <Tile n={stats.calls} k="calls answered" />
-            <Tile n={stats.booked} k="appointments booked" tone="good" />
-            <Tile n={stats.missed} k="ended without booking" tone={stats.missed > 0 ? 'warn' : undefined} />
-            <Tile n={stats.escalated} k="handed to a human" />
-            <Tile n={stats.emergencies} k="emergencies" tone={stats.emergencies > 0 ? 'alert' : undefined} />
-            <Tile n={pct(stats.bookingRate)} k="booking rate" />
-            <Tile n={mmss(stats.avgDurationSec)} k="average call" />
-            <Tile n={pct(stats.transferRate)} k="transferred" />
-          </div>
+          <>
+            <div className="db-big">
+              <Big n={stats.calls} k="answered" />
+              <Big n={stats.booked} k="booked" tone="good" />
+              <Big
+                n={stats.emergencies}
+                k={stats.emergencies === 1 ? 'emergency' : 'emergencies'}
+                tone={stats.emergencies > 0 ? 'alert' : undefined}
+              />
+            </div>
+            <p className="db-lead-line">
+              {pct(stats.bookingRate)} of calls became an appointment · {mmss(stats.avgDurationSec)}{' '}
+              on the phone on average · {stats.escalated} handed to a human ·{' '}
+              {pct(stats.transferRate)} transferred
+            </p>
+          </>
         )}
       </section>
-
-      {!noCalls && (
-        <section className="db-section">
-          <h2 className="db-h2">How the agent behaved</h2>
-          <div className="db-tiles">
-            <Tile n={`${quality.firstResponseMsP50} ms`} k="first reply, median" />
-            {/* p95, not the mean: one nine-second reply matters to the caller
-                who got it, and a mean hides it completely. */}
-            <Tile
-              n={`${quality.firstResponseMsP95} ms`}
-              k="first reply, slowest 5%"
-              tone={quality.firstResponseMsP95 > 2500 ? 'warn' : undefined}
-            />
-            <Tile n={`${quality.avgResponseMs} ms`} k="average reply" />
-            <Tile n={quality.bargeInsPerCall} k="interruptions per call" />
-            <Tile n={pct(quality.noSpeechRate)} k="nobody spoke" />
-            <Tile
-              n={Object.entries(stats.answeredInLanguage)
-                .map(([l, n]) => `${LANG[l] ?? l} ${n}`)
-                .join(' · ') || '—'}
-              k="languages heard"
-              wide
-            />
-          </div>
-        </section>
-      )}
-
-      {!noCalls && (
-        <section className="db-section">
-          <h2 className="db-h2">What it earned</h2>
-          <div className="db-tiles">
-            <Tile n={paise(money.bookedRevenuePaise)} k="booked, at list price" tone="good" />
-            <Tile n={paise(money.modelCostPaise + money.telephonyCostPaise)} k="cost to run" />
-            <Tile n={paise(money.costPerBookingPaise)} k="cost per booking" />
-            <Tile
-              n={money.roi > 0 ? `${money.roi.toFixed(1)}×` : '—'}
-              k="return"
-              tone={money.roi > 1 ? 'good' : undefined}
-            />
-            <Tile n={`${money.callMinutes} min`} k="minutes on the phone" />
-          </div>
-          <p className="db-note">
-            Revenue counts only appointments this agent booked and that were not cancelled, valued at
-            the low end of each treatment&rsquo;s price range. Telephony is estimated per minute.
-          </p>
-        </section>
-      )}
 
       <section className="db-section">
         <h2 className="db-h2">Recent calls</h2>
@@ -390,29 +355,75 @@ export default function Dashboard() {
         )}
       </section>
 
+      {!noCalls && (
+        <section className="db-section">
+          <h2 className="db-h2">The detail</h2>
+          {/* Set as a list, not as tiles. These are numbers you check when you
+              have a question, not ones you scan every morning — and giving
+              them the same cards as the headline made the page a wall. */}
+          <dl className="db-detail">
+            <Row k="First reply, median" v={`${quality.firstResponseMsP50} ms`} />
+            {/* p95, not the mean: one nine-second reply matters to the caller
+                who got it, and a mean hides it completely. */}
+            <Row
+              k="First reply, slowest 5%"
+              v={`${quality.firstResponseMsP95} ms`}
+              tone={quality.firstResponseMsP95 > 2500 ? 'warn' : undefined}
+            />
+            <Row k="Average reply" v={`${quality.avgResponseMs} ms`} />
+            <Row k="Interruptions per call" v={String(quality.bargeInsPerCall)} />
+            <Row k="Nobody spoke" v={pct(quality.noSpeechRate)} />
+            <Row
+              k="Languages heard"
+              v={
+                Object.entries(stats.answeredInLanguage)
+                  .map(([l, n]) => `${LANG[l] ?? l} ${n}`)
+                  .join(' · ') || '—'
+              }
+            />
+            <Row k="Booked, at list price" v={paise(money.bookedRevenuePaise)} tone="good" />
+            <Row k="Cost to run" v={paise(money.modelCostPaise + money.telephonyCostPaise)} />
+            <Row k="Cost per booking" v={paise(money.costPerBookingPaise)} />
+            <Row
+              k="Return"
+              v={money.roi > 0 ? `${money.roi.toFixed(1)}×` : '—'}
+              tone={money.roi > 1 ? 'good' : undefined}
+            />
+            <Row k="Minutes on the phone" v={`${money.callMinutes} min`} />
+          </dl>
+          <p className="db-note">
+            Revenue counts only appointments this agent booked and that were not cancelled, valued
+            at the low end of each treatment&rsquo;s price range. Telephony is estimated per minute.
+          </p>
+        </section>
+      )}
+
+
       {openCall && <CallView id={openCall} onClose={() => setOpenCall(null)} />}
     </div>
   )
 }
 
-function Tile({
-  n,
-  k,
-  tone,
-  wide,
-}: {
-  n: string | number
-  k: string
-  tone?: 'good' | 'warn' | 'alert'
-  wide?: boolean
-}) {
+/** One of the three figures that carry the week. */
+function Big({ n, k, tone }: { n: number | string; k: string; tone?: string }) {
   return (
-    <div className={`db-tile${tone ? ` db-tile-${tone}` : ''}${wide ? ' db-tile-wide' : ''}`}>
-      <span className="db-tile-n">{n}</span>
-      <span className="db-tile-k">{k}</span>
+    <div className="db-big-cell">
+      <span className={`db-big-n${tone ? ` db-tone-${tone}` : ''}`}>{n}</span>
+      <span className="db-big-k">{k}</span>
     </div>
   )
 }
+
+/** A line of the detail list: a label, a rule, a figure. */
+function Row({ k, v, tone }: { k: string; v: string; tone?: string }) {
+  return (
+    <div className="db-detail-row">
+      <dt>{k}</dt>
+      <dd className={tone ? `db-tone-${tone}` : undefined}>{v}</dd>
+    </div>
+  )
+}
+
 
 const LANG: Record<string, string> = {
   'en-IN': 'English',
