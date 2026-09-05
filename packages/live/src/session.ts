@@ -188,8 +188,23 @@ export class LiveSession {
    * turn that ended because it was finished.
    */
   private turnWasCut = false
-  /** True while we are deliberately replacing the socket. */
-  private suppressReconnect = false
+  /**
+   * Which connection is the live one.
+   *
+   * A socket that closes only means the line dropped if it is the socket the
+   * call is currently on. Swapping accents deliberately closes the old one, and
+   * that close arrives whenever the network gets round to it — a second later,
+   * in the trace that found this. A flag held across the swap does not cover
+   * that: by the time the event landed the flag was down again, the old socket
+   * was treated as a dropped line, and the accent-switched session the caller
+   * was about to speak into got replaced by a second reconnect. Two connects
+   * back to back is several seconds of a call in which nobody answers.
+   *
+   * A counter has no window to fall outside of. Each connect claims the next
+   * number, and anything arriving from an older one is from a socket we have
+   * already replaced.
+   */
+  private generation = 0
   private static readonly MAX_ATTEMPTS = 3
   private static readonly MAX_TOTAL = 8
 
@@ -261,7 +276,6 @@ export class LiveSession {
     const previous = this.session
     try {
       this.switching = true
-      this.suppressReconnect = true
       await this.connect({ resume: true })
       try {
         previous?.close()
@@ -272,7 +286,6 @@ export class LiveSession {
       console.warn(`[${this.opts.sessionId}] accent switch failed, keeping session:`, err)
     } finally {
       this.switching = false
-      this.suppressReconnect = false
       // The caller may have changed language again while this was reconnecting.
       // Catching up here is what makes the serialisation converge rather than
       // leave the session one language behind.
@@ -284,6 +297,10 @@ export class LiveSession {
   }
 
   private async connect({ resume }: { resume: boolean }): Promise<void> {
+    // Claimed before the await, so a socket opened by an earlier connect that is
+    // still settling is already stale by the time anything arrives from it.
+    const generation = ++this.generation
+    const current = (): boolean => generation === this.generation
     const apiKey = this.opts.getApiKey ? await this.opts.getApiKey() : this.opts.apiKey
     const ai = new GoogleGenAI({
       apiKey,
@@ -307,22 +324,28 @@ export class LiveSession {
         // from here silently no-ops against a null session. The opening turn
         // goes out after connect() resolves.
         onopen: () => this.onOpen(),
-        onmessage: (m) => this.onMessage(m),
-        onerror: (e) => this.emit({
-          type: 'error',
-          code: 'live_error',
-          message: String((e as unknown as { message?: string })?.message ?? e).slice(0, 300),
-          recoverable: true,
-        }),
+        // A socket we have already replaced must not go on narrating the call:
+        // its transcript and its audio belong to a conversation that has moved.
+        onmessage: (m) => {
+          if (current()) this.onMessage(m)
+        },
+        onerror: (e) => {
+          if (!current()) return
+          this.emit({
+            type: 'error',
+            code: 'live_error',
+            message: String((e as unknown as { message?: string })?.message ?? e).slice(0, 300),
+            recoverable: true,
+          })
+        },
         onclose: (e) => {
           const reason = (e as unknown as { reason?: string })?.reason
           if (reason) console.log(`[${this.opts.sessionId}] live closed: ${reason}`)
           // A close we did not ask for is a dropped line, not the end of the
           // call. Reconnect with the handle rather than hanging up on someone
-          // mid-sentence.
-          // A close we caused ourselves — swapping accents — must not trigger
-          // the dropped-line recovery path.
-          if (this.suppressReconnect) return
+          // mid-sentence. A close on a socket we have already replaced is one
+          // we caused, however long it took to arrive.
+          if (!current()) return
           if (!this.closed) void this.reconnect()
           else this.opts.onClose?.()
         },
