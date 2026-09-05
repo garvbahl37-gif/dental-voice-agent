@@ -7,8 +7,8 @@ import type { Transport } from '@vaani/core'
  * Narrower than the `ws` package's socket — enough of it to carry a call, and
  * nothing this adapter does not actually use.
  */
-export interface VercelSocket {
-  on(event: 'message', handler: (data: unknown) => void): void
+export interface UpgradedSocket {
+  on(event: 'message', handler: (data: unknown, isBinary: boolean) => void): void
   on(event: 'close', handler: () => void): void
   on(event: 'error', handler: () => void): void
   send(data: string | Uint8Array): void
@@ -23,7 +23,7 @@ export interface VercelSocket {
  * socket API underneath differs, which is the entire reason this file exists
  * rather than a second copy of the session logic.
  */
-export class VercelWsTransport implements Transport {
+export class WsUpgradeTransport implements Transport {
   readonly channel = 'web' as const
   readonly supportsBargeIn = true
 
@@ -32,13 +32,23 @@ export class VercelWsTransport implements Transport {
   private readonly closeHandlers: (() => void)[] = []
   private open = true
 
-  constructor(private readonly socket: VercelSocket) {
-    socket.on('message', (data: unknown) => {
-      // Binary is audio; anything text is a control event.
-      if (typeof data === 'string') {
+  constructor(private readonly socket: UpgradedSocket) {
+    socket.on('message', (data: unknown, isBinary: boolean) => {
+      /**
+       * Binary is audio; text is a control event — and only the flag says which.
+       *
+       * `ws` delivers *every* frame as a Buffer, text included; the string case
+       * this used to test for never happens. So every control message the
+       * console sent was read as audio instead: the language dropdown did
+       * nothing mid-call, barge-in never learned what had actually been played,
+       * and the JSON bytes went into Live as noise loud enough to derail a turn.
+       * The standalone server has always keyed off `isBinary`; this adapter,
+       * written later, guessed.
+       */
+      if (!isBinary) {
         let raw: unknown
         try {
-          raw = JSON.parse(data)
+          raw = JSON.parse(toText(data))
         } catch {
           return
         }
@@ -112,12 +122,31 @@ export class VercelWsTransport implements Transport {
   }
 }
 
+/** Reads a text frame, whichever shape the runtime hands it over in. */
+function toText(data: unknown): string {
+  if (typeof data === 'string') return data
+  // `ws` may deliver a fragmented text frame as an array of chunks.
+  if (Array.isArray(data)) return data.map(toText).join('')
+  const bytes = toBytes(data)
+  return bytes ? new TextDecoder().decode(bytes) : ''
+}
+
 /** Normalises whatever the runtime calls a binary frame into bytes. */
 function toBytes(data: unknown): Uint8Array | null {
   if (data instanceof Uint8Array) return data
   if (data instanceof ArrayBuffer) return new Uint8Array(data)
   if (ArrayBuffer.isView(data)) {
     return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+  }
+  if (Array.isArray(data)) {
+    const parts = data.map(toBytes).filter((p): p is Uint8Array => p !== null)
+    const joined = new Uint8Array(parts.reduce((n, p) => n + p.byteLength, 0))
+    let at = 0
+    for (const p of parts) {
+      joined.set(p, at)
+      at += p.byteLength
+    }
+    return joined
   }
   return null
 }

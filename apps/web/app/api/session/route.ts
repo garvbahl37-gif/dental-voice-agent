@@ -7,10 +7,11 @@ import {
   recorderForToken,
   runVoiceSession,
   SESSION_COOKIE,
+  WsUpgradeTransport,
   type CallRecorder,
+  type UpgradedSocket,
 } from '@vaani/session-host'
 import { LangSchema, voiceGender } from '@vaani/shared'
-import { VercelWsTransport, type VercelSocket } from '@/lib/vercel-transport'
 
 /**
  * A call, hosted next to the console instead of on a separate box.
@@ -74,8 +75,8 @@ export function GET(req: Request): Promise<Response> {
   const token = readCookie(req.headers.get('cookie'), SESSION_COOKIE)
 
   return experimental_upgradeWebSocket((ws) => {
-    const socket = ws as unknown as VercelSocket
-    const transport = new VercelWsTransport(socket)
+    const socket = ws as unknown as UpgradedSocket
+    const transport = new WsUpgradeTransport(socket)
 
     void runVoiceSession({
       record: token ? keptAlive(recorderForToken(token)) : undefined,
