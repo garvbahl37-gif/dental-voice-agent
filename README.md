@@ -1,3 +1,5 @@
+![Vaani — an AI front desk for dental practices, taking a call in Hinglish](docs/banner.png)
+
 # Vaani — AI front desk for dental practices
 
 A multilingual voice agent that answers the phone for a dental practice. It speaks
