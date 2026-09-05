@@ -23,6 +23,8 @@ interface FakeSocket {
 }
 
 const sockets: FakeSocket[] = []
+/** Realtime text sent to Live — which Live counts as the caller talking. */
+const nudges: string[] = []
 
 vi.mock('@google/genai', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
@@ -37,7 +39,9 @@ vi.mock('@google/genai', async (importOriginal) => ({
             socket.closed = true
           },
           sendClientContent: () => {},
-          sendRealtimeInput: () => {},
+          sendRealtimeInput: (input: { text?: string }) => {
+            if (input.text) nudges.push(input.text)
+          },
           sendToolResponse: () => {},
         }
       },
@@ -74,6 +78,7 @@ const withHandle = (inner: { resumeHandle: string | undefined }) => {
 
 beforeEach(() => {
   sockets.length = 0
+  nudges.length = 0
 })
 
 describe('a socket that closes after it has been replaced', () => {
@@ -151,5 +156,85 @@ describe('a socket that closes after it has been replaced', () => {
 
     expect(connects(events)).toBe(2)
     expect(sockets[1]!.closed).toBe(false)
+  })
+})
+
+/**
+ * Live counts realtime text as the caller speaking. Sent while a reply is being
+ * composed it is a barge-in: the model throws the reply away and starts again.
+ * The trace that found this showed `interrupted` eight milliseconds after the
+ * language was detected, "हाँ जी," discarded, and three seconds of silence
+ * before she spoke — which on the phone is the agent taking six seconds to
+ * answer a simple question.
+ */
+describe('the mid-call language nudge', () => {
+  const heard = (text: string) => ({ serverContent: { inputTranscription: { text } } })
+  const replies = (text: string) => ({ serverContent: { outputTranscription: { text } } })
+  const done = { serverContent: { turnComplete: true } }
+
+  it('goes out at once when the line is quiet', async () => {
+    const { session } = harness()
+    await session.start()
+
+    // Same accent as Hindi, so nothing reconnects and the nudge is all there is.
+    session.setLang('hi-Latn-IN')
+
+    expect(nudges).toHaveLength(1)
+    expect(nudges[0]).toContain('Hinglish')
+  })
+
+  it('waits while she is answering, rather than cutting her off', async () => {
+    const { session, inner } = harness()
+    await session.start()
+
+    inner.onMessage(heard('kya hum Hindi mein baat kar sakte hain'))
+    inner.onMessage(replies('हाँ जी,'))
+    session.setLang('hi-Latn-IN')
+
+    expect(nudges).toHaveLength(0)
+
+    inner.onMessage(done)
+    expect(nudges).toHaveLength(1)
+  })
+
+  it('waits even before her first word, while the reply is being composed', async () => {
+    const { session, inner } = harness()
+    await session.start()
+
+    // The caller has stopped and the model is composing: nothing is audible
+    // yet, and text sent here is exactly what threw the reply away.
+    inner.onMessage(heard('ab Hindi mein baat kijiye'))
+    session.setLang('hi-Latn-IN')
+
+    expect(nudges).toHaveLength(0)
+  })
+
+  it('is dropped when a reconnect will carry the whole prompt instead', async () => {
+    const { session, inner } = harness()
+    await session.start()
+    withHandle(inner)
+
+    inner.onMessage(heard('please speak Tamil'))
+    session.setLang('ta-IN')
+    expect(nudges).toHaveLength(0)
+
+    inner.onMessage(done)
+
+    // The rebuilt instruction says everything the nudge would have, in full.
+    expect(nudges).toHaveLength(0)
+    await vi.waitFor(() => expect(sockets).toHaveLength(2))
+  })
+
+  it('sends only the language in play when the caller changes their mind twice', async () => {
+    const { session, inner } = harness()
+    await session.start()
+
+    inner.onMessage(heard('actually'))
+    session.setLang('hi-Latn-IN')
+    session.setLang('hi-IN')
+    inner.onMessage(done)
+
+    expect(nudges).toHaveLength(1)
+    expect(nudges[0]).toContain('Devanagari')
   })
 })

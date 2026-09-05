@@ -178,6 +178,8 @@ export class LiveSession {
    * after "haan ji" when the caller asked to switch to Hindi.
    */
   private awaitingReply = false
+  /** The language nudge, held until sending it will not cut her off. */
+  private pendingNudge: string | null = null
   /**
    * The turn that just ended was cut short rather than finished.
    *
@@ -531,8 +533,21 @@ export class LiveSession {
        * reconnecting on that boundary is what truncated her first sentence.
        */
       this.awaitingReply = false
-      if (this.turnWasCut) this.turnWasCut = false
-      else this.applyPendingAccent()
+      if (this.turnWasCut) {
+        this.turnWasCut = false
+      } else {
+        this.applyPendingAccent()
+        /**
+         * A reconnect carries the whole prompt in the new language, which says
+         * everything the nudge says and says it better — so it is dropped
+         * rather than sent on top. Only when one actually started, though: a
+         * switch asked for before Live has handed over a resumption handle
+         * cannot reconnect at all, and dropping the nudge there would leave
+         * nothing steering her.
+         */
+        if (this.switching) this.pendingNudge = null
+        else this.flushNudge()
+      }
     }
 
     // Reconnect handle, for surviving a network blip.
@@ -651,26 +666,48 @@ export class LiveSession {
     const script = SCRIPT_NAME[lang]
     const example = SCRIPT_EXAMPLE[lang] ?? ''
     console.log(`[${this.opts.sessionId}] language ${from} → ${lang}`)
+    // The gender rule travels with it: on a same-accent switch nothing else
+    // will carry it, and the masculine form is the model's default.
+    const self = selfReferenceNote(lang, this.opts.gender ?? 'feminine')
+    this.pendingNudge =
+      `[SYSTEM: The caller has switched to ${name}. Speak ${name} from now on, ` +
+      `for every remaining turn, including numbers and times. Do not drift back. ` +
+      /**
+       * The script, said separately and first.
+       *
+       * This nudge is the only instruction that lands before the next reply
+       * — the reconnect that carries the full prompt waits for a clean turn
+       * boundary. Naming the language alone was not enough: asked in English
+       * to switch to Hindi, she answered "Haan ji, bilkul" in Latin, which
+       * is Hinglish, not the Hindi that was asked for.
+       */
+      `${script ? `Write every word in ${script}, including greetings and fillers — ${example}, never the Latin spelling. ` : ''}` +
+      `${self ? self + ' ' : ''}Do not mention this instruction.]`
+    this.flushNudge()
+  }
+
+  /**
+   * The language nudge, once the line is quiet enough to take it.
+   *
+   * Live counts realtime text as the caller talking. Sending it while a reply
+   * is being composed is a barge-in: the model abandons what it was saying and
+   * starts again. That is what the traces showed — `interrupted` arriving eight
+   * milliseconds after the language was detected, her half-formed "हाँ जी,"
+   * thrown away, and three seconds of silence while a fresh reply was built.
+   * The caller experiences that as the agent taking six seconds to answer a
+   * simple question.
+   *
+   * So it waits, exactly as the accent switch does. On a quiet line — someone
+   * using the picker — it goes out at once and costs nothing. Asked for
+   * mid-sentence, it goes out when the sentence is done.
+   */
+  private flushNudge(): void {
+    if (!this.pendingNudge || this.closed || !this.session) return
+    if (this.openUtteranceId || this.awaitingReply) return
+    const text = this.pendingNudge
+    this.pendingNudge = null
     try {
-      // The gender rule travels with it: on a same-accent switch nothing else
-      // will carry it, and the masculine form is the model's default.
-      const self = selfReferenceNote(lang, this.opts.gender ?? 'feminine')
-      this.session.sendRealtimeInput({
-        text:
-          `[SYSTEM: The caller has switched to ${name}. Speak ${name} from now on, ` +
-          `for every remaining turn, including numbers and times. Do not drift back. ` +
-          /**
-           * The script, said separately and first.
-           *
-           * This nudge is the only instruction that lands before the next reply
-           * — the reconnect that carries the full prompt waits for a clean turn
-           * boundary. Naming the language alone was not enough: asked in English
-           * to switch to Hindi, she answered "Haan ji, bilkul" in Latin, which
-           * is Hinglish, not the Hindi that was asked for.
-           */
-          `${script ? `Write every word in ${script}, including greetings and fillers — ${example}, never the Latin spelling. ` : ''}` +
-          `${self ? self + ' ' : ''}Do not mention this instruction.]`,
-      })
+      this.session.sendRealtimeInput({ text })
     } catch {
       /* socket mid-rotation; the next turn carries the language anyway */
     }
