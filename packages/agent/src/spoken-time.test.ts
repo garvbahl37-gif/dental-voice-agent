@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { spokenTime } from './spoken-time'
+import { spokenHours, spokenTime } from './spoken-time'
 
 /**
  * How a time is said.
@@ -86,5 +86,45 @@ describe('spokenTime — English and the rest', () => {
 
   it('survives a locale the platform does not know', () => {
     expect(() => spokenTime(at(10, 0), 'kn-IN')).not.toThrow()
+  })
+})
+
+/**
+ * The opening hours are the most-asked question on the line, and they arrive
+ * from the practice record as a 24-hour range. Read back as digits in a Hindi
+ * sentence they were correct and foreign: "सुबह 9:00 बजे से शाम 7:00 बजे तक".
+ */
+describe('spokenHours', () => {
+  it('writes a Hindi range in words, keeping the days as they are', () => {
+    expect(spokenHours('Mon–Sat 9:00–19:00', 'hi-IN')).toBe('Mon–Sat सुबह नौ बजे–शाम सात बजे')
+  })
+
+  it('carries the half hour into the idiom', () => {
+    expect(spokenHours('9:30–13:30', 'hi-IN')).toBe('सुबह साढ़े नौ–दोपहर डेढ़')
+  })
+
+  it('writes Marathi in Marathi', () => {
+    expect(spokenHours('10:00–18:00', 'mr-IN')).toBe('सकाळी दहा वाजता–संध्याकाळी सहा वाजता')
+  })
+
+  it('leaves English alone', () => {
+    expect(spokenHours('Mon–Sat 9:00–19:00', 'en-IN')).toBe('Mon–Sat 9:00–19:00')
+  })
+
+  it('leaves a language whose idiom is not written out alone', () => {
+    expect(spokenHours('9:00–19:00', 'ta-IN')).toBe('9:00–19:00')
+  })
+
+  it('carries no digits into a Hindi line', () => {
+    expect(spokenHours('Mon–Sat 9:00–19:00', 'hi-IN')).not.toMatch(/[0-9]/)
+  })
+
+  it('passes through anything that is not a clock', () => {
+    expect(spokenHours('By appointment only', 'hi-IN')).toBe('By appointment only')
+    expect(spokenHours('call 022 2640 1234', 'hi-IN')).toBe('call 022 2640 1234')
+  })
+
+  it('refuses an impossible clock rather than inventing an hour', () => {
+    expect(spokenHours('25:99', 'hi-IN')).toBe('25:99')
   })
 })

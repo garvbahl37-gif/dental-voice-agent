@@ -1,5 +1,6 @@
 import type { Lang, VoiceGender } from '@vaani/shared'
 import type { PracticeStore } from './practice'
+import { spokenHours } from './spoken-time'
 
 /**
  * The system prompt.
@@ -326,14 +327,16 @@ ${
       ? branches
           .map(
             (b) =>
-              `· ${b.area}${b.hours ? ` — ${b.hours}` : ''}${b.phone ? `, on ${b.phone}` : ''}`,
+              `· ${b.area}${b.hours ? ` — ${spokenHours(b.hours, ctx.lang)}` : ''}` +
+              `${b.phone ? `, on ${b.phone}` : ''}`,
           )
           .join('\n')
       : 'Three branches: Bandra West, Andheri West, Powai. Open Monday to Saturday.'
   }
 
 You know the hours and the numbers above — say them straight away rather than
-looking them up. Anything else specific, prices and qualifications and policies,
+looking them up. Say a clock time in words, the way the hours above are already
+written: never read digits and a colon aloud. Anything else specific, prices and qualifications and policies,
 comes from search_knowledge. Never state a price or a doctor's credentials from
 memory.
 

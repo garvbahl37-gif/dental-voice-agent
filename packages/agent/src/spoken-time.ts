@@ -144,3 +144,27 @@ export function spokenTime(iso: string, lang: Lang): SpokenTime {
   const phrase = `${day} at ${written} ${when}`
   return { phrase, native: lang === 'en-IN' }
 }
+
+/**
+ * A practice's opening hours, with the clock written the way it is said.
+ *
+ * The hours come out of the practice record as a 24-hour range — "Mon–Sat
+ * 9:00–19:00" — and go into the instruction as-is. Asked in Hindi when the
+ * clinic opens, she read the digits straight back: "सुबह 9:00 बजे से शाम 7:00
+ * बजे तक". Correct, and not how anybody says it.
+ *
+ * Only the clock is rewritten. The days around it are left alone: the model
+ * renders "Mon–Sat" as "सोमवार से शनिवार" without help, and a second guess at
+ * how to join a range is how half-translated sentences start. Languages whose
+ * idiom `clock` does not write out are left in digits for the same reason.
+ */
+export function spokenHours(hours: string, lang: Lang): string {
+  if (lang !== 'hi-IN' && lang !== 'mr-IN' && lang !== 'hi-Latn-IN') return hours
+  return hours.replace(/\b(\d{1,2}):(\d{2})\b/g, (whole, hh: string, mm: string) => {
+    const h = Number(hh)
+    const m = Number(mm)
+    if (h > 23 || m > 59) return whole
+    const h12 = h % 12 === 0 ? 12 : h % 12
+    return `${period(h, lang)} ${clock(h12, m, lang)}`
+  })
+}
