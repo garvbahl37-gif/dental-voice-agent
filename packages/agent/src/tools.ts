@@ -332,7 +332,17 @@ export class DentalTools implements ToolRunner {
             say:
               'Offer at most two of these. Do not read the whole list. Say each `when` ' +
               'exactly as written — it is already in the caller\'s language and idiom, ' +
-              'and rewording it is how "साढ़े बारह" becomes "twelve बारह thirty".',
+              'and rewording it is how "साढ़े बारह" becomes "twelve बारह thirty". ' +
+              /**
+               * The second slot is the one that slips.
+               *
+               * Offering two, she reads the first as given and then compresses:
+               * "ढाई बजे या फिर 3:00 बजे" — half the sentence in words and half
+               * off a clock face, in a language that does not read clock faces
+               * aloud. Joining them is welcome; re-rendering the second is not.
+               */
+              'The second one is written out too. Join them however sounds ' +
+              'natural, but do not turn the second into digits and a colon.',
           },
         }
       }
