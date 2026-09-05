@@ -3,6 +3,7 @@ import type { ToolCall, ToolDef } from '@vaani/providers'
 import type { ToolRunner } from '@vaani/core'
 import type { PracticeStore } from './practice'
 import { triage } from './triage'
+import { spokenTime } from './spoken-time'
 import { searchKnowledge } from './knowledge'
 import { normalisePhone, speakPhone } from './caller-state'
 
@@ -40,20 +41,6 @@ export interface ToolContext {
   >
 }
 
-const HOURS_12 = (iso: string, lang: Lang): string => {
-  const d = new Date(iso)
-  const h = d.getHours()
-  const m = d.getMinutes()
-  const day = d.toLocaleDateString(lang === 'hi-IN' ? 'hi-IN' : 'en-IN', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
-  const hour12 = h % 12 === 0 ? 12 : h % 12
-  const period = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening'
-  const mm = m === 0 ? '' : m === 30 ? ' thirty' : ` ${m}`
-  return `${day} at ${hour12}${mm} in the ${period}`
-}
 
 export const TOOL_DEFS: ToolDef[] = [
   {
@@ -248,7 +235,7 @@ export class DentalTools implements ToolRunner {
             upcomingAppointments: upcoming.map((ap) => ({
               id: ap.id,
               service: practice.services.find((s) => s.id === ap.serviceId)?.name,
-              when: HOURS_12(ap.start, lang),
+              when: spokenTime(ap.start, lang).phrase,
             })),
             say: `Existing patient: ${found.name}. Greet them by name.`,
           },
@@ -340,9 +327,12 @@ export class DentalTools implements ToolRunner {
               providerId: s.providerId,
               operatoryId: s.operatoryId,
               doctor: s.providerName,
-              when: HOURS_12(s.start, lang),
+              when: spokenTime(s.start, lang).phrase,
             })),
-            say: 'Offer at most two of these. Do not read the whole list.',
+            say:
+              'Offer at most two of these. Do not read the whole list. Say each `when` ' +
+              'exactly as written — it is already in the caller\'s language and idiom, ' +
+              'and rewording it is how "साढ़े बारह" becomes "twelve बारह thirty".',
           },
         }
       }
@@ -387,7 +377,7 @@ export class DentalTools implements ToolRunner {
             patientName: patient?.name,
             serviceName: service.name,
             providerName: provider?.name,
-            when: HOURS_12(appt.start, lang),
+            when: spokenTime(appt.start, lang).phrase,
           },
         })
 
@@ -399,7 +389,7 @@ export class DentalTools implements ToolRunner {
               patient: patient?.name,
               treatment: service.name,
               doctor: provider?.name,
-              when: HOURS_12(appt.start, lang),
+              when: spokenTime(appt.start, lang).phrase,
             },
             say: 'Confirm it warmly and mention the WhatsApp confirmation.',
           },
@@ -417,7 +407,7 @@ export class DentalTools implements ToolRunner {
               id: ap.id,
               treatment: practice.services.find((s) => s.id === ap.serviceId)?.name,
               doctor: practice.provider(ap.providerId)?.name,
-              when: HOURS_12(ap.start, lang),
+              when: spokenTime(ap.start, lang).phrase,
             })),
           },
         }
@@ -445,8 +435,8 @@ export class DentalTools implements ToolRunner {
         return {
           ok: true,
           result: {
-            when: HOURS_12(moved.appointment.start, lang),
-            say: 'Confirm the new time simply.',
+            when: spokenTime(moved.appointment.start, lang).phrase,
+            say: 'Confirm the new time simply, saying `when` exactly as written.',
           },
         }
       }

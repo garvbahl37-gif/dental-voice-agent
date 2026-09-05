@@ -54,6 +54,37 @@ const THINKING_AFTER_MS = 400
  */
 const LANG_NAME = LANG_FULL_NAME
 
+/**
+ * The alphabet each language is written in, for the mid-call nudge.
+ *
+ * Hinglish is absent on purpose: it is Hindi written in Latin, so telling it to
+ * use a script would be telling it to stop being Hinglish.
+ */
+const SCRIPT_NAME: Partial<Record<Lang, string>> = {
+  'hi-IN': 'Devanagari',
+  'mr-IN': 'Devanagari',
+  'gu-IN': 'the Gujarati script',
+  'bn-IN': 'the Bengali script',
+  'ta-IN': 'the Tamil script',
+  'te-IN': 'the Telugu script',
+  'kn-IN': 'the Kannada script',
+  'ml-IN': 'the Malayalam script',
+  'pa-IN': 'Gurmukhi',
+}
+
+/** One concrete word, because an example lands harder than a rule. */
+const SCRIPT_EXAMPLE: Partial<Record<Lang, string>> = {
+  'hi-IN': '"हाँ जी"',
+  'mr-IN': '"हो जी"',
+  'gu-IN': '"હા જી"',
+  'bn-IN': '"হ্যাঁ"',
+  'ta-IN': '"ஆம்"',
+  'te-IN': '"అవును"',
+  'kn-IN': '"ಹೌದು"',
+  'ml-IN': '"അതെ"',
+  'pa-IN': '"ਹਾਂ ਜੀ"',
+}
+
 export interface ToolRunner {
   defs(): ToolDef[]
   run(call: ToolCall): Promise<{ ok: boolean; result: unknown }>
@@ -138,6 +169,25 @@ export class LiveSession {
   private pendingAccentSwitch = false
   /** A reconnect is in flight; starting a second would race it. */
   private switching = false
+  /**
+   * The caller has spoken and the reply has not finished.
+   *
+   * Wider than `openUtteranceId`, which only becomes true once she is already
+   * making sound. The model starts composing the moment the caller stops, and a
+   * reconnect in that gap throws the reply away — which is what cut her off
+   * after "haan ji" when the caller asked to switch to Hindi.
+   */
+  private awaitingReply = false
+  /**
+   * The turn that just ended was cut short rather than finished.
+   *
+   * Live reports `interrupted` for a barge-in — and, it turns out, sometimes
+   * mid-reply when nobody has barged in at all. Either way the turn boundary
+   * that follows is not a real one: reconnecting on it split a sentence into
+   * "हाँ जी," and, after the reconnect, "बिलकुल। बताइए". A switch waits for a
+   * turn that ended because it was finished.
+   */
+  private turnWasCut = false
   /** True while we are deliberately replacing the socket. */
   private suppressReconnect = false
   private static readonly MAX_ATTEMPTS = 3
@@ -344,6 +394,7 @@ export class LiveSession {
       // keep one bubble per thing the caller said rather than inferring the
       // boundary from whichever bubble is last.
       if (!this.openCallerText) this.callerTurnId = `t${++this.turnSeq}`
+      this.awaitingReply = true
       this.openCallerText += sc.inputTranscription.text
       this.armThinking()
 
@@ -408,6 +459,7 @@ export class LiveSession {
     // position to reconcile: the model stops generating and tells us, and the
     // client flushes whatever it has queued.
     if (sc?.interrupted) {
+      this.turnWasCut = true
       if (this.openUtteranceId) {
         /**
          * Cut off after two or three words, the model typically restarts the
@@ -450,8 +502,14 @@ export class LiveSession {
       this.closeAgentTurn()
       this.emit({ type: 'agent.state', state: 'idle' })
 
-      // A safe moment to change accent: nobody is mid-sentence.
-      this.applyPendingAccent()
+      /**
+       * A safe moment to change accent: the reply is finished, not merely
+       * silent and not merely cut off. An interrupted turn ends here too, and
+       * reconnecting on that boundary is what truncated her first sentence.
+       */
+      this.awaitingReply = false
+      if (this.turnWasCut) this.turnWasCut = false
+      else this.applyPendingAccent()
     }
 
     // Reconnect handle, for surviving a network blip.
@@ -553,17 +611,22 @@ export class LiveSession {
     if (accentFor(from) !== accentFor(lang)) {
       this.pendingAccentSwitch = true
       /**
-       * If nobody is mid-sentence, take it now.
+       * Take it now only if nothing is in flight.
        *
-       * Waiting for the next turn boundary means the next thing she says is
-       * still in the old accent — and switching from the console happens
-       * precisely when the line is quiet, so that was the common case rather
-       * than the rare one.
+       * Two different situations look alike here. Someone changing the picker
+       * while the line is quiet should hear the next word in the new accent —
+       * that is why this exists. But a caller *asking* to switch has just
+       * spoken, and the reply to them is already being composed: reconnecting
+       * then throws that reply away mid-sentence, which is exactly what
+       * happened after "haan ji". Waiting costs one turn in the old accent and
+       * keeps the sentence whole, which is the better trade.
        */
-      if (!this.openUtteranceId) this.applyPendingAccent()
+      if (!this.openUtteranceId && !this.awaitingReply) this.applyPendingAccent()
     }
 
     const name = LANG_NAME[lang]
+    const script = SCRIPT_NAME[lang]
+    const example = SCRIPT_EXAMPLE[lang] ?? ''
     console.log(`[${this.opts.sessionId}] language ${from} → ${lang}`)
     try {
       // The gender rule travels with it: on a same-accent switch nothing else
@@ -573,6 +636,16 @@ export class LiveSession {
         text:
           `[SYSTEM: The caller has switched to ${name}. Speak ${name} from now on, ` +
           `for every remaining turn, including numbers and times. Do not drift back. ` +
+          /**
+           * The script, said separately and first.
+           *
+           * This nudge is the only instruction that lands before the next reply
+           * — the reconnect that carries the full prompt waits for a clean turn
+           * boundary. Naming the language alone was not enough: asked in English
+           * to switch to Hindi, she answered "Haan ji, bilkul" in Latin, which
+           * is Hinglish, not the Hindi that was asked for.
+           */
+          `${script ? `Write every word in ${script}, including greetings and fillers — ${example}, never the Latin spelling. ` : ''}` +
           `${self ? self + ' ' : ''}Do not mention this instruction.]`,
       })
     } catch {

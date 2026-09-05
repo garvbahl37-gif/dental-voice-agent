@@ -294,3 +294,86 @@ describe('rapid language changes', () => {
     expect(built.at(-1)).toBe('en-IN')
   })
 })
+
+/**
+ * When it is safe to change accent.
+ *
+ * The accent is fixed at connect, so following the caller costs a reconnect —
+ * and a reconnect lands like a dropped line if it happens while she is talking.
+ * These pin the three moments that matter, all of which were wrong at some
+ * point: mid-sentence, mid-reply-before-she-starts, and at the end of a turn
+ * that was cut off rather than finished.
+ */
+describe('when an accent switch is allowed to happen', () => {
+  function connected() {
+    const h = harness()
+    const priv = h.session as unknown as {
+      session: unknown
+      resumeHandle: string | undefined
+      switching: boolean
+      pendingAccentSwitch: boolean
+      openUtteranceId: string | null
+      awaitingReply: boolean
+      turnWasCut: boolean
+      switchAccent(): Promise<void>
+    }
+    priv.session = { sendRealtimeInput: () => {} }
+    priv.resumeHandle = 'handle'
+    const switches: string[] = []
+    priv.switchAccent = async () => {
+      switches.push('go')
+    }
+    return { ...h, priv, switches }
+  }
+
+  it('switches at once when the line is genuinely quiet', () => {
+    // Someone changing the picker between calls should hear it immediately.
+    const { session, switches } = connected()
+    session.setLang('ta-IN')
+    expect(switches.length).toBe(1)
+  })
+
+  it('waits when the caller has spoken and the reply is still coming', () => {
+    /**
+     * The reported bug. `openUtteranceId` is only set once she is making
+     * sound, but the model starts composing the moment the caller stops — and
+     * a caller *asking* to switch has just spoken. Reconnecting there threw the
+     * reply away after "हाँ जी,".
+     */
+    const { session, priv, switches, feed } = connected()
+    feed({ serverContent: { inputTranscription: { text: 'can we talk in Hindi' } } })
+    expect(priv.awaitingReply).toBe(true)
+
+    session.setLang('hi-IN')
+    expect(switches.length).toBe(0)
+
+    feed({ serverContent: { turnComplete: true } })
+    expect(switches.length).toBe(1)
+  })
+
+  it('does not switch on the end of a turn that was cut off', () => {
+    /**
+     * Live reports `interrupted` mid-reply even when nobody barged in. The
+     * turn boundary that follows is not a real one, and switching on it split
+     * one sentence across a reconnect.
+     */
+    const { session, switches, feed } = connected()
+    feed({ serverContent: { inputTranscription: { text: 'hindi mein baat karo' } } })
+    session.setLang('hi-IN')
+
+    feed({ serverContent: { interrupted: true } })
+    feed({ serverContent: { turnComplete: true } })
+    expect(switches.length).toBe(0)
+
+    // The next turn that ends properly carries it.
+    feed({ serverContent: { turnComplete: true } })
+    expect(switches.length).toBe(1)
+  })
+
+  it('still refuses to switch while she is mid-sentence', () => {
+    const { session, priv, switches } = connected()
+    priv.openUtteranceId = 'u1'
+    session.setLang('ml-IN')
+    expect(switches.length).toBe(0)
+  })
+})
