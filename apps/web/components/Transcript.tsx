@@ -47,18 +47,26 @@ interface Props {
 }
 
 export function Transcript({ turns, startedAt, thinking = false }: Props) {
-  const endRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  /**
+   * Follow the newest line by scrolling this column only.
+   *
+   * `scrollIntoView` scrolls every ancestor too, the page included. On desktop
+   * the page cannot scroll so it made no difference, but on a phone the panel
+   * sits below the call — and this runs on every word revealed, so anyone who
+   * scrolled down to read a booking was dragged back up several times a second.
+   */
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+    const el = scrollRef.current
+    el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   }, [turns, thinking])
 
   return (
-    <div style={s.scroll}>
+    <div ref={scrollRef} style={s.scroll}>
       {turns.map((turn) => (
         <Row key={turn.id} turn={turn} startedAt={startedAt} />
       ))}
       {thinking && <Thinking />}
-      <div ref={endRef} />
     </div>
   )
 }

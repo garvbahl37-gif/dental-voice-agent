@@ -374,6 +374,13 @@
   flex-wrap: wrap;
 }
 
+/* The text field sets the row's minimum. With `min-width: 0` alone it shrank
+   to nothing beside a select and a button on a phone — the key name field was
+   three letters wide — instead of wrapping onto its own line. */
+.kb-row > .kb-input:first-child {
+  flex: 1 1 200px;
+}
+
 .kb-input {
   flex: 1;
   min-width: 0;

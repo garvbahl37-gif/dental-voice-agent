@@ -43,7 +43,7 @@ interface Props {
 
 export function PracticePanel({ patient, bookings, tools, triage }: Props) {
   return (
-    <aside style={styles.panel}>
+    <aside className="console-panel" style={styles.panel}>
       {triage && <TriageBanner band={triage.band} reason={triage.reason} />}
 
       <Section title="caller">

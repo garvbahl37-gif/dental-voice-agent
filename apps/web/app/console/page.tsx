@@ -13,6 +13,7 @@ import {
   type ToolActivity,
 } from '@/components/PracticePanel'
 import { CallSummaryView, type CallSummary } from '@/components/CallSummary'
+import './console.css'
 
 /**
  * Where a call is hosted.
@@ -439,20 +440,26 @@ export default function Console() {
   const latest = metrics.at(-1)
 
   return (
-    <main data-shell="console" style={s.shell}>
+    <main data-shell="console" className="console-shell" style={s.shell}>
       {/* ── Left: the call ───────────────────────────────────────────────── */}
-      <section style={s.stage}>
-        <header style={s.head}>
+      {/* The phase is for the phone layout, which sizes the stage differently
+          once there is a transcript to scroll. */}
+      <section
+        className="console-stage"
+        data-phase={turns.length > 0 && !lastCall ? 'call' : 'idle'}
+        style={s.stage}
+      >
+        <header className="console-head" style={s.head}>
           <div>
             <div style={s.eyebrow}>
               <span style={{ ...s.dot, background: live ? 'var(--confirm)' : 'var(--ink-faint)' }} />
               {live ? 'Live · Voice' : 'Vaani · Voice'}
             </div>
-            <h1 style={s.title}>Front desk</h1>
+            <h1 className="console-title" style={s.title}>Front desk</h1>
             <p style={s.sub}>Smile Dental Care · Bandra, Andheri, Powai</p>
           </div>
 
-          <div style={s.pillRow}>
+          <div className="console-pills" style={s.pillRow}>
             {/*
               Named in each language's own script, because nobody scans a list
               of English names looking for their language — a Tamil speaker
@@ -492,7 +499,7 @@ export default function Console() {
         </header>
 
         {/* Live telemetry — real measurements, not confidence theatre. */}
-        <div style={s.strip}>
+        <div className="console-strip" style={s.strip}>
           <Stat label="State" value={stateLabel(agentState)} accent={accentFor(agentState)} />
           <Stat
             label="Mouth to ear"
@@ -520,8 +527,11 @@ export default function Console() {
         ) : (
         <>
         {/* ── Hero ───────────────────────────────────────────────────────── */}
-        <div style={s.hero}>
-          <div style={{ width: turns.length > 0 ? 190 : 300, transition: 'width 420ms ease' }}>
+        <div className="console-hero" style={s.hero}>
+          <div
+            className="console-blob"
+            style={{ width: turns.length > 0 ? 190 : 300, transition: 'width 420ms ease' }}
+          >
             <VoiceBlob
               state={agentState}
               micLevel={levels.mic}
@@ -532,13 +542,13 @@ export default function Console() {
           </div>
 
           {turns.length === 0 && (
-            <div style={s.pitch}>
-              <h2 style={s.pitchLead}>
-                Answers in eleven Indian languages,
+            <div className="console-pitch" style={s.pitch}>
+              <h2 className="console-pitch-lead" style={s.pitchLead}>
+                Answers in eleven Indian languages,{' '}
                 <br />
                 or two in one sentence.
               </h2>
-              <p style={s.pitchBody}>
+              <p className="console-pitch-body" style={s.pitchBody}>
                 Interrupt mid-sentence and the reply stops where you cut in — nothing is
                 remembered that you never heard.
               </p>
@@ -556,16 +566,21 @@ export default function Console() {
 
         {/* ── Controls ───────────────────────────────────────────────────── */}
         {!lastCall && (
-        <div style={s.controls}>
+        <div className="console-controls" style={s.controls}>
           {live ? (
             // No interrupt button. Interrupting is what talking over someone
             // *is* — the VAD hears you and she stops. A button would be an
             // admission that it does not work on its own.
-            <button onClick={end} style={s.endBtn}>
+            <button onClick={end} className="console-cta" style={s.endBtn}>
               <span style={s.endGlyph}>■</span> End call
             </button>
           ) : (
-            <button onClick={start} disabled={waking || status === 'connecting'} style={s.startBtn}>
+            <button
+              onClick={start}
+              disabled={waking || status === 'connecting'}
+              className="console-cta"
+              style={s.startBtn}
+            >
               {waking ? 'Waking the server…' : status === 'connecting' ? 'Connecting…' : 'Take a call'}
             </button>
           )}
@@ -580,7 +595,7 @@ export default function Console() {
 
 function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
-    <div style={s.stat}>
+    <div className="console-stat" style={s.stat}>
       <span className="label">{label}</span>
       <span style={{ ...s.statValue, color: accent ?? 'var(--ink)' }}>{value}</span>
     </div>

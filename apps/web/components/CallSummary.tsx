@@ -52,7 +52,7 @@ export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNe
 
   return (
     <div style={s.wrap}>
-      <div style={s.head}>
+      <div className="summary-head" style={s.head}>
         <div>
           <div style={s.eyebrow}>Call ended</div>
           <h2 style={s.title}>{outcomeLabel(outcome)}</h2>

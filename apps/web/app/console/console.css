@@ -1,0 +1,173 @@
+/*
+ * The console on a phone.
+ *
+ * The console is a desktop app shell: the call on the left, the practice panel
+ * a fixed 330px on the right, the page locked to the viewport. On a phone that
+ * left the call about 140px to live in — the title clipped, the pitch set one
+ * word to a line, the panel sliding over all of it.
+ *
+ * Below the breakpoint the two stack instead: the call fills the screen, and
+ * the panel follows it, a scroll away.
+ *
+ * Everything here is `!important` because the console styles inline, and an
+ * inline style beats any stylesheet rule that is not. The desktop layout is the
+ * inline one and is untouched; these only apply under the media queries.
+ */
+
+@media (max-width: 860px) {
+  /* The shell's scroll lock is what keeps the desktop console from moving.
+     Stacked, the panel is below the fold, so the page has to scroll to it. */
+  html body:has([data-shell='console']) {
+    overflow: visible;
+  }
+
+  .console-shell {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* Idle and after a call, the stage is at least a screen tall and grows with
+     what it holds, so a short phone scrolls rather than clipping. */
+  .console-stage {
+    flex: none !important;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  /* During a call it is exactly a screen tall, so the transcript scrolls inside
+     it and End call stays under the thumb instead of drifting below the fold. */
+  .console-stage[data-phase='call'] {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  /* On desktop the blob and the transcript split the height. Stacked, every
+     pixel the blob does not need belongs to what is being said. */
+  .console-stage[data-phase='call'] .console-hero {
+    flex: none !important;
+  }
+
+  .console-panel {
+    width: auto !important;
+    border-left: none !important;
+    border-top: 1px solid var(--hairline);
+    overflow: visible !important;
+  }
+}
+
+@media (max-width: 520px) {
+  /* No bottom padding: the controls carry their own, because they stick. */
+  .console-stage {
+    padding: 16px 16px 0 !important;
+  }
+
+  /* After a call there are no controls, so the summary needs the room back. */
+  .console-stage:not(:has(.console-controls)) {
+    padding-bottom: 28px !important;
+  }
+
+  /* The language picker drops under the title rather than squeezing it. */
+  .console-head {
+    flex-wrap: wrap;
+    gap: 12px !important;
+  }
+
+  .console-title {
+    font-size: 30px !important;
+  }
+
+  /* The picker and the model name share one line; the model name gives way,
+     since a second row here is a row the transcript loses mid-call. */
+  .console-pills {
+    flex-shrink: 1 !important;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .console-pills > * {
+    min-width: 0;
+  }
+
+  .console-pills .lang-select {
+    max-width: 100%;
+  }
+
+  .console-pills > .mono {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Four readings in a row need ~500px; two by two fits any phone, and holds
+     its height when "Checking diary" replaces "Ready" mid-call. */
+  .console-strip {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px !important;
+    margin-top: 14px !important;
+    padding: 10px 14px !important;
+  }
+
+  .console-stat {
+    min-width: 0 !important;
+    gap: 2px !important;
+  }
+
+  .console-stat > span:last-child {
+    font-size: 15px !important;
+  }
+
+  /* Sized by height as well as width, so a short phone still has room for the
+     pitch and the button under it. */
+  .console-blob {
+    width: min(200px, 52vw, 28vh) !important;
+  }
+
+  .console-stage[data-phase='call'] .console-blob {
+    width: 88px !important;
+  }
+
+  .console-pitch-lead {
+    font-size: 22px !important;
+  }
+
+  /* The desktop break is placed for a 500px measure; on a phone it leaves a
+     ragged one-word line, so the sentence wraps on its own. */
+  .console-pitch-lead br {
+    display: none;
+  }
+
+  .console-pitch-body {
+    font-size: 13.5px !important;
+  }
+
+  /* Pinned to the bottom of the screen, so on a phone too short for the whole
+     stage "Take a call" is still the first thing in reach. During a call the
+     stage is a screen tall and this already sits at its foot. */
+  .console-controls {
+    position: sticky;
+    bottom: 0;
+    padding: 14px 0 calc(16px + env(safe-area-inset-bottom)) !important;
+    background: linear-gradient(to bottom, rgba(251, 250, 247, 0), var(--bg) 40%);
+  }
+
+  .console-cta {
+    width: 100%;
+    max-width: 360px;
+    justify-content: center;
+  }
+
+  .console-panel {
+    padding: 24px 16px calc(28px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* The outcome and the button share a line on desktop; on a phone the title
+     needs the width, so the button goes under it. */
+  .summary-head {
+    flex-wrap: wrap;
+    align-items: flex-start !important;
+    gap: 14px;
+  }
+}
