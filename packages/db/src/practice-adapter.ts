@@ -234,9 +234,19 @@ export class OrgPracticeAdapter {
     providerId: string
     operatoryId: string
     start: string
-    durationMin: number
+    /**
+     * How long it takes. Optional because the agent's tools were written
+     * against the in-memory store, which knows each treatment's length — they
+     * never passed one, and every phone booking failed on an end time of NaN.
+     * The treatment's own length is used when it is not given.
+     */
+    durationMin?: number
     branchId?: string
   }) {
+    const durationMin =
+      input.durationMin ?? this.services.find((s) => s.id === input.serviceId)?.durationMin
+    if (!durationMin || !Number.isFinite(durationMin)) return { ok: false as const, reason: 'unknown_service' }
+
     const branchId =
       input.branchId ?? this.operatories.find((o) => o.id === input.operatoryId)?.branchId
     if (!branchId) return { ok: false as const, reason: 'unknown_branch' }
@@ -248,7 +258,7 @@ export class OrgPracticeAdapter {
       operatoryId: input.operatoryId,
       branchId,
       startIso: input.start,
-      durationMin: input.durationMin,
+      durationMin,
       callId: this.callId,
     })
     if (!result.ok) return result
@@ -260,7 +270,7 @@ export class OrgPracticeAdapter {
         providerId: result.appointment.providerId,
         operatoryId: result.appointment.operatoryId,
         start: result.appointment.startAt.toISOString(),
-        durationMin: input.durationMin,
+        durationMin,
         status: result.appointment.status,
       },
     }
@@ -271,7 +281,8 @@ export class OrgPracticeAdapter {
     start: string
     providerId: string
     operatoryId: string
-    durationMin: number
+    /** Optional for the same reason as in `bookAtomic`; the appointment keeps its own length. */
+    durationMin?: number
   }) {
     const out = await this.repo.rescheduleAppointment(input.appointmentId, {
       startIso: input.start,
@@ -288,7 +299,7 @@ export class OrgPracticeAdapter {
         providerId: out.appointment.providerId,
         operatoryId: out.appointment.operatoryId,
         start: out.appointment.startAt.toISOString(),
-        durationMin: input.durationMin,
+        durationMin: Math.round((out.appointment.endAt.getTime() - out.appointment.startAt.getTime()) / 60_000),
         status: out.appointment.status,
       },
     }

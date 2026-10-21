@@ -413,7 +413,7 @@ export class OrgRepo {
 
   async rescheduleAppointment(
     appointmentId: string,
-    to: { startIso: string; providerId: string; operatoryId: string; durationMin: number },
+    to: { startIso: string; providerId: string; operatoryId: string; durationMin?: number },
   ) {
     const [current] = await this.db
       .select()
@@ -422,6 +422,11 @@ export class OrgRepo {
       .limit(1)
     if (!current) return { ok: false as const, reason: 'not_found' }
 
+    // Moving an appointment does not change what it is for, so unless told
+    // otherwise it keeps its own length.
+    const durationMin =
+      to.durationMin ?? Math.round((current.endAt.getTime() - current.startAt.getTime()) / 60_000)
+
     const booked = await this.book({
       patientId: current.patientId,
       serviceId: current.serviceId,
@@ -429,7 +434,7 @@ export class OrgRepo {
       operatoryId: to.operatoryId,
       branchId: current.branchId,
       startIso: to.startIso,
-      durationMin: to.durationMin,
+      durationMin,
       source: 'reschedule',
     })
     if (!booked.ok) return booked

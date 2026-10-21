@@ -229,6 +229,107 @@ describe('DentalTools', () => {
     expect(events.some((e) => e.type === 'ui.event' && e.event === 'appointment.booked')).toBe(true)
   })
 
+  /**
+   * "Booked" said aloud, nothing in the diary.
+   *
+   * The model booked before the caller was identified, was refused, and
+   * confirmed the appointment anyway; the console then said "No appointment
+   * booked" over a call that had promised one. A booking now carries the name
+   * and number it needs, and a refusal says in so many words that it is not
+   * booked.
+   */
+  const firstSlot = async () => {
+    const avail = await tools.run({ id: 'a', name: 'check_availability', args: { service: 'scaling' } })
+    return (avail.result as { slots: { slotStart: string; providerId: string; operatoryId: string }[] }).slots[0]!
+  }
+
+  it('books for a caller not yet identified, registering them from the name and number given', async () => {
+    const slot = await firstSlot()
+    const r = await tools.run({
+      id: 'b',
+      name: 'book_appointment',
+      args: { ...slot, service: 'Scaling & Polishing', patientName: 'Ravi Menon', phone: '98200 11002' },
+    })
+
+    expect(r.ok).toBe(true)
+    expect((r.result as { booked: boolean }).booked).toBe(true)
+    expect(patientId).not.toBeNull()
+    expect(practice.patients.find((p) => p.id === patientId)?.name).toBe('Ravi Menon')
+    expect(events.some((e) => e.type === 'ui.event' && e.event === 'patient.updated')).toBe(true)
+    const booked = events.find((e) => e.type === 'ui.event' && e.event === 'appointment.booked')
+    expect(booked && booked.type === 'ui.event' && booked.payload.patientName).toBe('Ravi Menon')
+  })
+
+  it('finds a returning caller by the number given with the booking, rather than registering them twice', async () => {
+    const known = practice.patients[0]!
+    const before = practice.patients.length
+    const slot = await firstSlot()
+    const r = await tools.run({
+      id: 'b',
+      name: 'book_appointment',
+      args: { ...slot, service: 'Scaling & Polishing', patientName: known.name, phone: known.phone },
+    })
+
+    expect(r.ok).toBe(true)
+    expect(patientId).toBe(known.id)
+    expect(practice.patients).toHaveLength(before)
+    expect(events.some((e) => e.type === 'ui.event' && e.event === 'patient.identified')).toBe(true)
+  })
+
+  it('without a number, books nothing and says plainly that it is not booked', async () => {
+    const slot = await firstSlot()
+    const r = await tools.run({
+      id: 'b',
+      name: 'book_appointment',
+      args: { ...slot, service: 'Scaling & Polishing', patientName: 'Ravi Menon' },
+    })
+    const result = r.result as { booked: boolean; say: string }
+
+    expect(r.ok).toBe(false)
+    expect(result.booked).toBe(false)
+    expect(result.say).toMatch(/mobile number/)
+    expect(result.say).toMatch(/NOT booked/)
+    expect(events.some((e) => e.type === 'ui.event' && e.event === 'appointment.booked')).toBe(false)
+  })
+
+  it('a slot taken in the meantime is reported as not booked', async () => {
+    const slot = await firstSlot()
+    await tools.run({ id: 'p1', name: 'create_patient', args: { name: 'First Caller', phone: '9000000011' } })
+    const first = await tools.run({ id: 'b1', name: 'book_appointment', args: { ...slot, service: 'Scaling & Polishing' } })
+    expect(first.ok).toBe(true)
+
+    patientId = null
+    const second = await tools.run({
+      id: 'b2',
+      name: 'book_appointment',
+      args: { ...slot, service: 'Scaling & Polishing', patientName: 'Second Caller', phone: '9000000012' },
+    })
+    const result = second.result as { booked: boolean; conflict: boolean; say: string }
+    expect(second.ok).toBe(false)
+    expect(result).toMatchObject({ booked: false, conflict: true })
+    expect(result.say).toMatch(/NOT booked/)
+  })
+
+  it('an unknown treatment is reported as not booked', async () => {
+    await tools.run({ id: 'p1', name: 'create_patient', args: { name: 'Test Caller', phone: '9000000013' } })
+    const slot = await firstSlot()
+    const r = await tools.run({ id: 'b', name: 'book_appointment', args: { ...slot, service: 'hair transplant' } })
+    expect((r.result as { booked: boolean }).booked).toBe(false)
+  })
+
+  it('names a moved appointment, so the console can show what moved where', async () => {
+    await tools.run({ id: 'p1', name: 'create_patient', args: { name: 'Test Caller', phone: '9000000014' } })
+    const avail = await tools.run({ id: 'a', name: 'check_availability', args: { service: 'scaling' } })
+    const [s1, s2] = (avail.result as { slots: { slotStart: string; providerId: string; operatoryId: string }[] }).slots
+    const booked = await tools.run({ id: 'b', name: 'book_appointment', args: { ...s1!, service: 'Scaling & Polishing' } })
+    const id = (booked.result as { appointmentId: string }).appointmentId
+
+    const moved = await tools.run({ id: 'm', name: 'reschedule_appointment', args: { appointmentId: id, ...s2! } })
+    expect(moved.ok).toBe(true)
+    const ev = events.find((e) => e.type === 'ui.event' && e.event === 'appointment.rescheduled')
+    expect(ev && ev.type === 'ui.event' && ev.payload).toMatchObject({ patientName: 'Test Caller', serviceName: 'Scaling & Polishing' })
+  })
+
   it('phrases availability as speech, not as a data dump', async () => {
     const r = await tools.run({ id: 'c1', name: 'check_availability', args: { service: 'cleaning' } })
     const slots = (r.result as { slots: { when: string }[] }).slots

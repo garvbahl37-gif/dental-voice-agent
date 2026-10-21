@@ -582,7 +582,7 @@ export class LiveSession {
 
     const responses: { id: string; name: string; response: Record<string, unknown> }[] = []
 
-    for (const fc of calls) {
+    for (const fc of identityFirst(calls)) {
       if (!fc.name) continue
       const id = fc.id ?? `c${Date.now()}`
       const args = (fc.args ?? {}) as Record<string, unknown>
@@ -763,4 +763,19 @@ export class LiveSession {
       /* already gone */
     }
   }
+}
+
+/**
+ * Finding or registering the caller runs before anything else in a batch.
+ *
+ * Live sends several calls at once when it is sure of them, in the order it
+ * thought of them — and it has been seen to ask for a booking and the new
+ * patient it is for in one breath, booking first. Run in that order, the
+ * booking was refused for want of a patient, and the caller was told it was
+ * done anyway. The sort is stable, so everything else keeps its order.
+ */
+const IDENTITY = new Set(['lookup_patient', 'create_patient'])
+
+export function identityFirst<T extends { name?: string }>(calls: T[]): T[] {
+  return [...calls].sort((a, b) => Number(IDENTITY.has(b.name ?? '')) - Number(IDENTITY.has(a.name ?? '')))
 }

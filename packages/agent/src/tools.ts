@@ -90,7 +90,11 @@ export const TOOL_DEFS: ToolDef[] = [
   },
   {
     name: 'book_appointment',
-    description: 'Book a slot returned by check_availability. Read the details back first.',
+    description:
+      'Book a slot returned by check_availability. Read the details back first. ' +
+      'If the caller has not been found or registered yet, pass their name and ' +
+      'mobile number here and they are found or registered in the same step. ' +
+      'It is only booked if this returns booked: true.',
     parameters: {
       type: 'object',
       properties: {
@@ -99,6 +103,8 @@ export const TOOL_DEFS: ToolDef[] = [
         providerId: { type: 'string' },
         operatoryId: { type: 'string' },
         notes: { type: 'string' },
+        patientName: { type: 'string', description: "The caller's name, if not identified yet" },
+        phone: { type: 'string', description: 'Their mobile number, digits only, if not identified yet' },
       },
       required: ['slotStart', 'service', 'providerId', 'operatoryId'],
     },
@@ -196,8 +202,78 @@ export const TOOL_DEFS: ToolDef[] = [
   },
 ]
 
+/**
+ * A booking that did not happen, said so plainly.
+ *
+ * The model reads `say`; `booked: false` is there for anything that reads the
+ * result instead — the console, a test, a log — so no reader has to infer it.
+ */
+function notBooked(say: string, extra: Record<string, unknown> = {}): { ok: false; result: unknown } {
+  return {
+    ok: false,
+    result: {
+      booked: false,
+      ...extra,
+      say: `${say} It is NOT booked — do not tell the caller it is, or that it is done.`,
+    },
+  }
+}
+
+/** The time as it is said; the ISO time itself if it cannot be read. */
+function sayWhen(iso: string, lang: Lang): string {
+  try {
+    return spokenTime(iso, lang).phrase
+  } catch {
+    return iso
+  }
+}
+
 export class DentalTools implements ToolRunner {
   constructor(private readonly ctx: ToolContext) {}
+
+  /**
+   * Who a booking is for.
+   *
+   * The patient found earlier in the call if there is one. Otherwise, so a
+   * booking never fails only because a step was skipped, the caller is found
+   * by the number the model passes, or registered with it and their name —
+   * exactly as `lookup_patient` and `create_patient` would have done.
+   */
+  private async resolvePatient(
+    name: unknown,
+    phone: unknown,
+  ): Promise<{ ok: true; id: string } | { ok: false; say: string }> {
+    const known = this.ctx.patientId()
+    if (known) return { ok: true, id: known }
+
+    const { practice, emit } = this.ctx
+    const digits = phone ? (normalisePhone(String(phone)) ?? String(phone).replace(/\D/g, '')) : ''
+    if (digits.length === 10) {
+      const found = await practice.findPatientByPhone(digits)
+      if (found) {
+        this.ctx.setPatient(found.id)
+        const upcoming = await practice.upcomingFor(found.id)
+        emit({ type: 'ui.event', event: 'patient.identified', payload: { ...found, upcoming: upcoming.length } })
+        return { ok: true, id: found.id }
+      }
+      if (name && String(name).trim()) {
+        const created = await practice.createPatient({
+          name: String(name).trim(),
+          phone: digits,
+          preferredLanguage: this.ctx.lang(),
+        })
+        this.ctx.setPatient(created.id)
+        emit({ type: 'ui.event', event: 'patient.updated', payload: { ...created } })
+        return { ok: true, id: created.id }
+      }
+    }
+
+    const missing = !name && digits.length !== 10 ? 'their name and mobile number' : !name ? 'their name' : 'their ten-digit mobile number'
+    return {
+      ok: false,
+      say: `Nothing was booked yet: it needs ${missing}. Ask for that, then call book_appointment again with patientName and phone.`,
+    }
+  }
 
   defs(): ToolDef[] {
     return TOOL_DEFS
@@ -347,61 +423,92 @@ export class DentalTools implements ToolRunner {
         }
       }
 
+      /**
+       * Booking — the one tool whose failure the caller must never miss.
+       *
+       * Three ways it used to fail without anyone being told:
+       *
+       * - The model booked before identifying the caller (or asked for both in
+       *   one batch, the booking first). It was refused with "no patient", and
+       *   then confirmed the appointment aloud anyway. Now it can pass the name
+       *   and number it already heard, and the patient is found or registered
+       *   here, in the same step.
+       * - The practice's database needs the appointment's length, and this
+       *   never passed it, so every phone booking died on an end time of NaN.
+       *   The length now comes from the treatment, here and in the adapter.
+       * - A failure answered "unknown treatment" or threw. Every failure now
+       *   says `booked: false` and, in so many words, not to say otherwise.
+       *
+       * And the console hears about a booking the moment it is written, before
+       * anything else here gets a chance to throw.
+       */
       case 'book_appointment': {
-        const patientId = this.ctx.patientId()
-        if (!patientId) {
-          return { ok: false, result: { say: 'No patient identified yet — get their name and number first.' } }
-        }
+        const who = await this.resolvePatient(a.patientName, a.phone)
+        if (!who.ok) return notBooked(who.say)
+        const patientId = who.id
+
         const service = practice.findService(String(a.service))
-        if (!service) return { ok: false, result: { say: 'Unknown treatment.' } }
+        if (!service) {
+          return notBooked(
+            'That treatment is not on the list, so nothing was booked. Check with them which treatment they want.',
+          )
+        }
 
         // Re-checked at the moment of writing, not on the strength of the
         // earlier search — the slot may have gone while the caller decided.
-        const outcome = await practice.bookAtomic({
-          patientId,
-          serviceId: service.id,
-          start: String(a.slotStart),
-          providerId: String(a.providerId),
-          operatoryId: String(a.operatoryId),
-          notes: a.notes ? String(a.notes) : undefined,
-        })
+        let outcome: Awaited<ReturnType<typeof practice.bookAtomic>>
+        try {
+          outcome = await practice.bookAtomic({
+            patientId,
+            serviceId: service.id,
+            start: String(a.slotStart),
+            providerId: String(a.providerId),
+            operatoryId: String(a.operatoryId),
+            durationMin: service.durationMin,
+            notes: a.notes ? String(a.notes) : undefined,
+          })
+        } catch (err) {
+          return notBooked(
+            'The diary did not take the booking because of a fault on our side. Apologise, say the front desk will call back to fix a time, and take a note of what they wanted.',
+            { error: err instanceof Error ? err.message : String(err) },
+          )
+        }
 
         if (!outcome.ok) {
-          return {
-            ok: false,
-            result: {
-              conflict: true,
-              say: 'That slot was taken just now. Apologise briefly, then offer the next nearest time. Do NOT claim it is booked.',
-            },
-          }
+          return notBooked(
+            'That slot was taken just now. Apologise briefly, then offer the next nearest time.',
+            { conflict: true },
+          )
         }
         const appt = outcome.appointment
         const patient = practice.patients.find((p) => p.id === patientId)
         const provider = practice.provider(appt.providerId)
+        const when = sayWhen(appt.start, lang)
 
         emit({
           type: 'ui.event',
           event: 'appointment.booked',
           payload: {
             ...appt,
-            patientName: patient?.name,
+            patientName: patient?.name ?? (a.patientName ? String(a.patientName) : undefined),
             serviceName: service.name,
             providerName: provider?.name,
-            when: spokenTime(appt.start, lang).phrase,
+            when,
           },
         })
 
         return {
           ok: true,
           result: {
+            booked: true,
             appointmentId: appt.id,
             confirmed: {
               patient: patient?.name,
               treatment: service.name,
               doctor: provider?.name,
-              when: spokenTime(appt.start, lang).phrase,
+              when,
             },
-            say: 'Confirm it warmly and mention the WhatsApp confirmation.',
+            say: 'It is in the diary. Confirm it warmly, saying `when` exactly as written.',
           },
         }
       }
@@ -424,28 +531,48 @@ export class DentalTools implements ToolRunner {
       }
 
       case 'reschedule_appointment': {
-        const moved = await practice.reschedule({
-          appointmentId: String(a.appointmentId),
-          start: String(a.slotStart),
-          providerId: String(a.providerId),
-          operatoryId: String(a.operatoryId),
-        })
-        if (!moved.ok) {
-          return {
-            ok: false,
-            result: {
-              say:
-                moved.reason === 'taken'
-                  ? 'That new slot has gone. Their original appointment is untouched — say so, and offer another time.'
-                  : 'Could not find that appointment.',
-            },
-          }
+        let moved: Awaited<ReturnType<typeof practice.reschedule>>
+        try {
+          moved = await practice.reschedule({
+            appointmentId: String(a.appointmentId),
+            start: String(a.slotStart),
+            providerId: String(a.providerId),
+            operatoryId: String(a.operatoryId),
+          })
+        } catch (err) {
+          return notBooked(
+            'The diary did not take the change because of a fault on our side. Their original appointment stands — say so, and that the front desk will call back.',
+            { error: err instanceof Error ? err.message : String(err) },
+          )
         }
-        emit({ type: 'ui.event', event: 'appointment.rescheduled', payload: { ...moved.appointment } })
+        if (!moved.ok) {
+          return notBooked(
+            moved.reason === 'taken'
+              ? 'That new slot has gone. Their original appointment is untouched — say so, and offer another time.'
+              : 'Could not find that appointment, so nothing was moved.',
+          )
+        }
+        const appt = moved.appointment
+        const when = sayWhen(appt.start, lang)
+        // Named, like a booking, so the console can show what moved where.
+        emit({
+          type: 'ui.event',
+          event: 'appointment.rescheduled',
+          payload: {
+            ...appt,
+            patientName: practice.patients.find((p) => p.id === this.ctx.patientId())?.name,
+            serviceName: practice.services.find((s) => s.id === appt.serviceId)?.name,
+            providerName: practice.provider(appt.providerId)?.name,
+            when,
+          },
+        })
         return {
           ok: true,
           result: {
-            when: spokenTime(moved.appointment.start, lang).phrase,
+            booked: true,
+            moved: true,
+            appointmentId: appt.id,
+            when,
             say: 'Confirm the new time simply, saying `when` exactly as written.',
           },
         }

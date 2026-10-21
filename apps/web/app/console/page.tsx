@@ -96,6 +96,15 @@ export default function Console() {
 
   const [patient, setPatient] = useState<PatientCard | null>(null)
   const [bookings, setBookings] = useState<BookedAppointment[]>([])
+  /**
+   * Bookings that were tried and did not go into the diary, with why.
+   *
+   * Without these, a call where the desk tried to book and failed ended on
+   * "No appointment booked" with nothing to say a booking had ever been
+   * attempted — which read as the console losing a booking, not as a booking
+   * that needs a person to finish it.
+   */
+  const [missed, setMissed] = useState<string[]>([])
   const [tools, setTools] = useState<ToolActivity[]>([])
   const [cards, setCards] = useState<InlineCard[]>([])
   const [triage, setTriage] = useState<{ band: string; reason: string } | null>(null)
@@ -283,10 +292,48 @@ export default function Console() {
           { kind: 'tool', id: event.id, at: Date.now(), name: event.name, args: event.args },
         ])
         break
-      case 'tool.result':
+      case 'tool.result': {
         setTools((prev) =>
           prev.map((t) => (t.id === event.id ? { ...t, ms: event.ms, ok: event.ok } : t)),
         )
+        /**
+         * The tool's own answer is the record of whether it booked.
+         *
+         * The UI event usually arrives first and has already added the
+         * booking; this adds it only if it has not, so a booking the diary
+         * took can never be missing from the summary. A refusal is kept too.
+         */
+        if (event.name === 'book_appointment' || event.name === 'reschedule_appointment') {
+          const r = (event.result ?? {}) as {
+            booked?: boolean
+            appointmentId?: string
+            when?: string
+            conflict?: boolean
+            error?: string
+            say?: string
+            confirmed?: { patient?: string; treatment?: string; doctor?: string; when?: string }
+          }
+          if (event.ok && r.appointmentId) {
+            const id = String(r.appointmentId)
+            setBookings((prev) =>
+              prev.some((b) => b.id === id)
+                ? prev
+                : [
+                    ...prev,
+                    {
+                      id,
+                      patientName: r.confirmed?.patient,
+                      serviceName: r.confirmed?.treatment,
+                      providerName: r.confirmed?.doctor,
+                      when: r.confirmed?.when ?? r.when,
+                      moved: event.name === 'reschedule_appointment',
+                    },
+                  ],
+            )
+          } else if (!event.ok) {
+            setMissed((prev) => [...prev, missReason(event.name, r)])
+          }
+        }
         setCards((prev) =>
           prev.map((c) =>
             c.kind === 'tool' && c.id === event.id
@@ -295,6 +342,7 @@ export default function Console() {
           ),
         )
         break
+      }
       case 'metrics.turn':
         setMetrics((prev) => [...prev, event])
         break
@@ -319,17 +367,17 @@ export default function Console() {
             ...prev,
             { kind: 'patient', id: `p${at}`, at, name: p.name, phone: p.phone, isNew: true },
           ])
-        } else if (event.event === 'appointment.booked') {
-          setBookings((prev) => [
-            ...prev,
-            {
-              id: String(p.id),
-              patientName: p.patientName,
-              serviceName: p.serviceName,
-              providerName: p.providerName,
-              when: p.when,
-            },
-          ])
+        } else if (event.event === 'appointment.booked' || event.event === 'appointment.rescheduled') {
+          const booking: BookedAppointment = {
+            id: String(p.id),
+            patientName: p.patientName,
+            serviceName: p.serviceName,
+            providerName: p.providerName,
+            when: p.when,
+            moved: event.event === 'appointment.rescheduled',
+          }
+          // A move keeps its id, so it replaces the booking it moved.
+          setBookings((prev) => [...prev.filter((b) => b.id !== booking.id), booking])
           setCards((prev) => [
             ...prev,
             {
@@ -409,6 +457,7 @@ export default function Console() {
     setMetrics([])
     setPatient(null)
     setBookings([])
+    setMissed([])
     setTools([])
     setCards([])
     setTriage(null)
@@ -472,6 +521,7 @@ export default function Console() {
       turns,
       patient,
       bookings,
+      missed,
       tools,
       triage,
       metrics,
@@ -485,6 +535,7 @@ export default function Console() {
     setMetrics([])
     setPatient(null)
     setBookings([])
+    setMissed([])
     setTools([])
     setCards([])
     setTriage(null)
@@ -494,7 +545,7 @@ export default function Console() {
     setElapsed(0)
     setError(null)
     setStatus('idle')
-  }, [startedAt, turns, patient, bookings, tools, triage, metrics, lang])
+  }, [startedAt, turns, patient, bookings, missed, tools, triage, metrics, lang])
 
   useEffect(() => {
     if (status !== 'live' || !startedAt) return
@@ -594,4 +645,14 @@ export default function Console() {
       </div>
     </main>
   )
+}
+
+/** Why a booking did not go in, in a few words a receptionist can act on. */
+function missReason(tool: string, r: { conflict?: boolean; error?: string; say?: string }): string {
+  if (tool === 'reschedule_appointment') return 'A move was tried but the appointment stayed where it was'
+  if (r.conflict) return 'The time was taken while they decided'
+  if (r.error) return 'The diary did not take it'
+  if (r.say && /mobile number|name/.test(r.say)) return 'There was no name and number to book under'
+  if (r.say && /treatment/.test(r.say)) return 'The treatment was not one the practice offers'
+  return 'The diary did not take it'
 }

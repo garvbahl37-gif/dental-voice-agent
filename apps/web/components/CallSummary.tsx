@@ -25,6 +25,8 @@ export interface CallSummary {
   turns: Turn[]
   patient: PatientCard | null
   bookings: BookedAppointment[]
+  /** Bookings tried and not made, with why. */
+  missed?: string[]
   tools: ToolActivity[]
   triage: { band: string; reason: string } | null
   metrics: TurnMetrics[]
@@ -34,6 +36,7 @@ export interface CallSummary {
 
 export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNew: () => void }) {
   const { patient, bookings, triage, turns, metrics, durationSec, lang } = summary
+  const missed = summary.missed ?? []
 
   const callerTurns = turns.filter((t) => t.speaker === 'caller').length
   const avgLatency =
@@ -46,10 +49,23 @@ export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNe
   if (triage) followUps.push(`Triage escalated — ${triage.reason}`)
   if (patient?.isNew) followUps.push('New patient record created — verify details')
   if (!patient) followUps.push('Caller was never identified')
-  if (bookings.length === 0 && callerTurns > 0) followUps.push('No appointment was booked')
+  // A booking that was tried and failed is the thing most worth a call back:
+  // the caller may well think they have an appointment.
+  if (bookings.length === 0) {
+    for (const why of new Set(missed)) followUps.push(`Booking tried but not made — ${why}. Call them back to fix a time`)
+    if (missed.length === 0 && callerTurns > 0) followUps.push('No appointment was booked')
+  }
 
   const outcome =
-    bookings.length > 0 ? 'booked' : triage ? 'escalated' : callerTurns === 0 ? 'no-speech' : 'no-booking'
+    bookings.length > 0
+      ? 'booked'
+      : triage
+        ? 'escalated'
+        : missed.length > 0
+          ? 'not-made'
+          : callerTurns === 0
+            ? 'no-speech'
+            : 'no-booking'
 
   /**
    * The turns, placed on the call's own clock.
@@ -111,7 +127,10 @@ export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNe
           ) : (
             bookings.map((b) => (
               <div key={b.id} style={s.booking}>
-                <strong style={s.bookingService}>{b.serviceName}</strong>
+                <strong style={s.bookingService}>
+                  {b.moved ? 'Moved · ' : ''}
+                  {b.serviceName ?? 'Appointment'}
+                </strong>
                 <span style={s.bookingWhen}>{b.when}</span>
                 <span style={s.bookingDoc}>{b.providerName}</span>
               </div>
@@ -149,6 +168,7 @@ function outcomeLabel(o: string): string {
     booked: 'Appointment booked',
     escalated: 'Escalated to the clinic',
     'no-speech': 'No conversation took place',
+    'not-made': 'Booking not completed',
     'no-booking': 'No appointment booked',
   }[o] ?? 'Call ended'
 }

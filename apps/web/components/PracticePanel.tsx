@@ -38,6 +38,8 @@ export interface BookedAppointment {
   serviceName?: string
   providerName?: string
   when?: string
+  /** An existing appointment moved to this time, rather than a new one. */
+  moved?: boolean
 }
 
 interface Props {

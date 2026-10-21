@@ -437,6 +437,8 @@ export class PracticeStore {
     start: string
     providerId: string
     operatoryId: string
+    /** Accepted for the database adapter's sake; here the treatment's own length is used. */
+    durationMin?: number
     notes?: string
   }): { ok: true; appointment: Appointment } | { ok: false; reason: 'taken' | 'unknown_service' } {
     const service = this.services.find((s) => s.id === input.serviceId)
