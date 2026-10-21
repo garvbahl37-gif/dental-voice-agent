@@ -284,13 +284,75 @@ call; what is not built is not on it).
       queue", and the example call says "put first in the clinic's callback
       queue"
 
+### Fix — "appointment booked, but it says no appointment booked"
+The console's summary only counted a booking when the `appointment.booked`
+event arrived; the backend lost bookings three ways before that event:
+- [x] Phone line (database adapter): `bookAtomic` needed the appointment's
+      length and the tool never passed it, so every phone booking died on an
+      end time of NaN. The adapter now takes the treatment's own length; a
+      reschedule keeps the appointment's (`practice-adapter.ts`, `repo.ts`)
+- [x] Booking before the caller was identified was refused ("no patient
+      yet") and the model confirmed it aloud anyway. `book_appointment` now
+      takes `patientName` and `phone` and finds or registers the caller in the
+      same step (`tools.ts`)
+- [x] When Live sends several tool calls at once, finding or registering the
+      caller runs first — a booking sent ahead of its patient no longer fails
+      (`live/session.ts`, `identityFirst`)
+- [x] Every refusal says `booked: false` and "It is NOT booked — do not tell
+      the caller it is"; a thrown error is caught and said the same way; the
+      booking event goes out the moment the row is written
+- [x] Console: a booking also counts from the tool's own result (so a lost
+      event cannot hide it), a reschedule counts as "Moved", and a booking
+      tried and refused shows as "Booking not completed" with the reason in
+      Needs a human ("The time was taken while they decided…")
+- [x] The tool no longer tells callers a WhatsApp confirmation is coming
+- [x] Tests: 11 new (booking with name and number, returning caller, no
+      number, slot taken, unknown treatment, moved appointment; adapter books
+      and moves without a length; batch order). All 377 pass
+- [x] Checked through the real console with a scripted call: booked → "Appointment
+      booked"; booked with the event dropped → still "Appointment booked";
+      refused → "Booking not completed"
+
+### Landing — smoothness
+Measured by tracing a full scroll of the landing, production (before) against
+this build (after, in dev mode, which is heavier): work per frame 6.1 → 3.9 ms,
+GPU work 1.04 → 0.50 ms, raster workers out of the top tasks.
+- [x] No blur over things that keep moving: frosted panels, captions, pills,
+      chips, the eyebrow and the glass in every sky are solid now (the bar
+      keeps its one blur)
+- [x] Clouds are soft gradients, not blur filters (four per sky, five skies);
+      the rim lights glow from a wide tail, not a drop-shadow filter
+- [x] Scroll-linked values have no CSS transition behind them (a transition
+      restarted every frame moves in uneven steps); the pointer is eased in
+      script instead, and the loop stops once it has caught up
+- [x] Each scroll value is written to the one element that reads it — the
+      record's line, the step rails — not to whole sections
+- [x] The honeycomb restarts its wave without forcing a page-wide layout (it
+      did every 6.5 s, on screen or not), and rests while off screen
+
+### README screenshots
+- [x] Retaken from the new design at 2× scale: landing (and the banner, which
+      had been deleted), the pipeline (new), a call in the console and its
+      summary (a scripted call through the real console — no live call can be
+      placed from a headless browser), the dashboard, setup, knowledge,
+      settings, sign-in, and the landing and dashboard on a phone
+- [x] WebP/JPEG where gradients made PNGs huge: 3.0 MB in all, down from 3.9
+- [x] README text matched to the new screens: the console layout, the
+      dashboard's order, the summary's "booking tried and not made", and a
+      section for /pipeline
+
+### More honesty fixes
+- [x] Knowledge page: "Alerts the clinic" / "the on-call dentist rings back"
+      → "First in the queue" / "In Needs a human at high priority — no
+      message is sent" (the spoken script is still quoted as it is said)
+- [x] Setup page: the practice phone is "the number the agent gives out", not
+      "where urgent calls are sent" — there is no call transfer
+
 ### Ship
 - [x] Committed as garvbahl37-gif only (no co-author line) and pushed to main
-- [ ] Deployed to Vercel production (dental-voice-agent-pi.vercel.app) —
+- [x] Deployed to Vercel production (dental-voice-agent-pi.vercel.app) —
       pushes do not deploy on their own; `npx vercel deploy --prod`
-- [ ] `docs/banner.png` is deleted in the working tree but the README still
-      shows it — left out of the commit; restore it or replace it with a shot
-      of the new landing
+- [x] `docs/banner.png` replaced with a shot of the new landing (banner.webp)
 
 ### The rest of the app
 - [x] Knowledge, settings, console, sign-in, onboarding take the shared tokens
@@ -376,17 +438,24 @@ https://dribbble.com/shots/26253961-Meeto-ai-AI-Meeting-Assistant-Dashboard
 - [ ] Built only from what the call row holds — no invented summary
 
 ### Bugs found along the way (not fixed — backend)
+- [ ] **Safety, needs a decision:** the red-band script tells an emergency
+      caller "I am alerting the clinic now, and our on-call dentist will call
+      you within a few minutes" (`triage.ts` L172, and the Hinglish L176 —
+      check the other nine). Nothing sends an alert and no callback is
+      arranged; the call only goes to the top of "Needs a human". A caller
+      may wait for that call instead of going to the emergency room. Either
+      make it true (notify an on-call number) or take the promise out of all
+      eleven scripts — hand-written clinical text, so not changed in passing
 - [ ] `triage.ts`: "चेहरा सूज गया है और बुखार भी है" (swollen face + fever, Hindi)
       comes back **green**; the English sentence is red. The Hindi swelling
       pattern only fires on `सूजन` near `आँख|गला`. The seeded demo calls show it as red.
-- [ ] The agent tells callers a WhatsApp confirmation is on its way; no code
-      sends one
+- [x] The agent tells callers a WhatsApp confirmation is on its way; no code
+      sends one — the booking tool no longer asks it to
 - [ ] Triage writes the band as `red`, but the dashboard's emergency count and
       the phone outcome check compare against `'RED'` (`analytics.ts` L62,
       `twilio-stream.ts` L129) — emergencies may never be counted
-- [ ] Phone bookings go through `OrgPracticeAdapter.bookAtomic`, which needs a
-      `durationMin` that `tools.ts` never passes — the end time may be NaN
-      (not run, read from the code)
+- [x] Phone bookings go through `OrgPracticeAdapter.bookAtomic`, which needs a
+      `durationMin` that `tools.ts` never passes — fixed, see the booking fix
 - [ ] `appointment.booked`, `appointment.cancelled` and `escalation.raised`
       webhooks can be subscribed to but are never sent; `call.completed` is
       sent for phone calls only

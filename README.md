@@ -1,4 +1,4 @@
-![Vaani — an AI front desk for dental practices, taking a call in Hinglish](docs/banner.png)
+![Vaani — every patient call, in their own language: the landing page](docs/banner.webp)
 
 # Vaani — AI front desk for dental practices
 
@@ -26,11 +26,25 @@ receptionist and carries on — it never claims to be a person.
 | Take a call | [/console](https://dental-voice-agent-pi.vercel.app/console) — speak to it in the browser |
 | Set up a practice | [/start](https://dental-voice-agent-pi.vercel.app/start) — creates a real, isolated tenant |
 | The dashboard | [/login](https://dental-voice-agent-pi.vercel.app/login) — `owner@smile.example` |
+| How it works inside | [/pipeline](https://dental-voice-agent-pi.vercel.app/pipeline) — one call, end to end |
 
 Everything runs on Vercel, console and calls alike, so there is nothing to wake: a call
 opens its socket in about a second and the first audio arrives around two.
 
-![The landing page](docs/screenshots/landing.png)
+![The landing page](docs/screenshots/landing.webp)
+
+---
+
+## The pipeline
+
+![The pipeline](docs/screenshots/pipeline.webp)
+
+[/pipeline](https://dental-voice-agent-pi.vercel.app/pipeline) draws the platform as the
+code has it: a call by phone (Twilio) or in the browser, the voice session, Gemini Live
+hearing and speaking in one step, the thirteen tools it calls mid-sentence, the triage
+rules, Postgres, and the dashboard, API and webhooks at the end. Packets run the wires
+and the board tells the story in six beats; below it, each stage names the file it comes
+from. Anything not built is left off it.
 
 ---
 
@@ -39,31 +53,34 @@ opens its socket in about a second and the first audio arrives around two.
 Press **Take a call** and talk. Interrupt it mid-sentence; it stops, and it does not
 remember saying what you never heard.
 
-![A call in progress](docs/screenshots/console-call.png)
+![A call in progress](docs/screenshots/console-call.webp)
 
-Left: live state, mouth-to-ear latency, and the transcript with each speaker in their own
-hue. Right: what the agent has understood so far — caller identity, anything committed to
-the diary, and every tool call with its latency.
+The stage holds the call — the orb, its timer, the language, and the live mouth-to-ear,
+turns and elapsed. Under it, the conversation, with what the desk did written in where it
+happened. On the right, what it has understood so far — who is calling, anything committed
+to the diary, and every lookup with how long it took.
 
 When the line drops, the practice gets the record it actually needs — not a transcript,
 but an answer to *"is there anything for me to do about this call?"*
 
-![The call summary](docs/screenshots/console-summary.png)
+![The call summary](docs/screenshots/console-summary.webp)
 
 **Needs a human** is the field that matters. An unidentified caller, an unconfirmed
-number, an escalated emergency, a call that ended without booking — each is surfaced
-rather than buried. Empty is the good outcome.
+number, an escalated emergency, a booking that was tried and did not go in, a call that
+ended without booking — each is surfaced rather than buried. Empty is the good outcome.
 
 ---
 
 ## The dashboard
 
-![The practice dashboard](docs/screenshots/dashboard.png)
+![The practice dashboard](docs/screenshots/dashboard.webp)
 
-Ordered by what someone opens it for, which is not the flattering number. **Needs a
-human** comes first — ranked emergency-first and capped, because an emergency must never
-be the ninth card down — then the call counts, then how the agent behaved, then what it
-earned.
+The desk itself first — a large card with the orb, the last call and the round controls
+to take a call, open the last one or go to the callbacks — then the recent calls with
+their outcomes, the week drawn as a curve, the first reply and the bookings, and the month
+as a calendar shaded by how busy each day was. Below the fold sits everything else:
+**Needs a human** ranked emergency-first, what the desk earned, the languages, and the
+detail.
 
 Latency is reported as a median *and* a 95th percentile. One nine-second reply matters to
 the caller who got it, and a mean hides it completely.
@@ -276,7 +293,7 @@ Every slot the agent offers is read from the diary at the moment it speaks.
 
 ## Mobile
 
-![The landing page on mobile](docs/screenshots/landing-mobile.png)
+![The landing page on mobile](docs/screenshots/landing-mobile.jpg)
 
 ---
 
