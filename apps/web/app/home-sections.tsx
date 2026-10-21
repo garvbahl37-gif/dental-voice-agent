@@ -335,29 +335,37 @@ export function Voices() {
   const [held, setHeld] = useState(false)
   const honey = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (held || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const t = window.setTimeout(() => setAt((i) => (i + 1) % VOICES.length), 6500)
-    return () => window.clearTimeout(t)
-  }, [at, held])
+  const [seen, setSeen] = useState(false)
 
-  // A wave of light rings out through the comb each time the call changes.
-  // The class comes off and goes back on, with a layout read between, so the
-  // animation starts again rather than carrying on from where it was.
+  // Only while it is on screen: the calls turn, and the comb ripples.
   useEffect(() => {
     const el = honey.current
     if (!el) return
-    el.classList.remove('is-wave')
-    void el.offsetWidth
-    el.classList.add('is-wave')
-  }, [at])
+    const io = new IntersectionObserver(([e]) => setSeen(!!e?.isIntersecting), { rootMargin: '100px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!seen || held || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const t = window.setTimeout(() => setAt((i) => (i + 1) % VOICES.length), 6500)
+    return () => window.clearTimeout(t)
+  }, [at, held, seen])
+
+  // A wave of light rings out through the comb each time the call changes.
+  // Two identical animations under two names, swapped: a new name starts the
+  // animation again with no layout read — the old way forced one across the
+  // whole page every six and a half seconds, which a scroll felt as a hitch.
+  // An attribute, not a class: the reveal adds a class to this element, and
+  // a class list React rewrites would take it away again.
+  const wave = at % 2 === 0 ? 'a' : 'b'
 
   let k = 0
   const v = VOICES[at]!
 
   return (
     <section id="voices" className="mo-section mo-voices">
-      <div className="mo-honey" aria-hidden data-reveal ref={honey}>
+      <div className="mo-honey" data-wave={wave} aria-hidden data-reveal ref={honey}>
         {HONEY_ROWS.map((n, r) => (
           <div key={r} className="mo-honey-row">
             {Array.from({ length: n }, (_, i) => {

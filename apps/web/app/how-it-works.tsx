@@ -43,13 +43,16 @@ const STEPS = [
 
 export function HowItWorks() {
   const track = useRef<HTMLDivElement>(null)
+  const list = useRef<HTMLOListElement>(null)
   const [step, setStep] = useState(0)
 
   /**
    * The scroll through the pinned track, from 0 to 3.
    *
    * Written straight to a custom property, so the rails fill without React
-   * rendering on every frame; state changes only when the step does.
+   * rendering on every frame; state changes only when the step does. Written
+   * on the list, the only thing that reads it, so a scroll frame restyles
+   * three rails rather than the whole section and its three scenes.
    */
   useEffect(() => {
     const el = track.current
@@ -61,7 +64,7 @@ export function HowItWorks() {
       const total = r.height - window.innerHeight
       if (total <= 0) return
       const p = Math.min(0.9999, Math.max(0, -r.top / total)) * STEPS.length
-      el.style.setProperty('--p', p.toFixed(4))
+      list.current?.style.setProperty('--p', p.toFixed(4))
       const s = Math.floor(p)
       setStep((prev) => (prev === s ? prev : s))
     }
@@ -97,7 +100,7 @@ export function HowItWorks() {
               <i aria-hidden /> How it works
             </p>
             <h2 className="hw-title">A smarter way to handle every patient call.</h2>
-            <ol className="hw-steps">
+            <ol className="hw-steps" ref={list}>
               {STEPS.map((s, i) => (
                 <li
                   key={s.k}

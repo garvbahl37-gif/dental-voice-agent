@@ -69,9 +69,10 @@
 }
 
 .mo-btn.is-glass {
-  background: rgba(255, 255, 255, 0.55);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  /* Solid enough to read without blurring what is behind it: it sits in the
+     bar, which already blurs, and two blurs on every scroll frame was paid
+     for twice. */
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .mo-btn.is-sm {
@@ -258,12 +259,13 @@
     linear-gradient(180deg, #ffffff 0%, #eef6f0 40%, #e3f0e6 70%, #ffffff 100%);
 }
 
-/* Clouds: blurred white masses drifting very slowly. */
+/* Clouds: soft white masses drifting very slowly. Soft by their own gradient,
+   not by a blur filter — a filter on a moving layer is redone every frame,
+   and there were four clouds in each of five skies. */
 .mo-cloud {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  filter: blur(22px);
+  background: radial-gradient(closest-side, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.6) 45%, rgba(255, 255, 255, 0) 100%);
   animation: mo-cloud 38s ease-in-out infinite alternate;
 }
 
@@ -290,8 +292,6 @@
   background:
     linear-gradient(90deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12) 40%, rgba(255, 255, 255, 0.4)),
     rgba(200, 230, 225, 0.25);
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
 }
 
 .mo-glass.is-left {
@@ -390,8 +390,7 @@
   left: -6%;
   bottom: -14%;
   width: 46%;
-  filter: blur(10px);
-  opacity: 0.8;
+  opacity: 0.55;
 }
 
 .is-room .mo-leaves.is-right { display: none; }
@@ -399,8 +398,7 @@
 .is-garden .mo-leaves {
   bottom: 10%;
   width: 34%;
-  filter: blur(8px);
-  opacity: 0.75;
+  opacity: 0.55;
 }
 
 .is-garden .mo-leaves.is-left { left: -4%; }
@@ -490,9 +488,7 @@
   padding: 6px 15px 6px 11px;
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 999px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(236, 248, 240, 0.7));
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(236, 248, 240, 0.88));
   box-shadow: 0 10px 26px -16px rgba(14, 40, 26, 0.45), 0 0 0 1px rgba(31, 157, 71, 0.12);
   font-size: 13.5px;
   font-weight: 500;
@@ -723,7 +719,7 @@
   opacity: 1;
   /* Drawn by the scroll: `--drop` runs from 0 to 1 as the panel arrives. */
   transform: scaleY(var(--drop, 1));
-  transition: transform 160ms linear;
+  transition: none;
 }
 
 /* Kept for the example calls, which arrive the way the old transcript did. */
@@ -1236,12 +1232,22 @@
   background: none;
 }
 
-.mo-honey.is-wave .mo-cell::after {
-  animation: mo-wave 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+.mo-honey[data-wave] .mo-cell::after {
+  animation: mo-wave-a 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both;
   animation-delay: calc(var(--ring, 0) * 140ms);
 }
 
-@keyframes mo-wave {
+.mo-honey[data-wave='b'] .mo-cell::after {
+  animation-name: mo-wave-b;
+}
+
+@keyframes mo-wave-a {
+  0% { opacity: 0; transform: scale(0.8); }
+  28% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.14); }
+}
+
+@keyframes mo-wave-b {
   0% { opacity: 0; transform: scale(0.8); }
   28% { opacity: 1; transform: scale(1.05); }
   100% { opacity: 0; transform: scale(1.14); }
@@ -1877,16 +1883,9 @@
 /* ── Depth in the hero ────────────────────────────────────────────────────── */
 
 /* Near layers move further than far ones, and the scene sinks as the page
-   scrolls while the call card rises out of it. The short transition is what
-   makes a jerky pointer read as a slow drift. */
-.mo-hero .mo-glass,
-.mo-hero .mo-cloud,
-.mo-hero .mo-leaves,
-.mo-hero .mo-hills,
-.mo-hero-in,
-.mo-lift {
-  transition: translate 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
+   scrolls while the call card rises out of it. No transition: these values
+   change every frame of a scroll, and a transition restarted every frame
+   moves in uneven steps. landing-fx.ts eases the pointer itself instead. */
 
 .mo-hero .mo-glass { translate: calc(var(--mx, 0) * -14px) calc(var(--hero, 0) * 90px); }
 .mo-hero .mo-cloud { translate: calc(var(--mx, 0) * 28px) calc(var(--my, 0) * 8px + var(--hero, 0) * 50px); }
@@ -2554,8 +2553,9 @@ html:has(.mo) {
 }
 
 .mo-comet.is-t1 {
-  stroke: rgba(79, 214, 114, 0.14);
-  stroke-width: 2;
+  /* Wide and faint: the glow the head used to get from a filter. */
+  stroke: rgba(79, 214, 114, 0.16);
+  stroke-width: 7;
   stroke-dasharray: 10 90;
 }
 
@@ -2570,7 +2570,6 @@ html:has(.mo) {
   stroke: #4fd672;
   stroke-width: 3.2;
   stroke-dasharray: 1.2 98.8;
-  filter: drop-shadow(0 0 5px rgba(79, 214, 114, 0.95));
   animation-name: mo-comet-head;
 }
 
@@ -2587,7 +2586,6 @@ html:has(.mo) {
 
 .mo-comet.is-head.is-warm {
   stroke: #fff;
-  filter: drop-shadow(0 0 6px rgba(255, 236, 196, 1));
 }
 
 @keyframes mo-comet {

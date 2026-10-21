@@ -22,6 +22,13 @@ import { useEffect } from 'react'
  * card that tilts under a scrolling thumb is a card that wobbles. Nothing runs
  * for anyone who asked for less motion. One animation frame per burst of
  * events, however many arrive.
+ *
+ * Smoothness: scroll values are written as they are, with no CSS transition
+ * behind them — a transition restarted on every frame of a scroll moves in
+ * uneven steps, which is what made the hero feel jerky. The pointer, which
+ * does want easing, is eased here, a fraction of the way each frame, and the
+ * loop keeps running only until it has caught up. Each value is written to
+ * the one element that reads it, so a scroll restyles a line, not a section.
  */
 export function useLandingFx(): void {
   useEffect(() => {
@@ -30,6 +37,7 @@ export function useLandingFx(): void {
 
     const hero = document.querySelector<HTMLElement>('.mo-hero')
     const panel = document.querySelector<HTMLElement>('.mo-panel-wrap')
+    const drop = panel?.querySelector<HTMLElement>('.mo-drop') ?? null
     const nav = document.querySelector<HTMLElement>('.mo-nav')
 
     /**
@@ -53,11 +61,17 @@ export function useLandingFx(): void {
     for (const s of sections) live.observe(s)
 
     let frame = 0
+    // Where the pointer is, and where the scene has eased to so far.
+    let tx = 0
+    let ty = 0
     let px = 0
     let py = 0
 
     const update = () => {
       frame = 0
+      px += (tx - px) * 0.1
+      py += (ty - py) * 0.1
+      const settling = Math.abs(tx - px) > 0.002 || Math.abs(ty - py) > 0.002
       const vh = window.innerHeight
       if (hero) {
         const r = hero.getBoundingClientRect()
@@ -68,18 +82,20 @@ export function useLandingFx(): void {
           hero.style.setProperty('--my', py.toFixed(3))
         }
       }
-      if (panel) {
+      if (panel && drop) {
         // Starts drawing as the panel's top enters the lower third of the
         // screen, finishes by the time it reaches the middle.
         const r = panel.getBoundingClientRect()
         const t = Math.min(1, Math.max(0, (vh * 0.95 - r.top) / (vh * 0.45)))
-        panel.style.setProperty('--drop', t.toFixed(3))
+        drop.style.setProperty('--drop', t.toFixed(3))
       }
       if (nav) {
         // How far down the page the reader is, for the line under the bar.
         const max = document.documentElement.scrollHeight - vh
         nav.style.setProperty('--progress', max > 0 ? (window.scrollY / max).toFixed(4) : '0')
       }
+      // The pointer has not caught up yet: one more frame.
+      if (fine && settling) queue()
     }
 
     const queue = () => {
@@ -87,8 +103,8 @@ export function useLandingFx(): void {
     }
 
     const onPointer = (e: PointerEvent) => {
-      px = (e.clientX / window.innerWidth) * 2 - 1
-      py = (e.clientY / window.innerHeight) * 2 - 1
+      tx = (e.clientX / window.innerWidth) * 2 - 1
+      ty = (e.clientY / window.innerHeight) * 2 - 1
       queue()
     }
 
