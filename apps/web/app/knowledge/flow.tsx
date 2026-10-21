@@ -72,10 +72,10 @@ const BANDS: Record<Band, Step> = {
     title: 'Red — emergency',
     desc: 'Minutes matter, and a dental chair is the wrong place.',
     tone: 'red',
-    chips: ['Alerts the clinic', 'Now'],
+    chips: ['First in the queue', 'Now'],
     purpose:
-      'Get the caller to emergency care at once, and make sure a person at the practice knows before the call ends.',
-    outcome: 'Emergency room advised; the on-call dentist rings back',
+      'Get the caller to emergency care at once, and put the call first in the practice’s queue.',
+    outcome: 'Emergency room advised; first in “Needs a human”',
     behaviour: [
       {
         k: 'Says, word for word',
@@ -153,14 +153,16 @@ const ACTIONS: Record<Band, Step[]> = {
     },
     {
       id: 'red-alert',
-      title: 'Clinic alerted',
+      title: 'First in the queue',
       desc: 'A high-priority task is raised while the caller is still on the line.',
       tone: 'red',
       chips: ['High priority'],
-      purpose: 'Make sure a person knows now — not when someone next reads a transcript.',
-      outcome: 'The on-call dentist calls back within minutes',
+      purpose: 'Put it where the team looks first — not wait for someone to read a transcript.',
+      // What the code does, not what the spoken script promises: nothing is
+      // sent to anyone; the row is on the dashboard at its next refresh.
+      outcome: 'In “Needs a human” at high priority — no message is sent',
       behaviour: [{ k: 'Raised as', v: '“RED triage” with the reason, flagged high.' }],
-      rules: [{ k: 'Every red band', v: ['Raises it — there is no red without the alert'] }],
+      rules: [{ k: 'Every red band', v: ['Raises it — there is no red without the queue entry'] }],
     },
     {
       id: 'red-human',

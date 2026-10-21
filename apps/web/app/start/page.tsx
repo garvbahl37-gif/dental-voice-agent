@@ -107,7 +107,7 @@ export default function Start() {
               autoComplete="off" onChange={(e) => setPhone(e.target.value)}
               placeholder="+91 22 2655 1200" />
             <p className="ob-hint">
-              Used as the number the agent gives out, and where urgent calls are sent.
+              The number the agent gives out to callers.
             </p>
 
             {error && <p role="alert" className="db-empty kb-bad ob-error">{error}</p>}
