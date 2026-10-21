@@ -1,21 +1,22 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { htmlLang, type Lang } from '@vaani/shared'
+import { useEffect, useState } from 'react'
+import { LoadingScreen } from './loading-screen'
 
 /**
  * The opening.
  *
- * A loading screen has to earn the time it takes, so this one is the product's
- * own claim compressed into two seconds: a line opens, and the same greeting
- * arrives in eleven scripts, one after another, faster than a person could
- * read them — which is the point. It resolves on the name.
+ * The landing page opens on the same screen the rest of the app loads on —
+ * the orb, the wordmark, "hello" turning through the scripts — held for two
+ * seconds and then opened out of the orb onto the page. One loading screen
+ * for the whole product, so the first thing a visitor sees is the thing they
+ * will see every time it opens.
  *
  * Three rules it keeps:
  *
- * It never blocks. The page behind it is fully rendered and interactive
- * underneath; this is a curtain, not a gate, and it lifts on a timer that
- * cannot hang. A loading screen that can trap someone is worse than none.
+ * It never blocks. The page behind it is fully rendered underneath; this is a
+ * curtain, not a gate, and it lifts on a timer that cannot hang. A loading
+ * screen that can trap someone is worse than none.
  *
  * It plays once. A curtain on every navigation is a toll, so a flag in
  * sessionStorage means a reader who came back from /console does not sit
@@ -24,24 +25,10 @@ import { htmlLang, type Lang } from '@vaani/shared'
  * It respects the request not to move: with reduced motion it never mounts.
  */
 
-const GREETING: Array<{ lang: Lang; text: string }> = [
-  { lang: 'en-IN', text: 'Good morning' },
-  { lang: 'hi-IN', text: 'नमस्ते' },
-  { lang: 'mr-IN', text: 'नमस्कार' },
-  { lang: 'gu-IN', text: 'નમસ્તે' },
-  { lang: 'bn-IN', text: 'নমস্কার' },
-  { lang: 'ta-IN', text: 'வணக்கம்' },
-  { lang: 'te-IN', text: 'నమస్కారం' },
-  { lang: 'kn-IN', text: 'ನಮಸ್ಕಾರ' },
-  { lang: 'ml-IN', text: 'നമസ്കാരം' },
-  { lang: 'pa-IN', text: 'ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ' },
-]
-
-const STEP = 132
-const SETTLE = 620
-
-/** Bars for the meter that runs under the greeting — fixed, so SSR matches. */
-const BARS = Array.from({ length: 28 }, (_, i) => 22 + ((i * 37) % 58))
+/** How long it holds before opening. */
+const HOLD = 2100
+/** How long the opening runs; matches the loading screen's own exit. */
+const OPEN = 850
 
 /**
  * Whether the curtain runs, decided once per page load.
@@ -71,20 +58,13 @@ function shouldPlay(): boolean {
 
 export function Intro() {
   const [on, setOn] = useState(false)
-  const [at, setAt] = useState(0)
   const [leaving, setLeaving] = useState(false)
-  const timers = useRef<number[]>([])
 
   useEffect(() => {
     if (!shouldPlay()) return
     setOn(true)
-
-    const push = (fn: () => void, ms: number) => timers.current.push(window.setTimeout(fn, ms))
-
-    for (let i = 1; i < GREETING.length; i++) push(() => setAt(i), i * STEP)
-    const runFor = GREETING.length * STEP
-    push(() => setLeaving(true), runFor + SETTLE)
-    push(() => {
+    const lift = window.setTimeout(() => setLeaving(true), HOLD)
+    const end = window.setTimeout(() => {
       setOn(false)
       // Marked as seen only once it has actually played. Writing the flag up
       // front meant React's development double-mount wrote it on the first
@@ -95,58 +75,24 @@ export function Intro() {
       } catch {
         /* private mode; showing it once more is the smaller failure */
       }
-    }, runFor + SETTLE + 620)
-
+    }, HOLD + OPEN)
     return () => {
-      for (const t of timers.current) clearTimeout(t)
-      timers.current = []
+      window.clearTimeout(lift)
+      window.clearTimeout(end)
     }
   }, [])
 
   // The page underneath must not scroll while the curtain is down, or a reader
-  // arrives already halfway through it.
+  // arrives already halfway through it. It is free again as the curtain opens.
   useEffect(() => {
-    if (!on) return
+    if (!on || leaving) return
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       document.body.style.overflow = prev
     }
-  }, [on])
+  }, [on, leaving])
 
   if (!on) return null
-  const now = GREETING[at]!
-
-  return (
-    <div className={`lp-intro${leaving ? ' is-leaving' : ''}`} aria-hidden>
-      <div className="lp-intro-inner">
-        <div className="lp-intro-meter" aria-hidden>
-          {BARS.map((h, i) => (
-            <span
-              key={i}
-              className="lp-intro-bar"
-              style={{ '--h': `${h}%`, '--i': i } as React.CSSProperties}
-            />
-          ))}
-        </div>
-
-        <div className="lp-intro-say">
-          {/* Keyed, so each script replaces the last rather than the text
-              mutating inside one node. */}
-          <span key={at} className="lp-intro-word" lang={htmlLang(now.lang)}>
-            {now.text}
-          </span>
-        </div>
-
-        <div className="lp-intro-rule">
-          <span className="lp-intro-rule-fill" />
-        </div>
-
-        <p className="lp-intro-mark">
-          <span className="lp-intro-name">Vaani</span>
-          <span className="lp-intro-sub">a front desk that answers in eleven languages</span>
-        </p>
-      </div>
-    </div>
-  )
+  return <LoadingScreen label="Answering in eleven languages" done={leaving} />
 }

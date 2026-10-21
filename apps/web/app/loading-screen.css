@@ -1,0 +1,445 @@
+/*
+ * The loading screen.
+ *
+ * One centre, everything round it. The orb sits exactly in the middle of the
+ * screen so the exit — a hole opening outward from it — opens from the orb.
+ * Everything moves on its own clock and none of it needs a script to start:
+ * aurora, orbits, rim, band, arc, rings, letters, greeting.
+ *
+ * Moves on transform and opacity throughout, except the exit's mask, which
+ * runs once, for under a second.
+ */
+
+/* The size of the hole the screen leaves by, animated as a length. */
+@property --ls-hole {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 0px;
+}
+
+.ls {
+  --ls-hole: 0px;
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 42% at 50% 64%, rgba(255, 246, 222, 0.85), transparent 70%),
+    linear-gradient(180deg, #bfe1dc 0%, #d6ece5 36%, #ecf5ee 64%, #ffffff 100%);
+  animation: ls-in 420ms ease both;
+}
+
+@keyframes ls-in {
+  from { opacity: 0; }
+}
+
+/* ── The sky ──────────────────────────────────────────────────────────────── */
+
+.ls-sky {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Two slow masses of colour drifting past each other. */
+.ls-aurora {
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.7;
+}
+
+.ls-aurora.a1 {
+  left: -18vmax;
+  top: -22vmax;
+  background: radial-gradient(circle, rgba(140, 222, 170, 0.75), transparent 65%);
+  animation: ls-drift-a 11s ease-in-out infinite alternate;
+}
+
+.ls-aurora.a2 {
+  right: -20vmax;
+  bottom: -26vmax;
+  background: radial-gradient(circle, rgba(150, 214, 228, 0.7), transparent 65%);
+  animation: ls-drift-b 13s ease-in-out infinite alternate;
+}
+
+@keyframes ls-drift-a {
+  to { transform: translate(14vmax, 10vmax) scale(1.1); }
+}
+
+@keyframes ls-drift-b {
+  to { transform: translate(-12vmax, -8vmax) scale(1.15); }
+}
+
+/* Faint orbits round the centre, as Momo draws its ellipses. */
+.ls-orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(14, 40, 26, 0.08);
+  translate: -50% -50%;
+  animation: ls-orbit 7s ease-in-out infinite alternate;
+}
+
+.ls-orbit.o1 { width: 300px; height: 300px; }
+.ls-orbit.o2 { width: 470px; height: 470px; border-color: rgba(255, 255, 255, 0.8); animation-delay: -2.3s; }
+.ls-orbit.o3 { width: 680px; height: 680px; border-color: rgba(14, 40, 26, 0.05); animation-delay: -4.6s; }
+
+@keyframes ls-orbit {
+  from { transform: scale(0.97); opacity: 0.6; }
+  to { transform: scale(1.03); opacity: 1; }
+}
+
+/* ── The stage: the orb, its arc, its rings ───────────────────────────────── */
+
+.ls-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 168px;
+  height: 168px;
+  margin: -84px 0 0 -84px;
+  display: grid;
+  place-items: center;
+  animation: ls-arrive 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes ls-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+    filter: blur(8px);
+  }
+}
+
+.ls-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.ls-track {
+  fill: none;
+  stroke: rgba(31, 157, 71, 0.12);
+  stroke-width: 2;
+}
+
+/* The arc: a run of green that turns and breathes — longer, then shorter —
+   so it reads as work being done rather than a wheel spinning. */
+.ls-sweep {
+  transform-origin: 84px 84px;
+  animation: ls-turn 1.5s linear infinite;
+}
+
+.ls-arc {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 60 430;
+  transform-origin: 84px 84px;
+  transform: rotate(-90deg);
+  filter: drop-shadow(0 0 6px rgba(52, 199, 89, 0.55));
+  animation: ls-breath 2.2s ease-in-out infinite;
+}
+
+@keyframes ls-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ls-breath {
+  0% { stroke-dasharray: 30 460; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 210 280; stroke-dashoffset: -60; }
+  100% { stroke-dasharray: 30 460; stroke-dashoffset: -460; }
+}
+
+/* Sound leaving the orb. */
+.ls-ping {
+  position: absolute;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(45, 189, 95, 0.4);
+  animation: ls-ping 2.6s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.ls-ping.p2 {
+  animation-delay: -1.3s;
+}
+
+@keyframes ls-ping {
+  from {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.3);
+  }
+}
+
+/* The orb: white glass, a turning mint-and-aqua rim, a band sweeping across. */
+.ls-orb {
+  position: relative;
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 38% 32%, #ffffff 0%, #f6fcf8 42%, #dcf2e5 80%, #c0e6cf 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.9),
+    0 24px 50px -16px rgba(31, 157, 71, 0.55),
+    inset 0 -10px 22px rgba(52, 199, 89, 0.12);
+  animation: ls-breathe 3.2s ease-in-out infinite alternate;
+}
+
+.ls-orb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 0deg, #78d4c8, #2dbd5f 18%, rgba(45, 189, 95, 0.25) 45%, rgba(225, 245, 234, 0.3) 62%, #70c496 82%, #78d4c8);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: ls-turn 3s linear infinite;
+}
+
+/* A highlight high on the glass. */
+.ls-orb::after {
+  content: '';
+  position: absolute;
+  left: 22%;
+  top: 12%;
+  width: 34%;
+  height: 22%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), transparent 70%);
+}
+
+.ls-band {
+  position: absolute;
+  left: -30%;
+  top: 20%;
+  width: 160%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(45, 189, 95, 0.34), transparent 70%);
+  filter: blur(6px);
+  animation: ls-sweep 4.2s ease-in-out infinite;
+}
+
+.ls-band.b2 {
+  background: radial-gradient(50% 50% at 50% 50%, rgba(120, 212, 200, 0.42), transparent 70%);
+  animation-duration: 5.6s;
+  animation-direction: reverse;
+}
+
+/* A crease that surfaces and dissolves, as the hero's orb does. */
+.ls-shine {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 50%;
+  height: 40%;
+  border-bottom: 1.4px solid rgba(31, 157, 71, 0.5);
+  border-radius: 0 0 50% 50%;
+  opacity: 0;
+  animation: ls-crease 4.2s ease-in-out infinite;
+}
+
+@keyframes ls-sweep {
+  0% { transform: translateY(-40%) rotate(-24deg); }
+  50% { transform: translateY(45%) rotate(18deg); }
+  100% { transform: translateY(-40%) rotate(-24deg); }
+}
+
+@keyframes ls-crease {
+  0%, 30%, 100% { opacity: 0; transform: rotate(-20deg) scaleY(0.6); }
+  48% { opacity: 1; transform: rotate(-8deg) scaleY(1); }
+  64% { opacity: 0; transform: rotate(6deg) scaleY(0.7); }
+}
+
+@keyframes ls-breathe {
+  from { transform: scale(1); }
+  to { transform: scale(1.04); }
+}
+
+/* ── The words under it ───────────────────────────────────────────────────── */
+
+.ls-text {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(50% + 112px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px;
+  text-align: center;
+}
+
+/* The name, a letter at a time, each rising out of a blur. */
+.ls-word {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.ls-word span {
+  display: inline-block;
+  animation: ls-letter 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--l, 0) * 70ms + 250ms);
+}
+
+@keyframes ls-letter {
+  from {
+    opacity: 0;
+    transform: translateY(0.45em);
+    filter: blur(6px);
+  }
+}
+
+/* The greeting, turning through the scripts: all ten stacked in one cell,
+   each on the same loop and a tenth of it apart. */
+.ls-hello {
+  display: grid;
+  margin: 6px 0 0;
+  height: 30px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 30px;
+  color: var(--mo-green-deep, #1f9d47);
+}
+
+.ls-hello span {
+  grid-area: 1 / 1;
+  opacity: 0;
+  animation: ls-say 4s linear infinite backwards;
+  animation-delay: calc(var(--g, 0) * 0.4s + 0.5s);
+}
+
+@keyframes ls-say {
+  0% { opacity: 0; transform: translateY(0.5em); filter: blur(4px); }
+  3%, 8% { opacity: 1; transform: none; filter: blur(0); }
+  10.5%, 100% { opacity: 0; transform: translateY(-0.5em); filter: blur(4px); }
+}
+
+.ls-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  margin: 14px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  animation: ls-fade 700ms ease 500ms both;
+}
+
+@keyframes ls-fade {
+  from { opacity: 0; }
+}
+
+.ls-dots {
+  display: inline-flex;
+  gap: 3px;
+  margin-left: 4px;
+}
+
+.ls-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: ls-dot 1.2s ease-in-out infinite;
+}
+
+.ls-dots i:nth-child(2) { animation-delay: 0.16s; }
+.ls-dots i:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes ls-dot {
+  0%, 60%, 100% { opacity: 0.25; }
+  30% { opacity: 1; }
+}
+
+/* ── The exit: the page opens out of the orb ──────────────────────────────── */
+
+/* A soft edge on the hole, so it reads as light opening rather than a cut. */
+.ls.is-leaving {
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent var(--ls-hole), #000 calc(var(--ls-hole) + 48px));
+  mask-image: radial-gradient(circle at 50% 50%, transparent var(--ls-hole), #000 calc(var(--ls-hole) + 48px));
+  animation: ls-open 800ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  pointer-events: none;
+}
+
+.ls.is-leaving .ls-text {
+  animation: ls-text-out 300ms ease forwards;
+}
+
+.ls.is-leaving .ls-stage {
+  animation: ls-stage-out 520ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+
+/* No corner of any screen is more than 0.71 of its longer side from the
+   middle, so 75vmax always clears it — any more and the visible part of
+   the opening is over in a blink. */
+@keyframes ls-open {
+  0% { --ls-hole: 0px; }
+  100% {
+    --ls-hole: 75vmax;
+    visibility: hidden;
+  }
+}
+
+@keyframes ls-text-out {
+  to {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes ls-stage-out {
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@media (max-width: 480px) {
+  .ls-orbit.o3 { display: none; }
+  .ls-word { font-size: 30px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ls,
+  .ls *,
+  .ls *::before,
+  .ls-orb::before {
+    animation: none !important;
+  }
+  .ls-hello span:not(:first-child),
+  .ls-ping,
+  .ls-sweep {
+    display: none;
+  }
+  .ls-hello span:first-child {
+    opacity: 1;
+  }
+  .ls.is-leaving {
+    -webkit-mask-image: none;
+    mask-image: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+}

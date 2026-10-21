@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import '../landing.css'
+import '../home.css'
 import '../dashboard/dashboard.css'
 import './auth.css'
+import { CallCard, Scene } from '../home-sections'
 
 /**
  * Signing in, and signing up, on one page.
@@ -19,6 +21,11 @@ import './auth.css'
  * without and lets `/api/onboard` default the rest; the longer setup, with
  * branches and a website import, stays at `/start` and is linked rather than
  * duplicated.
+ *
+ * Dressed as the landing page is, after Momo and CareFlow: on a wide screen the
+ * sky from the hero fills the left, with the call card standing in it and the
+ * three things the desk does floating round it; the form sits on the right in
+ * white glass. On a phone the sky shrinks to a band above the card.
  */
 
 type Mode = 'in' | 'new'
@@ -77,137 +84,174 @@ export default function Login() {
   const creating = mode === 'new'
 
   return (
-    <div className="lp au-shell">
-      <form onSubmit={submit} className="au-card">
-        <a className="au-mark" href="/">
-          <span className="au-mark-dot" aria-hidden />
+    <div className="lp mo au-shell">
+      <aside className="au-side" aria-hidden>
+        <Scene variant="sky" />
+        <a className="au-side-mark" href="/" tabIndex={-1}>
           Vaani
         </a>
-
-        <div className="au-switch" role="tablist" aria-label="Sign in or create an account">
-          <span className={`au-switch-pill${creating ? ' is-right' : ''}`} aria-hidden />
-          <button
-            type="button"
-            role="tab"
-            aria-selected={!creating}
-            className={`au-switch-tab${!creating ? ' is-on' : ''}`}
-            onClick={() => go('in')}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={creating}
-            className={`au-switch-tab${creating ? ' is-on' : ''}`}
-            onClick={() => go('new')}
-          >
-            Create account
-          </button>
-        </div>
-
-        <h1 className="au-title">{creating ? 'Set up your practice' : 'Sign in'}</h1>
-        <p className="au-sub">
-          {creating
-            ? 'One practice, ready to take calls. You can add branches, dentists and fees once you are in.'
-            : 'The front desk, and what it did while you were with a patient.'}
-        </p>
-
-        {creating && (
-          <>
-            <label className="au-label" htmlFor="practice">
-              Practice name
-            </label>
-            <input
-              id="practice"
-              className="kb-input"
-              required
-              minLength={3}
-              autoComplete="off"
-              value={practiceName}
-              onChange={(e) => setPracticeName(e.target.value)}
-              placeholder="Smile Dental Care"
-            />
-
-            <label className="au-label" htmlFor="owner">
-              Your name
-            </label>
-            <input
-              id="owner"
-              className="kb-input"
-              required
-              autoComplete="name"
-              value={ownerName}
-              onChange={(e) => setOwnerName(e.target.value)}
-              placeholder="Dr. Ananya Sharma"
-            />
-          </>
-        )}
-
-        <label className="au-label" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          className="kb-input"
-          type="email"
-          required
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@practice.in"
-        />
-
-        <label className="au-label" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          className="kb-input"
-          type="password"
-          required
-          minLength={creating ? 8 : undefined}
-          /* A password manager must be told which of the two this is, or it
-             offers to fill a new account with an existing password. */
-          autoComplete={creating ? 'new-password' : 'current-password'}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {creating && <p className="au-hint">At least 8 characters.</p>}
-
-        {error && (
-          <p role="alert" className="au-error">
-            {error}
+        <div className="au-side-copy">
+          <p className="mo-eyebrow">
+            <i /> AI front desk for dental practices
           </p>
-        )}
+          <h2>
+            Your front desk,
+            <br />
+            always ready.
+          </h2>
+        </div>
+        <div className="au-side-call">
+          <CallCard title="Vaani front desk" sub="Smile Dental Care" action="answer" />
+          <span className="au-fact f1">
+            <i /> Answers in eleven languages
+          </span>
+          <span className="au-fact f2">
+            <i /> Books into the real diary
+          </span>
+          <span className="au-fact f3">
+            <i /> Hands emergencies to your team
+          </span>
+        </div>
+      </aside>
 
-        <button className="lp-btn lp-btn-primary au-go" disabled={busy}>
-          {busy
-            ? creating
-              ? 'Setting up…'
-              : 'Signing in…'
-            : creating
-              ? 'Create practice'
-              : 'Sign in'}
-        </button>
+      <main className="au-main">
+        <form onSubmit={submit} className="au-card">
+          <a className="au-mark" href="/">
+            <span className="au-mark-dot" aria-hidden />
+            Vaani
+          </a>
 
-        <p className="au-foot">
-          {creating ? (
-            <>
-              Want to import your website and add branches as you go?{' '}
-              <a href="/start">Use the longer setup</a>.
-            </>
-          ) : (
-            <>
-              No account yet?{' '}
-              <button type="button" className="au-link" onClick={() => go('new')}>
-                Create one
-              </button>
-              .
-            </>
+          <div className="au-switch" role="tablist" aria-label="Sign in or create an account">
+            <span className={`au-switch-pill${creating ? ' is-right' : ''}`} aria-hidden />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!creating}
+              className={`au-switch-tab${!creating ? ' is-on' : ''}`}
+              onClick={() => go('in')}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={creating}
+              className={`au-switch-tab${creating ? ' is-on' : ''}`}
+              onClick={() => go('new')}
+            >
+              Create account
+            </button>
+          </div>
+
+          {/* Keyed to the mode, so the heading arrives afresh with each. */}
+          <div key={mode} className="au-head">
+            <h1 className="au-title">{creating ? 'Set up your practice' : 'Welcome back'}</h1>
+            <p className="au-sub">
+              {creating
+                ? 'One practice, ready to take calls. You can add branches, dentists and fees once you are in.'
+                : 'The front desk, and what it did while you were with a patient.'}
+            </p>
+          </div>
+
+          <label className="au-label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            className="kb-input"
+            type="email"
+            required
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@practice.in"
+          />
+
+          <label className="au-label" htmlFor="password">
+            Password
+          </label>
+          <input
+            id="password"
+            className="kb-input"
+            type="password"
+            required
+            minLength={creating ? 8 : undefined}
+            /* A password manager must be told which of the two this is, or it
+               offers to fill a new account with an existing password. */
+            autoComplete={creating ? 'new-password' : 'current-password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {creating && <p className="au-hint">At least 8 characters.</p>}
+
+          {/* The new practice's own fields come after the two both modes share,
+              so switching modes never moves the email and password. */}
+          {creating && (
+            <div className="au-more">
+              <label className="au-label" htmlFor="practice">
+                Practice name
+              </label>
+              <input
+                id="practice"
+                className="kb-input"
+                required
+                minLength={3}
+                autoComplete="off"
+                value={practiceName}
+                onChange={(e) => setPracticeName(e.target.value)}
+                placeholder="Smile Dental Care"
+              />
+
+              <label className="au-label" htmlFor="owner">
+                Your name
+              </label>
+              <input
+                id="owner"
+                className="kb-input"
+                required
+                autoComplete="name"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Dr. Ananya Sharma"
+              />
+            </div>
           )}
-        </p>
-      </form>
+
+
+          {error && (
+            <p role="alert" className="au-error">
+              {error}
+            </p>
+          )}
+
+          <button className="au-go" disabled={busy}>
+            {busy
+              ? creating
+                ? 'Setting up…'
+                : 'Signing in…'
+              : creating
+                ? 'Create practice'
+                : 'Sign in'}
+          </button>
+
+          <p className="au-foot">
+            {creating ? (
+              <>
+                Want to import your website and add branches as you go?{' '}
+                <a href="/start">Use the longer setup</a>.
+              </>
+            ) : (
+              <>
+                No account yet?{' '}
+                <button type="button" className="au-link" onClick={() => go('new')}>
+                  Create one
+                </button>
+                .
+              </>
+            )}
+          </p>
+        </form>
+      </main>
     </div>
   )
 }

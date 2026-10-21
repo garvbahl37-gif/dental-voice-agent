@@ -1,0 +1,907 @@
+/*
+ * How it works — the pinned showcase.
+ *
+ * The section is a tall track with a screen-high frame stuck inside it, so it
+ * holds still while it is scrolled through. how-it-works.tsx writes `--p`,
+ * the scroll through the track from 0 to 3, and each step's rail fills with
+ * its share of it. The stage on the right swaps scenes on the step, and each
+ * scene builds itself in: every piece marked `hw-a` arrives in its turn `--k`.
+ *
+ * Everything moves on opacity and transform. Nothing here lays the page out
+ * again while it scrolls.
+ */
+
+.hw {
+  position: relative;
+  padding-top: clamp(64px, 8vw, 110px);
+}
+
+/* ── The track and the frame stuck inside it ──────────────────────────────── */
+
+.hw-track {
+  position: relative;
+  height: 330vh;
+}
+
+.hw-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  max-width: var(--lp-measure);
+  margin: 0 auto;
+  /* Clear of the fixed bar at the top. */
+  padding: 92px var(--lp-gutter) 28px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.2fr);
+  gap: clamp(32px, 4.5vw, 72px);
+  align-items: center;
+}
+
+.hw-copy .mo-eyebrow {
+  margin-bottom: 18px;
+}
+
+.hw-title {
+  margin: 0 0 clamp(24px, 3.4vh, 40px);
+  font-size: clamp(34px, 3.5vw, 50px);
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+/* ── The steps ────────────────────────────────────────────────────────────── */
+
+.hw-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.hw-step {
+  position: relative;
+  /* This step's share of the scroll: 0 before it, 1 once it is past. */
+  --fill: clamp(0, calc(var(--p, 0) - var(--s, 0)), 1);
+}
+
+.hw-rail {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hairline);
+  overflow: hidden;
+}
+
+.hw-rail i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4fd672, var(--mo-green-deep));
+  transform: scaleX(var(--fill));
+  transform-origin: left;
+}
+
+.hw-step-btn {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: baseline;
+  width: 100%;
+  padding: 20px 0 16px;
+  text-align: left;
+  border-radius: 0;
+}
+
+.hw-num {
+  font-size: 12px;
+  color: var(--ink-faint);
+  transition: color 400ms ease;
+}
+
+.hw-step-t {
+  font-family: var(--font-display);
+  font-size: clamp(19px, 1.6vw, 23px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #a9b0ac;
+  transition: color 400ms ease;
+}
+
+.hw-step-btn:hover .hw-step-t {
+  color: var(--ink-muted);
+}
+
+.hw-step.is-on .hw-step-t {
+  color: var(--ink);
+}
+
+.hw-step.is-on .hw-num,
+.hw-step.is-done .hw-num {
+  color: var(--mo-green-deep);
+}
+
+/* The sentence opens under the active step: rows from nothing to its height,
+   so the steps below glide down rather than jump. */
+.hw-step-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hw-step-body > div {
+  overflow: hidden;
+}
+
+.hw-step-body p {
+  margin: 0;
+  padding: 0 0 22px 38px;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+  opacity: 0;
+  translate: 0 8px;
+  transition: opacity 400ms ease, translate 650ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hw-step.is-on .hw-step-body {
+  grid-template-rows: 1fr;
+}
+
+.hw-step.is-on .hw-step-body p {
+  opacity: 1;
+  translate: 0 0;
+  transition-delay: 120ms;
+}
+
+/* ── The stage ────────────────────────────────────────────────────────────── */
+
+.hw-stage {
+  position: relative;
+  isolation: isolate;
+  height: min(640px, calc(100vh - 140px));
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: 0 50px 90px -60px rgba(14, 40, 26, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+}
+
+.hw-stage .mo-scene {
+  border-radius: inherit;
+}
+
+/* A pool of warm light that moves to wherever the scene's weight is. */
+.hw-glow {
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 50%;
+  width: 70%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 252, 238, 0.95), rgba(236, 248, 238, 0.4) 50%, transparent 70%);
+  translate: -50% -50%;
+  transition: translate 1200ms cubic-bezier(0.22, 1, 0.36, 1), scale 1200ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
+.hw-stage[data-step='1'] .hw-glow { translate: -36% -58%; scale: 1.1; }
+.hw-stage[data-step='2'] .hw-glow { translate: -62% -44%; scale: 0.95; }
+
+/* Which step this is, top left, as CareFlow labels its panels. */
+.hw-cap {
+  position: absolute;
+  z-index: 3;
+  left: 20px;
+  top: 18px;
+  margin: 0;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mo-green-deep);
+}
+
+.hw-cap span {
+  display: inline-block;
+  animation: hw-cap 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes hw-cap {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+.hw-dots {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 18px;
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  translate: -50% 0;
+}
+
+.hw-dots li {
+  width: 6px;
+  height: 6px;
+  border-radius: 6px;
+  background: rgba(14, 40, 26, 0.18);
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1), background 300ms ease;
+}
+
+.hw-dots li.is-on {
+  width: 22px;
+  background: var(--mo-green-deep);
+}
+
+/* ── Scenes, and how they build ───────────────────────────────────────────── */
+
+.hw-scene {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 56px 28px;
+  visibility: hidden;
+  transition: visibility 0s linear 450ms;
+}
+
+.hw-scene.is-on {
+  visibility: visible;
+  transition: none;
+}
+
+/* Every piece arrives in its turn and leaves all at once — a scene that left
+   piece by piece would still be leaving when the next began. */
+.hw-a {
+  opacity: 0;
+  translate: 0 22px;
+  scale: 0.97;
+  transition:
+    opacity 300ms ease,
+    translate 450ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hw-scene.is-on .hw-a {
+  opacity: 1;
+  translate: 0 0;
+  scale: 1;
+  transition:
+    opacity 600ms ease,
+    translate 900ms cubic-bezier(0.16, 1, 0.3, 1),
+    scale 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--k, 0) * 150ms + 180ms);
+}
+
+/* The card everything stands on: Momo's white glass. */
+.hw-panel {
+  position: relative;
+  z-index: 1;
+  width: min(370px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.78);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 40px 70px -40px rgba(14, 40, 26, 0.5), 0 2px 6px rgba(14, 40, 26, 0.04);
+}
+
+/* Small facts floating round the card, each bobbing on its own clock. */
+.hw-chip {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 36px -22px rgba(14, 40, 26, 0.5);
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--ink);
+  animation: hw-bob 6s ease-in-out infinite alternate;
+}
+
+/* Above and below the card, never over what it says: one top right, clear
+   of the step label, and the others along the foot, clear of the dots. */
+.hw-chip.c1 { right: 22px; top: 62px; }
+.hw-chip.c2 { left: 22px; bottom: 48px; animation-delay: -2s; }
+.hw-chip.c3 { right: 22px; bottom: 48px; animation-delay: -4s; }
+
+@keyframes hw-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+
+.hw-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mo-green);
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+}
+
+/* ── Scene one: the call comes in ─────────────────────────────────────────── */
+
+.hw-ring {
+  align-items: center;
+  text-align: center;
+  padding: 18px 18px 22px;
+}
+
+.hw-incoming {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--agent-soft);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--mo-green-deep);
+}
+
+.hw-incoming i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mo-green);
+  animation: hw-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes hw-blink {
+  50% { opacity: 0.25; }
+}
+
+.hw-ring-orb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 150px;
+  height: 150px;
+  margin: 2px 0 -4px;
+}
+
+/* Sound leaving the orb, three rings a beat apart. */
+.hw-wave {
+  position: absolute;
+  inset: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(52, 199, 89, 0.45);
+  animation: hw-wave 2.6s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.hw-wave.w2 { animation-delay: -0.86s; }
+.hw-wave.w3 { animation-delay: -1.73s; }
+
+@keyframes hw-wave {
+  from {
+    opacity: 0.9;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+.hw-orb {
+  position: relative;
+  width: 118px;
+}
+
+.hw-ring-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.hw-ring-sub {
+  margin: -6px 0 2px;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+/* The language the line is in, turning: one pill lit at a time. */
+.hw-langs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.hw-langs span {
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  background: #fff;
+  font-size: 12px;
+  color: var(--ink-muted);
+  animation: hw-lang 6s ease-in-out infinite;
+  animation-delay: calc(var(--n, 0) * 1.2s);
+}
+
+@keyframes hw-lang {
+  0%, 22%, 100% {
+    background: #fff;
+    border-color: var(--hairline);
+    color: var(--ink-muted);
+  }
+  4%, 18% {
+    background: var(--mo-green-deep);
+    border-color: var(--mo-green-deep);
+    color: #fff;
+  }
+}
+
+.hw-answer {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-top: 6px;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green));
+  box-shadow: 0 14px 26px -10px rgba(52, 199, 89, 0.75);
+}
+
+.hw-answer svg {
+  width: 22px;
+  height: 22px;
+  animation: mo-ringing 2.4s ease-in-out infinite;
+}
+
+/* ── Scene two: the diary ─────────────────────────────────────────────────── */
+
+.hw-diary {
+  width: min(390px, 100%);
+}
+
+.hw-bubble {
+  max-width: 86%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.hw-bubble small {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.hw-bubble.is-caller {
+  align-self: flex-start;
+  border-bottom-left-radius: 6px;
+  background: var(--caller-soft);
+  color: #1d4a63;
+}
+
+.hw-bubble.is-desk {
+  align-self: flex-end;
+  border-bottom-right-radius: 6px;
+  background: var(--agent-soft);
+  color: #13502b;
+}
+
+.hw-checking {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.hw-spin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.6px solid rgba(31, 157, 71, 0.25);
+  border-top-color: var(--mo-green-deep);
+  animation: hw-spin 900ms linear infinite;
+}
+
+@keyframes hw-spin {
+  to { transform: rotate(360deg); }
+}
+
+.hw-slots {
+  padding: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.hw-slots p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.hw-slots div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.hw-slots span {
+  position: relative;
+  padding: 9px 0;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  text-align: center;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.hw-slots .is-taken {
+  color: var(--ink-faint);
+  background: var(--cloud);
+  text-decoration: line-through;
+}
+
+/* The pick: lit once the scene has had a moment, as though it were chosen. */
+.hw-slots .is-picked {
+  transition: background 400ms ease, color 400ms ease, border-color 400ms ease, box-shadow 400ms ease;
+}
+
+.hw-scene.is-on .hw-slots .is-picked {
+  border-color: var(--mo-green-deep);
+  background: var(--mo-green-deep);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.18);
+  transition-delay: 900ms;
+}
+
+.hw-booked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green-deep));
+  color: #fff;
+  font-size: 14px;
+  box-shadow: 0 18px 30px -18px rgba(31, 157, 71, 0.8);
+}
+
+.hw-booked small {
+  display: block;
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.hw-tick {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.hw-tick svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  transition: stroke-dashoffset 500ms ease;
+}
+
+.hw-scene.is-on .hw-tick svg {
+  stroke-dashoffset: 0;
+  transition-delay: 1250ms;
+}
+
+/* ── Scene three: the handover ────────────────────────────────────────────── */
+
+.hw-hand-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 4px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.hw-count {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+}
+
+.hw-alert {
+  position: relative;
+  padding: 14px 14px 14px 18px;
+  border: 1px solid #ffd2cf;
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+
+/* The band down its edge, red for the rules' red band. */
+.hw-alert::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--alert);
+}
+
+.hw-alert-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hw-band {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--alert-soft);
+  color: var(--alert);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.hw-alerted {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--alert);
+}
+
+.hw-alerted i {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--alert);
+}
+
+.hw-alerted i::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--alert);
+  animation: hw-alarm 1.6s ease-out infinite;
+}
+
+@keyframes hw-alarm {
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+.hw-alert h4,
+.hw-normal h4 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.hw-who {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.hw-brief {
+  margin: 10px 0 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--cloud);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-muted);
+}
+
+.hw-callback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.hw-callback svg {
+  width: 15px;
+  height: 15px;
+}
+
+.hw-normal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.hw-tag {
+  flex: none;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--cloud);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+/* ── Phones: three cards, one after another ───────────────────────────────── */
+
+.hw-stack {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .hw-track {
+    display: none;
+  }
+
+  .hw-stack {
+    display: block;
+    padding-inline: var(--lp-gutter);
+  }
+
+  .hw-stack .mo-head {
+    margin-bottom: 28px;
+  }
+
+  .hw-card + .hw-card {
+    margin-top: 44px;
+  }
+
+  .hw-card-k {
+    margin: 0 0 8px;
+    font-size: 11.5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mo-green-deep);
+  }
+
+  .hw-card h3 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .hw-card > p:not(.hw-card-k) {
+    margin: 0 0 18px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--ink-muted);
+  }
+
+  .hw-stage.is-small {
+    height: auto;
+    border-radius: 24px;
+  }
+
+  .hw-stage.is-small .hw-scene {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 28px 14px 22px;
+  }
+
+  /* No room to float the facts round the card: they sit under it in a row. */
+  .hw-stage.is-small .hw-chip {
+    position: static;
+    font-size: 12px;
+    animation: none;
+  }
+
+  /* On a phone the scene builds when its card scrolls into view. */
+  .lp-motion .hw-card:not(.is-in) .hw-a {
+    opacity: 0;
+    translate: 0 22px;
+    scale: 0.97;
+    transition-delay: 0ms;
+  }
+
+  .lp-motion .hw-card:not(.is-in) .hw-slots .is-picked {
+    background: #fff;
+    color: inherit;
+    border-color: var(--hairline);
+    box-shadow: none;
+  }
+
+  .lp-motion .hw-card:not(.is-in) .hw-tick svg {
+    stroke-dashoffset: 24;
+  }
+}
+
+/* A short laptop screen: the stage gives up some height before the copy does. */
+@media (min-width: 901px) and (max-height: 760px) {
+  .hw-title {
+    font-size: clamp(30px, 3vw, 40px);
+  }
+  .hw-step-btn {
+    padding: 14px 0 12px;
+  }
+  .hw-panel {
+    gap: 8px;
+    padding: 14px;
+  }
+  .hw-ring-orb {
+    width: 120px;
+    height: 120px;
+  }
+  .hw-orb {
+    width: 96px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hw-a,
+  .hw-scene.is-on .hw-a,
+  .hw-step-body,
+  .hw-step-body p {
+    transition: none !important;
+  }
+  .hw-chip,
+  .hw-wave,
+  .hw-langs span,
+  .hw-answer svg,
+  .hw-spin,
+  .hw-incoming i,
+  .hw-alerted i::after,
+  .hw-cap span {
+    animation: none !important;
+  }
+  .hw-wave {
+    display: none;
+  }
+}

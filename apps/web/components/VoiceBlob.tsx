@@ -4,16 +4,20 @@ import { useEffect, useRef } from 'react'
 import type { AgentState } from '@vaani/shared'
 
 /**
- * The speaking blob.
+ * The voice orb.
  *
- * Three translucent lobes, each a closed cardinal spline whose radius is
- * displaced by value noise and by live FFT energy. They counter-rotate at
- * different speeds, so the silhouette never repeats and reads as liquid rather
- * than as a pulsing circle.
+ * Its motion is Lalit's "Orb AI Motion" for theosm, studied frame by frame:
+ * a near-white membrane whose colour moves as soft bands sweeping across the
+ * surface, a crisp crease that surfaces now and then and dissolves, a rim
+ * whose bright glint travels around the edge, and a silhouette that breathes
+ * rather than holding a perfect circle — one slow cycle about every fifteen
+ * seconds. The colours are Momo's: mint and green glass with a pale aqua.
  *
- * The colour rule from the rest of the console holds: the lobes take the desk's
- * turmeric while she speaks and the caller's slate blue while they do, so the
- * shape says who has the floor before any label is read.
+ * It is driven by the call, not by a clock alone. The live level swells the
+ * bands and the wobble, the spectrum ripples the edge, and the colour rule
+ * from the rest of the console holds: the bands lean to the desk's green while
+ * she speaks and to the caller's sky blue while they do, so the orb says who
+ * has the floor before any label is read.
  */
 
 interface Props {
@@ -24,36 +28,35 @@ interface Props {
   live: boolean
 }
 
-const AGENT = { r: 184, g: 115, b: 10 }
-const CALLER = { r: 47, g: 75, b: 124 }
+type RGB = { r: number; g: number; b: number }
+
+const AGENT: RGB = { r: 45, g: 189, b: 95 }
+const CALLER: RGB = { r: 74, g: 150, b: 196 }
+/** Mint at rest, so an idle line still looks lit. */
+const RESTING: RGB = { r: 112, g: 196, b: 150 }
+/** The second band and the rim's glint: where the reference has amber. */
+const GLINT: RGB = { r: 120, g: 212, b: 200 }
+
+/** One full cycle of the reference, in seconds. */
+const CYCLE = 15
+const TAU = Math.PI * 2
+
 /**
- * Warm even at rest. A grey resting state reads as a device that is switched
- * off; a soft ember reads as someone waiting to speak — which is what she is.
+ * The folds. Each is a plane cutting the sphere off-centre: the cap beyond it
+ * takes a soft wash of colour, and the curve where it meets the membrane shows
+ * as a crisp crease only while the plane is nearly edge-on to the viewer. The
+ * planes wander around the sphere and in and out from its centre at their own
+ * rates, so one side warms, then another, as in the reference.
  */
-const RESTING = { r: 205, g: 152, b: 72 }
-
-const POINTS = 96
-const LOBES = [
-  { scale: 1.0, speed: 0.16, wobble: 0.16, alpha: 0.72, phase: 0 },
-  { scale: 0.88, speed: -0.22, wobble: 0.2, alpha: 0.55, phase: 2.1 },
-  { scale: 0.74, speed: 0.3, wobble: 0.26, alpha: 0.42, phase: 4.3 },
+const FOLDS = [
+  { turn: 1, reach: 2, tilt: 3, phase: 0, band: 1, glint: false },
+  { turn: -1, reach: 3, tilt: 2, phase: 2.3, band: 0.85, glint: true },
+  { turn: 2, reach: 1, tilt: 5, phase: 4.6, band: 0.45, glint: false },
 ]
+const POINTS = 96
 
-/** Cheap deterministic value noise — no dependency, stable across frames. */
-function noise(x: number, y: number): number {
-  const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453
-  return s - Math.floor(s)
-}
-
-function smoothNoise(angle: number, t: number, seed: number): number {
-  const a = angle * 1.7 + seed
-  return (
-    Math.sin(a + t) * 0.5 +
-    Math.sin(a * 2.3 - t * 1.3) * 0.28 +
-    Math.sin(a * 3.7 + t * 0.7) * 0.14 +
-    (noise(Math.floor(a * 2), seed) - 0.5) * 0.1
-  )
-}
+const rgba = (c: RGB, a: number) =>
+  `rgba(${c.r | 0}, ${c.g | 0}, ${c.b | 0}, ${Math.max(0, Math.min(1, a))})`
 
 export function VoiceBlob({ state, micLevel, agentLevel, spectrum, live }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -68,9 +71,12 @@ export function VoiceBlob({ state, micLevel, agentLevel, spectrum, live }: Props
     if (!ctx) return
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let t = 0
     let energy = 0
-    let hue = { ...RESTING }
+    let hue: RGB = { ...RESTING }
+    // Time runs a little faster when there is a voice; accumulated rather than
+    // read from the clock so a change of pace never jumps the shape.
+    let clock = Math.random() * CYCLE
+    let last = performance.now()
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2)
@@ -83,122 +89,188 @@ export function VoiceBlob({ state, micLevel, agentLevel, spectrum, live }: Props
     const observer = new ResizeObserver(resize)
     observer.observe(canvas)
 
-    const draw = () => {
+    /**
+     * Only drawn while it can be seen.
+     *
+     * A landing page carries three of these and the console one; drawing them
+     * all every frame, scrolled out of view or in a background tab, is the
+     * work that turned scrolling ragged on a slower phone. The loop stops and
+     * starts again from where the clock left off.
+     */
+    let visible = true
+    let running = false
+    const start = () => {
+      if (running || !visible || document.hidden) return
+      running = true
+      last = performance.now()
+      raf.current = requestAnimationFrame(draw)
+    }
+    const stop = () => {
+      running = false
+      cancelAnimationFrame(raf.current)
+    }
+    const seen = new IntersectionObserver(([e]) => {
+      visible = Boolean(e?.isIntersecting)
+      if (visible) start()
+      else stop()
+    })
+    seen.observe(canvas)
+    const onVisibility = () => (document.hidden ? stop() : start())
+    document.addEventListener('visibilitychange', onVisibility)
+
+    const draw = (now: number) => {
+      if (!running) return
       const p = props.current
       const size = canvas.clientWidth
       const cx = size / 2
       const cy = size / 2
-      const base = size * 0.24
-
-      if (!reduced) t += 0.01
+      const dt = Math.min(0.1, (now - last) / 1000)
+      last = now
 
       const speaking = p.state === 'speaking'
       const listening = p.state === 'listening'
       const working = p.state === 'thinking' || p.state === 'tool_running'
 
-      // Ease both energy and colour so handovers feel physical, not switched.
-      const target = speaking ? p.agentLevel : listening ? p.micLevel : working ? 0.22 : 0.05
+      // Ease energy and colour so a handover feels physical, not switched.
+      const target = speaking ? p.agentLevel : listening ? p.micLevel : working ? 0.2 : 0.04
       energy += (target - energy) * 0.12
 
       const want = speaking ? AGENT : listening ? CALLER : RESTING
       hue = {
-        r: hue.r + (want.r - hue.r) * 0.06,
-        g: hue.g + (want.g - hue.g) * 0.06,
-        b: hue.b + (want.b - hue.b) * 0.06,
+        r: hue.r + (want.r - hue.r) * 0.05,
+        g: hue.g + (want.g - hue.g) * 0.05,
+        b: hue.b + (want.b - hue.b) * 0.05,
       }
 
+      if (!reduced) clock += dt * (1 + energy * 1.6 + (working ? 0.5 : 0))
+      const ph = (clock / CYCLE) * TAU
+
       const fft = p.live ? p.spectrum(speaking ? 'agent' : 'mic') : new Uint8Array(0)
+      const R = size * 0.32
+
+      /** The membrane's edge at angle a: breathing slowly, rippling with a voice. */
+      const edge = (a: number) => {
+        const bin = fft.length > 0 ? (fft[Math.floor(((a / TAU + 1) % 1) * fft.length)] ?? 0) / 255 : 0
+        const breathe = 0.011 * Math.sin(3 * a + ph * 2) + 0.007 * Math.sin(5 * a - ph * 3)
+        return R * (1 + breathe * (1 + energy * 3) + bin * energy * 0.05)
+      }
+
+      const membrane = new Path2D()
+      for (let i = 0; i <= POINTS; i++) {
+        const a = (i / POINTS) * TAU
+        const r = edge(a)
+        const x = cx + Math.cos(a) * r
+        const y = cy + Math.sin(a) * r
+        if (i === 0) membrane.moveTo(x, y)
+        else membrane.lineTo(x, y)
+      }
+      membrane.closePath()
 
       ctx.clearRect(0, 0, size, size)
 
-      for (let l = 0; l < LOBES.length; l++) {
-        const lobe = LOBES[l]!
-        const pts: [number, number][] = []
+      // ── The halo: the light the sphere throws on the page.
+      const halo = ctx.createRadialGradient(cx, cy, R * 0.85, cx, cy, R * 1.55)
+      halo.addColorStop(0, rgba(hue, 0.14 + energy * 0.35))
+      halo.addColorStop(1, rgba(hue, 0))
+      ctx.fillStyle = halo
+      ctx.fillRect(0, 0, size, size)
 
-        for (let i = 0; i < POINTS; i++) {
-          const angle = (i / POINTS) * Math.PI * 2
-          const wobble = smoothNoise(angle, t * lobe.speed * 6, lobe.phase) * lobe.wobble
+      // ── The body: near-white, faintly tinted toward the edge.
+      const body = ctx.createRadialGradient(cx - R * 0.2, cy - R * 0.25, R * 0.05, cx, cy, R * 1.02)
+      body.addColorStop(0, 'rgba(255, 255, 255, 1)')
+      body.addColorStop(0.6, 'rgba(250, 255, 252, 0.98)')
+      body.addColorStop(0.9, rgba({ r: 226, g: 246, b: 234 }, 0.97))
+      body.addColorStop(1, rgba({ r: 205, g: 236, b: 218 }, 0.97))
+      ctx.fillStyle = body
+      ctx.fill(membrane)
 
-          // Map the spectrum around the circumference so the shape responds to
-          // timbre, not just loudness — that is what stops it looking like a
-          // metronome.
-          const bin = fft.length > 0 ? (fft[Math.floor((i / POINTS) * fft.length)] ?? 0) / 255 : 0
+      ctx.save()
+      ctx.clip(membrane)
 
-          const r = base * lobe.scale * (1 + wobble * (0.5 + energy) + bin * energy * 0.55)
-          pts.push([cx + Math.cos(angle) * r, cy + Math.sin(angle) * r])
-        }
+      for (let k = 0; k < FOLDS.length; k++) {
+        const f = FOLDS[k]!
+        // Which way the cut faces, and how far from the centre it sits.
+        const theta = ph * f.turn + f.phase
+        const ux = Math.cos(theta)
+        const uy = Math.sin(theta)
+        const d = R * (0.3 + 0.5 * (0.5 + 0.5 * Math.sin(ph * f.reach + f.phase * 1.7)))
+        const tint = f.glint ? GLINT : hue
 
-        ctx.beginPath()
-        ctx.moveTo(...(pts[0] as [number, number]))
-        // Closed Catmull-Rom, rendered as quadratics through midpoints.
-        for (let i = 0; i < POINTS; i++) {
-          const cur = pts[i]!
-          const next = pts[(i + 1) % POINTS]!
-          ctx.quadraticCurveTo(cur[0], cur[1], (cur[0] + next[0]) / 2, (cur[1] + next[1]) / 2)
-        }
-        ctx.closePath()
+        // The cap's wash: clear on the near side of the cut, strongest just
+        // past it, easing toward the membrane — a soft side of colour.
+        const strength = (0.4 + energy * 0.3) * f.band
+        const wash = ctx.createLinearGradient(
+          cx + ux * (d - R * 0.42),
+          cy + uy * (d - R * 0.42),
+          cx + ux * R,
+          cy + uy * R,
+        )
+        wash.addColorStop(0, rgba(tint, 0))
+        wash.addColorStop(0.45, rgba(tint, strength * 0.55))
+        wash.addColorStop(0.7, rgba(tint, strength))
+        wash.addColorStop(1, rgba(tint, strength * 0.6))
+        ctx.fillStyle = wash
+        ctx.fill(membrane)
 
-        const grad = ctx.createRadialGradient(cx, cy - base * 0.3, base * 0.1, cx, cy, base * 1.5)
-        const a = lobe.alpha * (0.7 + energy * 0.4)
-        grad.addColorStop(0, `rgba(${hue.r | 0}, ${hue.g | 0}, ${hue.b | 0}, ${a})`)
-        grad.addColorStop(1, `rgba(${hue.r | 0}, ${hue.g | 0}, ${hue.b | 0}, ${a * 0.25})`)
-        ctx.fillStyle = grad
-        ctx.fill()
-      }
-
-      // Radiating spokes — one per spectrum bin, so the corona *is* the voice's
-      // timbre rather than decoration around it. Length tracks that band's
-      // energy; the whole corona fades out when nobody is speaking.
-      const spokes = 72
-      const coronaAlpha = Math.min(0.9, 0.34 + energy * 1.5)
-      if (coronaAlpha > 0.1) {
-        ctx.save()
-        ctx.lineCap = 'round'
-        for (let i = 0; i < spokes; i++) {
-          const angle = (i / spokes) * Math.PI * 2 - Math.PI / 2
-          const bin = fft.length > 0 ? (fft[Math.floor((i / spokes) * fft.length)] ?? 0) / 255 : 0
-          const drift = smoothNoise(angle, t * 0.9, 7) * 0.5 + 0.5
-
-          const inner = base * 1.06
-          const outer = inner + base * (0.2 + bin * 0.95 + drift * 0.16 * (0.3 + energy))
-          if (outer - inner < 2) continue
-
+        // The crease: the circle where the plane meets the sphere, seen at a
+        // tilt, so an ellipse whose far half curves along the cap. It shows
+        // only while the plane is nearly edge-on, then dissolves.
+        const open = Math.sin(ph * f.tilt + f.phase)
+        const crease = Math.pow(Math.max(0, 1 - Math.abs(open) * 2.6), 2)
+        if (crease > 0.02) {
+          const rc = Math.sqrt(Math.max(0, R * R - d * d))
+          const ex = cx + ux * d
+          const ey = cy + uy * d
           ctx.beginPath()
-          ctx.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner)
-          ctx.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer)
-          ctx.strokeStyle = `rgba(${hue.r | 0}, ${hue.g | 0}, ${hue.b | 0}, ${
-            coronaAlpha * (0.35 + bin * 0.65)
-          })`
-          ctx.lineWidth = 1.6
+          // Never quite edge-on: the reference's creases are always curved,
+          // a lens rather than a ruled line.
+          ctx.ellipse(ex, ey, rc * (0.22 + 0.3 * Math.abs(open)), rc * 1.02, theta, -Math.PI / 2, Math.PI / 2)
+          ctx.lineWidth = 1.4
+          ctx.strokeStyle = rgba(tint, crease * (0.6 + energy * 0.35))
           ctx.stroke()
         }
-        ctx.restore()
       }
 
-      // A soft specular highlight gives the mass a surface rather than leaving
-      // it a flat silhouette.
-      const spec = ctx.createRadialGradient(
-        cx - base * 0.3,
-        cy - base * 0.45,
-        0,
-        cx - base * 0.3,
-        cy - base * 0.45,
-        base * 0.85,
-      )
-      spec.addColorStop(0, 'rgba(255,255,255,0.32)')
+      // The inner edge: colour gathering where the membrane turns away.
+      const inner = ctx.createRadialGradient(cx, cy, R * 0.72, cx, cy, R * 1.04)
+      inner.addColorStop(0, 'rgba(255,255,255,0)')
+      inner.addColorStop(1, rgba(hue, 0.22 + energy * 0.25))
+      ctx.fillStyle = inner
+      ctx.fill(membrane)
+      ctx.restore()
+
+      // ── The rim, with a glint that travels around it.
+      const glintAt = ph * 1.5
+      const rim =
+        'createConicGradient' in ctx
+          ? ctx.createConicGradient(glintAt, cx, cy)
+          : (ctx as CanvasRenderingContext2D).createLinearGradient(cx - R, cy - R, cx + R, cy + R)
+      rim.addColorStop(0, rgba(GLINT, 0.95))
+      rim.addColorStop(0.12, rgba(hue, 0.85))
+      rim.addColorStop(0.35, rgba(hue, 0.35))
+      rim.addColorStop(0.6, rgba({ r: 225, g: 245, b: 234 }, 0.3))
+      rim.addColorStop(0.85, rgba(hue, 0.5))
+      rim.addColorStop(1, rgba(GLINT, 0.95))
+      ctx.strokeStyle = rim
+      ctx.lineWidth = 1.6 + energy * 2.4
+      ctx.stroke(membrane)
+
+      // ── A soft highlight, top left, so the glass has a surface.
+      const spec = ctx.createRadialGradient(cx - R * 0.36, cy - R * 0.42, 0, cx - R * 0.36, cy - R * 0.42, R * 0.62)
+      spec.addColorStop(0, 'rgba(255,255,255,0.7)')
       spec.addColorStop(1, 'rgba(255,255,255,0)')
       ctx.fillStyle = spec
-      ctx.beginPath()
-      ctx.arc(cx, cy, base * 1.1, 0, Math.PI * 2)
-      ctx.fill()
+      ctx.fill(membrane)
 
       raf.current = requestAnimationFrame(draw)
     }
 
-    raf.current = requestAnimationFrame(draw)
+    start()
     return () => {
-      cancelAnimationFrame(raf.current)
+      stop()
       observer.disconnect()
+      seen.disconnect()
+      document.removeEventListener('visibilitychange', onVisibility)
     }
   }, [])
 

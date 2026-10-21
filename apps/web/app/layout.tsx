@@ -17,11 +17,12 @@ import './globals.css'
 /**
  * Four faces, each doing one job.
  *
- * The serif/grotesk split is the thesis rendered in type: the desk's speech is
- * set in the warm editorial face and the caller's in the neutral one, because
- * the product's whole task is making the machine read as the human. Devanagari
- * gets its own family — Latin faces render matras badly or fall back
- * inconsistently across platforms.
+ * The serif/grotesk split is the thesis rendered in type: headings and the
+ * desk's speech are set in the warm editorial face, the interface and the
+ * caller in the neutral one, because the product's whole task is making the
+ * machine read as the human. Devanagari and the other scripts get their own
+ * families — Latin faces render matras badly or fall back inconsistently
+ * across platforms.
  *
  * Self-hosted at build time via next/font, so the console still renders
  * correctly on the offline local tier.

@@ -1,0 +1,1389 @@
+/*
+ * The pipeline page.
+ *
+ * Momo's sky for the opening and the close, CareFlow's board for the middle:
+ * one big dark-sage card with the platform running across it in white glass,
+ * then the stages as CareFlow cards — white, sage, black, coral, dark — on a
+ * spine that fills as the page is read. Packet colours keep the app's rule:
+ * sky blue is the caller, green is the desk.
+ */
+
+.pl {
+  --pl-in: #a9dcf2;
+  --pl-out: #4fd672;
+  --pl-tool: #ffffff;
+  --pl-write: #bdd5c4;
+}
+
+/* ── The opening ──────────────────────────────────────────────────────────── */
+
+.pl-hero {
+  padding-bottom: clamp(70px, 9vw, 120px);
+}
+
+.pl-hero-in {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: calc(clamp(40px, 6vw, 80px) + 76px) var(--lp-gutter) 0;
+  text-align: center;
+}
+
+.pl-hero h1 {
+  margin: 0 0 22px;
+  font-size: clamp(40px, 6.2vw, 80px);
+  line-height: 1.03;
+  letter-spacing: -0.032em !important;
+  font-variation-settings: 'SOFT' 20, 'WONK' 1, 'opsz' 48;
+}
+
+.pl-hero h1 em {
+  font-style: normal;
+  color: var(--mo-green-deep);
+}
+
+.pl-lede {
+  max-width: 58ch;
+  margin: 0 auto 30px;
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.pl-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 7px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px -16px rgba(14, 40, 26, 0.45);
+  font-size: 13px;
+  animation: pl-bob 6s ease-in-out infinite alternate;
+  animation-delay: calc(var(--f, 0) * -1.2s);
+}
+
+.pl-facts li i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mo-green);
+}
+
+@keyframes pl-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-5px); }
+}
+
+/* ── The board ────────────────────────────────────────────────────────────── */
+
+.pl-overview {
+  position: relative;
+  margin-top: clamp(-80px, -6vw, -40px);
+}
+
+/* The board gets more width than the text column: it has thirteen boxes. */
+.pl-overview .lp-wrap {
+  --lp-measure: 1340px;
+}
+
+.pl-board {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(14px, 2vw, 26px);
+  border-radius: clamp(24px, 2.6vw, 34px);
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(50% 50% at 43% 50%, rgba(189, 213, 196, 0.32), transparent 70%),
+    radial-gradient(40% 50% at 100% 0%, rgba(52, 199, 89, 0.18), transparent 70%),
+    linear-gradient(160deg, #6e8b77 0%, #4f6b5a 50%, #354c3f 100%);
+  box-shadow: 0 60px 100px -60px rgba(14, 40, 26, 0.7);
+}
+
+/* A faint grid on the board, as a schematic would have. */
+.pl-board::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  -webkit-mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent);
+  mask-image: radial-gradient(70% 70% at 50% 50%, #000, transparent);
+}
+
+.pl-canvas {
+  position: relative;
+  width: 100%;
+  /* Box text is sized against the board's own width, so it shrinks with the
+     boxes instead of spilling out of them. */
+  container-type: inline-size;
+}
+
+.pl-canvas.is-tall {
+  display: none;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.pl-wires {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.pl-wire {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1.5;
+}
+
+/* A soft glow along a wire while its beat is on. */
+.pl-wire-glow {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+.pl-edge.is-hot .pl-wire {
+  stroke: rgba(255, 255, 255, 0.5);
+}
+
+.pl-edge.is-hot .pl-wire-glow {
+  opacity: 0.25;
+}
+
+.pl-packet {
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+.pl-edge.is-hot .pl-packet {
+  opacity: 1;
+}
+
+.pl-edge.is-in .pl-packet { fill: var(--pl-in); filter: drop-shadow(0 0 4px var(--pl-in)); }
+.pl-edge.is-out .pl-packet { fill: var(--pl-out); filter: drop-shadow(0 0 4px var(--pl-out)); }
+.pl-edge.is-tool .pl-packet { fill: var(--pl-tool); filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.9)); }
+.pl-edge.is-write .pl-packet,
+.pl-edge.is-show .pl-packet { fill: var(--pl-write); filter: drop-shadow(0 0 4px var(--pl-write)); }
+
+.pl-edge.is-in .pl-wire-glow { stroke: var(--pl-in); }
+.pl-edge.is-out .pl-wire-glow { stroke: var(--pl-out); }
+.pl-edge.is-tool .pl-wire-glow { stroke: #fff; }
+.pl-edge.is-write .pl-wire-glow,
+.pl-edge.is-show .pl-wire-glow { stroke: var(--pl-write); }
+
+/* The boxes: Momo's white glass on the dark board, lit when their beat is. */
+.pl-node {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0.7cqi;
+  padding: 0 0.9cqi;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.82);
+  transition: background 500ms ease, color 500ms ease, box-shadow 500ms ease, transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pl-node.is-lit {
+  border-color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--ink);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(255, 255, 255, 0.12);
+  transform: scale(1.04);
+}
+
+.pl-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.6cqi;
+  height: 2.6cqi;
+  border-radius: 0.8cqi;
+  background: rgba(255, 255, 255, 0.14);
+  transition: background 500ms ease, color 500ms ease;
+}
+
+.pl-node.is-lit .pl-icon {
+  background: var(--agent-soft);
+  color: var(--mo-green-deep);
+}
+
+.pl-icon svg {
+  width: 55%;
+  height: 55%;
+}
+
+.pl-node-t {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.pl-node-t b {
+  font-size: 1.12cqi;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pl-node-t small {
+  font-size: 0.92cqi;
+  opacity: 0.7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The database box is narrow and tall: icon over name. */
+.is-wide .pl-node.is-db {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.8cqi;
+  text-align: center;
+}
+
+/* The model: the centre of the board, the orb standing in it. */
+.pl-node.is-model {
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  border-radius: 26px;
+}
+
+.pl-node.is-model .pl-node-t b {
+  font-family: var(--font-display);
+  font-size: 1.7cqi;
+  font-weight: 500;
+}
+
+.pl-orb {
+  position: relative;
+  width: 44%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 38% 32%, #ffffff 0%, #f6fcf8 42%, #dcf2e5 80%, #c0e6cf 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 16px 34px -12px rgba(31, 157, 71, 0.65);
+  animation: pl-breathe 3.2s ease-in-out infinite alternate;
+}
+
+.pl-orb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 0deg, #78d4c8, #2dbd5f 18%, rgba(45, 189, 95, 0.25) 45%, rgba(225, 245, 234, 0.3) 62%, #70c496 82%, #78d4c8);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: pl-turn 3s linear infinite;
+}
+
+.pl-orb i {
+  position: absolute;
+  left: -30%;
+  top: 20%;
+  width: 160%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(45, 189, 95, 0.36), transparent 70%);
+  filter: blur(5px);
+  animation: pl-sweep 4.2s ease-in-out infinite;
+}
+
+/* Sound rings off the model while it is the beat. */
+.pl-node.is-model::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1.5px solid rgba(79, 214, 114, 0.6);
+  opacity: 0;
+}
+
+.pl-node.is-model.is-lit::after {
+  animation: pl-ring 2s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+@keyframes pl-ring {
+  from { opacity: 0.9; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes pl-turn {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pl-sweep {
+  0%, 100% { transform: translateY(-40%) rotate(-24deg); }
+  50% { transform: translateY(45%) rotate(18deg); }
+}
+
+@keyframes pl-breathe {
+  to { transform: scale(1.05); }
+}
+
+/* ── The story under the board ────────────────────────────────────────────── */
+
+.pl-story {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-top: clamp(12px, 2vw, 22px);
+  padding: 16px 18px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Six segments, like a story's: the one on fills over the beat's length. */
+.pl-beats {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pl-beats button {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 22px;
+  border-radius: 0;
+}
+
+.pl-beats button::before,
+.pl-beats i {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 9px;
+  height: 4px;
+  border-radius: 4px;
+}
+
+.pl-beats button::before {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.pl-beats i {
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.pl-beats .is-done i {
+  transform: scaleX(1);
+  opacity: 0.7;
+}
+
+.pl-beats .is-on i {
+  animation: pl-fill linear both;
+}
+
+@keyframes pl-fill {
+  to { transform: scaleX(1); }
+}
+
+.pl-now {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  animation: pl-now 600ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes pl-now {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+}
+
+.pl-now-n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--mo-green-deep);
+  font-size: 14px;
+}
+
+.pl-now h3 {
+  margin: 0 0 4px;
+  font-size: clamp(19px, 2vw, 25px);
+  font-weight: 500;
+}
+
+.pl-now p {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.pl-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.pl-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pl-legend li::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(14, 40, 26, 0.05);
+}
+
+.pl-legend .is-in::before { background: #7cc6e6; }
+.pl-legend .is-out::before { background: var(--pl-out); }
+.pl-legend .is-tool::before { background: #fff; border: 1px solid var(--hairline-strong); }
+.pl-legend .is-write::before { background: var(--sage-deep); }
+
+/* ── Stage by stage ───────────────────────────────────────────────────────── */
+
+.pl-stages {
+  padding-top: clamp(90px, 11vw, 150px);
+}
+
+.pl-spine-list {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 72px;
+  list-style: none;
+  view-timeline-name: --pl-spine;
+}
+
+/* The spine: a faint line the length of the list, filling green from the
+   top as the middle of the screen moves down it, a light at its head. */
+.pl-spine {
+  position: absolute;
+  left: 21px;
+  top: 30px;
+  bottom: 30px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--hairline);
+}
+
+.pl-spine i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green-deep));
+  transform-origin: top;
+}
+
+.pl-spine b {
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #4fd672;
+  box-shadow: 0 0 0 5px rgba(79, 214, 114, 0.22), 0 0 16px 4px rgba(79, 214, 114, 0.6);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .pl-spine i {
+      animation: pl-spine linear both;
+      animation-timeline: --pl-spine;
+      animation-range: entry 50% exit 50%;
+    }
+    .pl-spine b {
+      animation: pl-head linear both;
+      animation-timeline: --pl-spine;
+      animation-range: entry 50% exit 50%;
+    }
+  }
+}
+
+@keyframes pl-spine {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+@keyframes pl-head {
+  from { top: 0%; }
+  to { top: 100%; }
+}
+
+.pl-stage {
+  position: relative;
+}
+
+.pl-stage + .pl-stage {
+  margin-top: 22px;
+}
+
+/* Each stage's number on the spine, lit once its card is in. */
+.pl-stage-dot {
+  position: absolute;
+  left: -72px;
+  top: 26px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--surface);
+  font-size: 12px;
+  color: var(--ink-faint);
+  transition: background 500ms ease, color 500ms ease, border-color 500ms ease, transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.pl-stage.is-in .pl-stage-dot {
+  border-color: transparent;
+  background: var(--mo-green-deep);
+  color: #fff;
+  transform: scale(1.06);
+  transition-delay: 300ms;
+}
+
+/* The cards, in CareFlow's colours. */
+.pl-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+  gap: clamp(20px, 3vw, 40px);
+  align-items: center;
+  padding: clamp(22px, 3vw, 34px);
+  border-radius: 28px;
+  box-shadow: 0 30px 60px -44px rgba(14, 40, 26, 0.5);
+}
+
+.pl-card.is-white { background: var(--surface); border: 1px solid var(--hairline); }
+.pl-card.is-sage { background: var(--sage); color: var(--sage-ink); }
+.pl-card.is-ink { background: var(--ink); color: #fff; }
+.pl-card.is-coral { background: var(--coral-soft); color: #5a1d1a; border: 1px solid #ffd0cd; }
+.pl-card.is-dark {
+  color: #fff;
+  background:
+    radial-gradient(60% 60% at 70% 40%, rgba(189, 213, 196, 0.3), transparent 70%),
+    linear-gradient(160deg, #6e8b77, #3f5a49);
+}
+
+.pl-card-n {
+  margin: 0 0 8px;
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.pl-card h3 {
+  margin: 0 0 12px;
+  font-size: clamp(25px, 2.6vw, 34px);
+  line-height: 1.08;
+  font-weight: 500;
+}
+
+.pl-card-copy > p:not(.pl-card-n):not(.pl-code) {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  opacity: 0.82;
+}
+
+.pl-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin: 8px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(14, 40, 26, 0.06);
+  font-size: 11.5px;
+}
+
+.is-ink .pl-code,
+.is-dark .pl-code {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pl-code svg {
+  width: 13px;
+  height: 13px;
+}
+
+.pl-art {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(14, 40, 26, 0.04);
+}
+
+.is-ink .pl-art,
+.is-dark .pl-art {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.is-sage .pl-art {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.is-coral .pl-art {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* With motion on, each card rises a little further and its picture starts
+   once the card is in. */
+.lp-motion .pl-stage[data-reveal] {
+  transform: translateY(46px) scale(0.98);
+}
+
+.lp-motion .pl-stage[data-reveal].is-in {
+  transform: none;
+}
+
+/* ── The pictures ─────────────────────────────────────────────────────────── */
+
+/* Every looping picture waits for its card. */
+.lp-motion .pl-stage:not(.is-in) .pl-art * {
+  animation-play-state: paused !important;
+}
+
+/* 01 · the line: voice running from the phone to the session and back. */
+.art-line {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.art-end {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.art-end svg {
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 8px 20px -12px rgba(14, 40, 26, 0.5);
+}
+
+.art-end.is-mid svg {
+  background: var(--mo-green-deep);
+  color: #fff;
+}
+
+.art-end small {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+.art-wave {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+}
+
+.art-wave i {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: #7cc6e6;
+  transform: scaleY(0.2);
+  animation: art-bar 1.2s ease-in-out infinite;
+  animation-delay: calc(var(--v, 0) * -70ms);
+}
+
+.art-wave.is-back i {
+  background: var(--pl-out);
+}
+
+/* A packet riding the wave. */
+.art-wave b {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: #7cc6e6;
+  box-shadow: 0 0 10px 3px rgba(124, 198, 230, 0.7);
+  animation: art-ride 1.6s linear infinite;
+}
+
+.art-wave.is-back b {
+  background: var(--pl-out);
+  box-shadow: 0 0 10px 3px rgba(79, 214, 114, 0.7);
+  animation-direction: reverse;
+}
+
+@keyframes art-bar {
+  0%, 100% { transform: scaleY(0.2); }
+  50% { transform: scaleY(1); }
+}
+
+@keyframes art-ride {
+  from { left: 0; }
+  to { left: calc(100% - 9px); }
+}
+
+/* 02 · the model: voice in, voice out, one orb. */
+.art-model {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.art-bars {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 54px;
+}
+
+.art-bars i {
+  width: 3px;
+  height: 100%;
+  border-radius: 3px;
+  transform: scaleY(0.2);
+  animation: art-bar 1s ease-in-out infinite;
+  animation-delay: calc(var(--v, 0) * -83ms);
+}
+
+.art-bars.is-in i { background: var(--pl-in); }
+.art-bars.is-out i { background: var(--pl-out); animation-delay: calc(var(--v, 0) * -83ms - 0.5s); }
+
+.art-orb {
+  position: relative;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 38% 32%, #ffffff 0%, #f6fcf8 42%, #dcf2e5 80%, #c0e6cf 100%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 18px 36px -12px rgba(0, 0, 0, 0.5), 0 0 0 10px rgba(255, 255, 255, 0.08);
+  animation: pl-breathe 3.2s ease-in-out infinite alternate;
+}
+
+.art-orb::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 2px;
+  background: conic-gradient(from 0deg, #78d4c8, #2dbd5f 18%, rgba(45, 189, 95, 0.25) 45%, rgba(225, 245, 234, 0.3) 62%, #70c496 82%, #78d4c8);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  animation: pl-turn 3s linear infinite;
+}
+
+.art-orb i {
+  position: absolute;
+  left: -30%;
+  top: 20%;
+  width: 160%;
+  height: 46%;
+  border-radius: 50%;
+  background: radial-gradient(50% 50% at 50% 50%, rgba(45, 189, 95, 0.36), transparent 70%);
+  filter: blur(5px);
+  animation: pl-sweep 4.2s ease-in-out infinite;
+}
+
+.art-chip {
+  position: absolute;
+  left: 50%;
+  bottom: -36px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  white-space: nowrap;
+  translate: -50% 0;
+  animation: art-cut 4s ease-in-out infinite;
+}
+
+@keyframes art-cut {
+  0%, 55%, 100% { opacity: 0.45; }
+  65%, 85% { opacity: 1; background: rgba(79, 214, 114, 0.35); }
+}
+
+/* 03 · languages: one lit at a time, round the eleven. */
+.art-langs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 380px;
+}
+
+.art-langs span {
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  animation: art-lang 11s ease-in-out infinite;
+  animation-delay: calc(var(--v, 0) * 1s);
+}
+
+@keyframes art-lang {
+  0%, 9.09%, 100% { background: rgba(255, 255, 255, 0.7); color: var(--sage-ink); transform: none; }
+  1.5%, 7.5% { background: var(--mo-green-deep); color: #fff; transform: translateY(-3px); }
+}
+
+/* 04 · tools: asked and answered, one line after another, round again. */
+.art-tools {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.art-tools li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--hairline);
+  font-size: 13px;
+  animation: art-tool 8s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation-delay: calc(var(--v, 0) * 0.6s);
+}
+
+.art-tools code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--mo-green-deep);
+}
+
+.art-tools span {
+  color: var(--ink-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+@keyframes art-tool {
+  0% { opacity: 0; transform: translateX(-14px); }
+  6%, 80% { opacity: 1; transform: none; }
+  92%, 100% { opacity: 0; transform: none; }
+}
+
+/* 05 · booking: a slot read, held, re-checked, written. */
+.art-book {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.art-slots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.art-slots span {
+  padding: 12px 0;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.art-slots .is-taken {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+.art-slots .is-pick {
+  animation: art-pick 6s ease-in-out infinite;
+}
+
+@keyframes art-pick {
+  0%, 15% { background: transparent; border-color: rgba(255, 255, 255, 0.16); }
+  25%, 60% { background: rgba(79, 214, 114, 0.18); border-color: var(--pl-out); border-style: dashed; }
+  70%, 100% { background: var(--mo-green-deep); border-color: transparent; border-style: solid; }
+}
+
+.art-checks {
+  display: grid;
+  gap: 6px;
+}
+
+.art-checks span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  opacity: 0.3;
+  animation: art-check 6s ease infinite;
+  animation-delay: calc(var(--v, 0) * 1.3s + 0.6s);
+}
+
+.art-checks span::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+}
+
+.art-checks .is-done {
+  font-weight: 600;
+}
+
+@keyframes art-check {
+  0% { opacity: 0.3; }
+  8%, 70% { opacity: 1; color: #9df0b5; }
+  85%, 100% { opacity: 0.3; }
+}
+
+/* 06 · triage: the said line, and the scan settling on red. */
+.art-triage {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.art-said {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  line-height: 1.3;
+}
+
+.art-band {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.art-band b {
+  flex: none;
+  min-width: 60px;
+  padding: 3px 0;
+  border-radius: 999px;
+  text-align: center;
+  font-size: 11.5px;
+}
+
+.art-band.is-red b { background: var(--alert-soft); color: var(--alert); }
+.art-band.is-amber b { background: var(--warm-soft); color: var(--warm); }
+.art-band.is-green b { background: var(--agent-soft); color: var(--mo-green-deep); }
+
+.art-band.is-red {
+  animation: art-match 5s ease-in-out infinite;
+}
+
+@keyframes art-match {
+  0%, 30% { box-shadow: none; color: var(--ink-muted); }
+  42%, 90% { box-shadow: 0 0 0 2px var(--alert), 0 10px 24px -10px rgba(224, 54, 43, 0.5); color: var(--ink); }
+  100% { box-shadow: none; }
+}
+
+/* 07 · rows landing in their tables, one after another. */
+.art-rows {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.art-rows li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: var(--cloud);
+  overflow: hidden;
+  font-size: 12.5px;
+  animation: art-row 7s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  animation-delay: calc(var(--v, 0) * 0.5s);
+}
+
+.art-rows li .mono {
+  font-size: 11.5px;
+  color: var(--mo-green-deep);
+}
+
+.art-rows li span:nth-child(2) {
+  color: var(--ink-muted);
+}
+
+/* A green flash as each row is written. */
+.art-rows li i {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(79, 214, 114, 0.25), transparent);
+  transform: translateX(-100%);
+  animation: art-flash 7s ease infinite;
+  animation-delay: calc(var(--v, 0) * 0.5s + 0.2s);
+}
+
+@keyframes art-row {
+  0% { opacity: 0; transform: translateY(10px); }
+  6%, 82% { opacity: 1; transform: none; }
+  94%, 100% { opacity: 0; }
+}
+
+@keyframes art-flash {
+  0% { transform: translateX(-100%); }
+  10%, 100% { transform: translateX(100%); }
+}
+
+/* 08 · a corner of the dashboard. */
+.art-desk {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.art-chart {
+  width: 100%;
+  height: 110px;
+  padding: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.art-area {
+  fill: rgba(47, 74, 58, 0.18);
+  opacity: 0;
+  animation: art-fade 6s ease infinite;
+}
+
+.art-line-p {
+  fill: none;
+  stroke: var(--sage-ink);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: art-draw 6s ease infinite;
+}
+
+@keyframes art-draw {
+  0% { stroke-dashoffset: 260; }
+  35%, 90% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
+}
+
+@keyframes art-fade {
+  0%, 25% { opacity: 0; }
+  40%, 90% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.art-callback {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+}
+
+.art-callback b {
+  display: block;
+  font-size: 13px;
+}
+
+.art-callback small {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.art-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--coral);
+  box-shadow: 0 0 0 0 rgba(255, 139, 139, 0.6);
+  animation: mo-live 1.8s ease-out infinite;
+}
+
+.art-call {
+  margin-left: auto;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+/* ── The budgets ──────────────────────────────────────────────────────────── */
+
+.pl-budgets {
+  padding-top: clamp(80px, 10vw, 130px);
+}
+
+.pl-budget-card {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr);
+  gap: clamp(20px, 4vw, 56px);
+  align-items: center;
+  padding: clamp(24px, 3.4vw, 44px);
+  border-radius: 30px;
+  background: var(--ink);
+  color: #fff;
+}
+
+.pl-budget-head h2 {
+  margin: 0 0 10px;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.06;
+  font-weight: 500;
+}
+
+.pl-budget-head p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.pl-budget-card dl {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.pl-budget-card dl div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.pl-budget-card dl div:first-child {
+  background: var(--sage);
+  color: var(--sage-ink);
+}
+
+.pl-budget-card dt {
+  font-size: 12.5px;
+  opacity: 0.75;
+}
+
+.pl-budget-card dd {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.pl-budget-card dd small {
+  margin-left: 4px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+.pl-close {
+  margin-top: clamp(60px, 8vw, 110px);
+}
+
+/* ── Narrower ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .pl-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pl-art {
+    min-height: 200px;
+  }
+  .pl-budget-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* On a narrower screen the board turns on its side: the call runs down it. */
+@media (max-width: 960px) {
+  .pl-canvas.is-wide {
+    display: none;
+  }
+  .pl-canvas.is-tall {
+    display: block;
+  }
+  .is-tall .pl-node {
+    gap: 2cqi;
+    padding: 0 2.4cqi;
+    border-radius: 14px;
+  }
+  .is-tall .pl-node-t b {
+    font-size: 3.1cqi;
+  }
+  .is-tall .pl-node-t small {
+    font-size: 2.5cqi;
+  }
+  .is-tall .pl-icon {
+    width: 7cqi;
+    height: 7cqi;
+    border-radius: 2cqi;
+  }
+  .is-tall .pl-node.is-model .pl-node-t b {
+    font-size: 4.6cqi;
+  }
+  /* The five tools stand in one row: icon over name, no second line. */
+  .is-tall .pl-node:is(.is-diary, .is-patients, .is-knowledge, .is-triage, .is-handover, .is-dashboard, .is-queue, .is-api) {
+    flex-direction: column;
+    justify-content: center;
+    gap: 1.2cqi;
+    padding: 0 1cqi;
+    text-align: center;
+  }
+  .is-tall .pl-node:is(.is-diary, .is-patients, .is-knowledge, .is-triage, .is-handover) small,
+  .is-tall .pl-node:is(.is-dashboard, .is-queue, .is-api) small {
+    display: none;
+  }
+  .is-tall .pl-node:is(.is-diary, .is-patients, .is-knowledge, .is-triage, .is-handover) b {
+    font-size: 2.6cqi;
+  }
+  .is-tall .pl-node.is-model {
+    gap: 2cqi;
+  }
+  .is-tall .pl-orb {
+    width: 34%;
+  }
+}
+
+@media (max-width: 760px) {
+  .pl-now {
+    gap: 12px;
+  }
+  .pl-now-n {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+  .pl-spine-list {
+    padding-left: 0;
+  }
+  .pl-spine {
+    display: none;
+  }
+  .pl-stage-dot {
+    position: static;
+    margin: 0 0 -22px 18px;
+    position: relative;
+    z-index: 1;
+  }
+  .pl-budget-card dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .art-line {
+    gap: 4px;
+  }
+  .art-end svg {
+    width: 34px;
+    height: 34px;
+    padding: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl *,
+  .pl *::before,
+  .pl *::after {
+    animation: none !important;
+  }
+  .pl-packet {
+    display: none;
+  }
+  .art-tools li,
+  .art-rows li,
+  .art-checks span {
+    opacity: 1;
+  }
+  .art-line-p {
+    stroke-dashoffset: 0;
+  }
+  .art-area {
+    opacity: 1;
+  }
+}

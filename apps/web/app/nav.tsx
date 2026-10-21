@@ -1,32 +1,34 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 /**
- * The top bar.
+ * The top bar, after Momo.
  *
- * Three columns, not a flex row with space-between: the mark holds the left,
- * the links sit dead centre whatever their combined width, and the action holds
- * the right. Centring links inside a two-item flex row is not possible without
- * the columns, which is why they used to drift toward the action.
+ * The wordmark on the left, four links in the middle, and two actions on the
+ * right: a quiet glass "Sign in" and the green "Get started". It sits on the
+ * sky at the top of the page and, a few pixels down, lifts into a frosted
+ * pill so the links stay readable over whatever scrolls under it.
  *
- * It detaches on scroll. Flush against the top it is a bar; a few pixels down
- * it lifts into a floating pill with real glass behind it. The change is the
- * only thing telling a reader they have left the top of the page, and it costs
- * one class.
+ * On a phone the links fold into a menu rather than wrapping into two rows.
  */
 
 const LINKS = [
-  { href: '#does', id: 'does', label: 'What it does' },
-  { href: '#limits', id: 'limits', label: 'What it won’t do' },
-  { href: '#channels', id: 'channels', label: 'Where it answers' },
+  { href: '#how', label: 'How it works' },
+  { href: '/pipeline', label: 'Pipeline' },
+  { href: '#needs', label: 'Use cases' },
+  { href: '#voices', label: 'Example calls' },
+  { href: '#languages', label: 'Languages' },
 ] as const
 
-export function Nav() {
+/**
+ * `home` is false on the other marketing pages, where the section links have
+ * to lead back to the landing page rather than to an anchor that is not there.
+ */
+export function Nav({ home = true }: { home?: boolean } = {}) {
+  const to = (href: string) => (home || !href.startsWith('#') ? href : `/${href}`)
   const [lifted, setLifted] = useState(false)
-  const [active, setActive] = useState<string | null>(null)
-  const rail = useRef<HTMLDivElement>(null)
-  const pill = useRef<HTMLSpanElement>(null)
+  const [menu, setMenu] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setLifted(window.scrollY > 12)
@@ -35,102 +37,59 @@ export function Nav() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  /**
-   * Which section is being read.
-   *
-   * The band nearest the top of the viewport wins, rather than the first one
-   * intersecting — with tall sections the first-intersecting rule leaves the
-   * previous section marked active long after it has scrolled away.
-   */
-  useEffect(() => {
-    const sections = LINKS.map((l) => document.getElementById(l.id)).filter(
-      (n): n is HTMLElement => Boolean(n),
-    )
-    if (!sections.length) return
-
-    let frame = 0
-    const pick = () => {
-      frame = 0
-      let best: { id: string; d: number } | null = null
-      for (const s of sections) {
-        const top = s.getBoundingClientRect().top
-        // A section counts as current once its top passes a third of the way
-        // down the viewport, so the mark changes as it is reached, not as it
-        // is left.
-        const d = Math.abs(top - window.innerHeight * 0.33)
-        if (top < window.innerHeight * 0.66 && (!best || d < best.d)) best = { id: s.id, d }
-      }
-      setActive(best?.id ?? null)
-    }
-    const onScroll = () => {
-      if (frame) return
-      frame = requestAnimationFrame(pick)
-    }
-    pick()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      window.removeEventListener('scroll', onScroll)
-      if (frame) cancelAnimationFrame(frame)
-    }
-  }, [])
-
-  /**
-   * The indicator slides between links rather than appearing under each.
-   *
-   * Measured from the live element, because the labels are different widths in
-   * every language the page might be translated into and hard-coded offsets
-   * would be wrong the moment one changed.
-   */
-  useEffect(() => {
-    const bar = pill.current
-    const box = rail.current
-    if (!bar || !box) return
-    if (!active) {
-      bar.style.opacity = '0'
-      return
-    }
-    const link = box.querySelector<HTMLElement>(`[data-nav="${active}"]`)
-    if (!link) return
-    bar.style.opacity = '1'
-    bar.style.width = `${link.offsetWidth}px`
-    bar.style.transform = `translateX(${link.offsetLeft}px)`
-  }, [active])
-
   return (
-    <nav className={`lp-nav${lifted ? ' is-lifted' : ''}`}>
-      <div className="lp-nav-shell">
-        <a className="lp-mark" href="#top">
-          <span className="lp-mark-dot" aria-hidden />
-          <span className="lp-mark-text">
-            <span className="lp-mark-name">Vaani</span>
-            <span className="lp-mark-sub">front desk</span>
-          </span>
+    <nav className={`mo-nav${lifted ? ' is-lifted' : ''}`}>
+      <div className="mo-nav-in">
+        {/* How far down the page the reader is: a thin green line along the
+            foot of the bar, filled by the scroll. */}
+        <span className="mo-progress" aria-hidden />
+        <a className="mo-logo" href={home ? '#top' : '/'}>
+          Vaani
         </a>
 
-        <div className="lp-nav-rail" ref={rail}>
-          <span className="lp-nav-pill" ref={pill} aria-hidden />
+        <div className="mo-nav-links">
           {LINKS.map((l) => (
-            <a
-              key={l.id}
-              className={`lp-nav-link${active === l.id ? ' is-on' : ''}`}
-              href={l.href}
-              data-nav={l.id}
-              aria-current={active === l.id ? 'true' : undefined}
-            >
+            <a key={l.href} href={to(l.href)}>
               {l.label}
             </a>
           ))}
         </div>
 
-        <div className="lp-nav-end">
-          <a className="lp-nav-link lp-nav-quiet" href="/login">
+        <div className="mo-nav-end">
+          <a className="mo-btn is-glass is-sm" href="/login">
             Sign in
           </a>
-          <a className="lp-btn lp-btn-primary lp-btn-sm" href="/start">
-            Set up your practice
+          <a className="mo-btn is-green is-sm" href="/start">
+            Get started
           </a>
+          <button
+            className="mo-burger"
+            aria-label={menu ? 'Close the menu' : 'Open the menu'}
+            aria-expanded={menu}
+            aria-controls="mo-menu"
+            onClick={() => setMenu((m) => !m)}
+          >
+            <span />
+            <span />
+          </button>
         </div>
       </div>
+
+      {menu && (
+        <div className="mo-menu" id="mo-menu">
+          {LINKS.map((l) => (
+            <a key={l.href} href={to(l.href)} onClick={() => setMenu(false)}>
+              {l.label}
+            </a>
+          ))}
+          <a href="/login" onClick={() => setMenu(false)}>
+            Sign in
+          </a>
+          <a className="mo-btn is-green" href="/start">
+            Get started
+          </a>
+        </div>
+      )}
     </nav>
   )
 }

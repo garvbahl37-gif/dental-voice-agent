@@ -3,11 +3,17 @@
 /**
  * The practice panel — what the front desk would be watching.
  *
- * Everything here updates from `ui.event` as the call happens: the patient card
- * fills field by field as details are extracted, the booking lands in the
- * calendar the instant it commits, tool calls appear as they fire. That
- * simultaneity is the point. A transcript alone shows a conversation; this
- * shows a system running.
+ * Set as CareFlow's column of cards: the caller on sage where CareFlow shows
+ * a reading, the bookings and lookups on white, an emergency in coral at the
+ * top. Everything here updates from `ui.event` as the call happens: the
+ * patient card fills as details are extracted, the booking lands the instant
+ * it commits, lookups appear as they fire. That simultaneity is the point. A
+ * transcript alone shows a conversation; this shows a system running.
+ *
+ * Nothing is shown until there is something to show. Three boxes reading
+ * "Not identified yet", "Nothing booked yet" and "Idle" were most of what
+ * anyone saw of this panel; one card says what will appear, and each section
+ * arrives with its first content.
  */
 
 export interface ToolActivity {
@@ -41,22 +47,75 @@ interface Props {
   triage: { band: string; reason: string } | null
 }
 
-export function PracticePanel({ patient, bookings, tools, triage }: Props) {
-  return (
-    <aside className="console-panel" style={styles.panel}>
-      {triage && <TriageBanner band={triage.band} reason={triage.reason} />}
+const TOOL: Record<string, string> = {
+  lookup_patient: 'Looked up the caller',
+  create_patient: 'Created a patient record',
+  list_services: 'Read the treatment list',
+  check_availability: 'Checked the diary',
+  book_appointment: 'Booked the appointment',
+  list_my_appointments: 'Found their appointments',
+  reschedule_appointment: 'Moved the appointment',
+  cancel_appointment: 'Cancelled the appointment',
+  join_waitlist: 'Added to the waitlist',
+  search_knowledge: 'Checked what the practice says',
+  triage_symptoms: 'Triaged the symptoms',
+  escalate_to_human: 'Flagged it for a person',
+  record_note: 'Left a note',
+}
 
-      <Section title="caller">
-        {patient ? (
-          <div style={styles.card}>
-            <div style={styles.cardTop}>
-              <span style={styles.patientName}>{patient.name ?? 'Collecting…'}</span>
-              {patient.isNew && <span style={styles.newChip}>new</span>}
-            </div>
-            <Field label="mobile" value={patient.phone} />
-            <Field label="speaks" value={patient.preferredLanguage} />
+export function PracticePanel({ patient, bookings, tools, triage }: Props) {
+  const empty = !triage && !patient && bookings.length === 0 && tools.length === 0
+
+  return (
+    <aside className={`cc-side${empty ? ' is-empty' : ''}`} aria-label="What the desk understands">
+      {empty && (
+        <section className="cc-intro">
+          <h2>What the desk understands</h2>
+          <p>
+            Who is calling, what goes in the diary and every lookup it makes appear here as the
+            call happens — and in the conversation, where they were said.
+          </p>
+          <ul>
+            <li>
+              <i aria-hidden /> The caller, once identified
+            </li>
+            <li>
+              <i aria-hidden /> Anything booked, the moment it commits
+            </li>
+            <li>
+              <i aria-hidden /> Each lookup, with how long it took
+            </li>
+          </ul>
+        </section>
+      )}
+
+      {triage && (
+        <section className={`cc-triage is-${triage.band}`} role="alert">
+          <header>
+            <span className="cc-tile is-coral" aria-hidden>
+              !
+            </span>
+            {triage.band === 'red' ? 'Emergency — clinic alerted' : 'Urgent — flagged for the doctor'}
+          </header>
+          <p>{triage.reason}</p>
+        </section>
+      )}
+
+      {patient && (
+        <section className="cc-caller">
+          <header>
+            <span className="cc-tile" aria-hidden>
+              <PersonIcon />
+            </span>
+            Caller
+            {patient.isNew && <span className="cc-pill">new</span>}
+          </header>
+          <p className="cc-caller-name">{patient.name ?? 'Collecting…'}</p>
+          <dl>
+            <Field label="Mobile" value={patient.phone} />
+            <Field label="Speaks" value={patient.preferredLanguage} />
             <Field
-              label="upcoming"
+              label="Upcoming"
               value={
                 patient.upcoming === undefined
                   ? undefined
@@ -65,190 +124,81 @@ export function PracticePanel({ patient, bookings, tools, triage }: Props) {
                     : `${patient.upcoming} booked`
               }
             />
-          </div>
-        ) : (
-          <Placeholder>Not identified yet</Placeholder>
-        )}
-      </Section>
+          </dl>
+        </section>
+      )}
 
-      <Section title="booked this call">
-        {bookings.length === 0 ? (
-          <Placeholder>Nothing booked yet</Placeholder>
-        ) : (
-          <div style={styles.stack}>
+      {bookings.length > 0 && (
+        <section className="cc-card-w">
+          <header>
+            <h2>Booked this call</h2>
+            <span className="cc-count">{bookings.length}</span>
+          </header>
+          <ul className="cc-bookings">
             {bookings.map((b) => (
-              <div key={b.id} style={styles.booking}>
-                <div style={styles.bookingHead}>
-                  <span style={styles.service}>{b.serviceName}</span>
-                  <span style={styles.tick}>✓</span>
-                </div>
-                <span style={styles.when}>{b.when}</span>
-                <span style={styles.doctor}>{b.providerName}</span>
-              </div>
+              <li key={b.id}>
+                <span className="cc-check" aria-hidden>
+                  ✓
+                </span>
+                <span>
+                  <strong>{b.serviceName}</strong>
+                  <small>
+                    {b.when}
+                    {b.providerName ? ` · ${b.providerName}` : ''}
+                  </small>
+                </span>
+              </li>
             ))}
-          </div>
-        )}
-      </Section>
+          </ul>
+        </section>
+      )}
 
-      <Section title="tools">
-        {tools.length === 0 ? (
-          <Placeholder>Idle</Placeholder>
-        ) : (
-          <div style={styles.stack}>
-            {tools.slice(-6).reverse().map((t) => (
-              <div key={t.id} style={styles.tool}>
-                <div style={styles.toolHead}>
-                  <span className="mono" style={styles.toolName}>
-                    {t.name}
+      {tools.length > 0 && (
+        <section className="cc-card-w">
+          <header>
+            <h2>Lookups</h2>
+            <span className="cc-count is-grey">{tools.length}</span>
+          </header>
+          <ul className="cc-tools">
+            {tools
+              .slice(-6)
+              .reverse()
+              .map((t) => (
+                <li key={t.id} className={t.ok === false ? 'is-bad' : undefined}>
+                  <span className="cc-tool-name">{TOOL[t.name] ?? t.name.replace(/_/g, ' ')}</span>
+                  <span className={`cc-pill${t.ms === undefined ? ' is-busy' : ''}`}>
+                    {t.ms === undefined ? 'running' : `${Math.round(t.ms)} ms`}
                   </span>
-                  {t.ms !== undefined && (
-                    <span className="mono" style={styles.toolMs}>
-                      {Math.round(t.ms)}ms
-                    </span>
+                  {Object.keys(t.args).length > 0 && (
+                    <small className="mono">
+                      {Object.entries(t.args)
+                        .map(([k, v]) => `${k}: ${String(v)}`)
+                        .join('  ')}
+                    </small>
                   )}
-                </div>
-                {Object.keys(t.args).length > 0 && (
-                  <span className="mono" style={styles.toolArgs}>
-                    {Object.entries(t.args)
-                      .map(([k, v]) => `${k}: ${String(v)}`)
-                      .join('  ')}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
     </aside>
-  )
-}
-
-function TriageBanner({ band, reason }: { band: string; reason: string }) {
-  const red = band === 'red'
-  return (
-    <div
-      role="alert"
-      style={{
-        ...styles.triage,
-        borderColor: red ? 'var(--alert)' : 'var(--agent)',
-        background: red ? 'rgba(255,92,77,0.08)' : 'rgba(255,180,67,0.07)',
-      }}
-    >
-      <span
-        className="label"
-        style={{ color: red ? 'var(--alert)' : 'var(--agent)', letterSpacing: '0.16em' }}
-      >
-        {red ? 'emergency — escalated' : 'urgent'}
-      </span>
-      <span style={styles.triageReason}>{reason}</span>
-    </div>
-  )
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section style={styles.section}>
-      <span className="label">{title}</span>
-      {children}
-    </section>
   )
 }
 
 function Field({ label, value }: { label: string; value?: string }) {
   return (
-    <div style={styles.field}>
-      <span className="label" style={{ fontSize: 9 }}>
-        {label}
-      </span>
-      <span
-        className="mono"
-        style={{ fontSize: 12, color: value ? 'var(--ink)' : 'var(--ink-faint)' }}
-      >
-        {value ?? '—'}
-      </span>
+    <div>
+      <dt>{label}</dt>
+      <dd className={value ? undefined : 'is-empty'}>{value ?? '—'}</dd>
     </div>
   )
 }
 
-function Placeholder({ children }: { children: React.ReactNode }) {
-  return <div style={styles.placeholder}>{children}</div>
-}
-
-const styles: Record<string, React.CSSProperties> = {
-  panel: {
-    width: 330,
-    flexShrink: 0,
-    borderLeft: '1px solid var(--hairline)',
-    background: 'var(--bg-tint)',
-    padding: '30px 24px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 26,
-    overflowY: 'auto',
-  },
-  section: { display: 'flex', flexDirection: 'column', gap: 10 },
-  card: {
-    border: '1px solid var(--hairline)',
-    borderRadius: 'var(--r-lg)',
-    background: 'var(--surface)',
-    padding: 16,
-    boxShadow: 'var(--shadow-sm)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 9,
-  },
-  cardTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  patientName: { fontFamily: 'var(--font-display)', fontSize: 19 },
-  newChip: {
-    fontFamily: 'var(--font-mono)',
-    fontSize: 9,
-    letterSpacing: '0.1em',
-    textTransform: 'uppercase',
-    color: 'var(--caller)',
-    border: '1px solid var(--caller-line)',
-    background: 'var(--caller-soft)',
-    borderRadius: 3,
-    padding: '1px 5px',
-  },
-  field: { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 },
-  stack: { display: 'flex', flexDirection: 'column', gap: 8 },
-  booking: {
-    border: '1px solid var(--hairline)',
-    borderLeft: '2px solid var(--confirm)',
-    borderRadius: 'var(--r-md)',
-    background: 'var(--surface)',
-    padding: '12px 14px',
-    boxShadow: 'var(--shadow-sm)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 3,
-    animation: 'none',
-  },
-  bookingHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  service: { fontSize: 13, fontWeight: 500 },
-  tick: { color: 'var(--confirm)', fontSize: 12 },
-  when: { fontSize: 12, color: 'var(--ink-muted)' },
-  doctor: { fontSize: 11, color: 'var(--ink-faint)' },
-  tool: {
-    border: '1px solid var(--hairline)',
-    borderRadius: 'var(--r-sm)',
-    padding: '8px 10px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-  },
-  toolHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
-  toolName: { fontSize: 11, color: 'var(--caller)', fontWeight: 500 },
-  toolMs: { fontSize: 10, color: 'var(--ink-faint)' },
-  toolArgs: { fontSize: 10, color: 'var(--ink-faint)', wordBreak: 'break-word' },
-  placeholder: { fontSize: 12, color: 'var(--ink-faint)', padding: '10px 0' },
-  triage: {
-    border: '1px solid',
-    borderRadius: 'var(--r-md)',
-    padding: 14,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 6,
-  },
-  triageReason: { fontSize: 12.5, lineHeight: 1.45 },
+function PersonIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="8" r="3.6" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5 20c1.2-3.6 3.8-5.4 7-5.4s5.8 1.8 7 5.4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  )
 }

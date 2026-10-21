@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AgentState, Lang, ServerEvent, TurnMetrics, WordMark } from '@vaani/shared'
-import { ALL_LANGS, BUDGETS, LANG_ENGLISH, LANG_LABEL, htmlLang } from '@vaani/shared'
+import { BUDGETS } from '@vaani/shared'
 import { VoiceClient } from '@/lib/voice-client'
-import { VoiceBlob } from '@/components/VoiceBlob'
-import { Transcript, type Turn, type Utterance } from '@/components/Transcript'
+import { Transcript, type InlineCard, type Turn, type Utterance } from '@/components/Transcript'
 import {
   PracticePanel,
   type BookedAppointment,
@@ -13,6 +12,9 @@ import {
   type ToolActivity,
 } from '@/components/PracticePanel'
 import { CallSummaryView, type CallSummary } from '@/components/CallSummary'
+import { AppBar } from '../app-bar'
+import { Stage, clock } from './stage'
+import '../dashboard/careflow.css'
 import './console.css'
 
 /**
@@ -95,6 +97,7 @@ export default function Console() {
   const [patient, setPatient] = useState<PatientCard | null>(null)
   const [bookings, setBookings] = useState<BookedAppointment[]>([])
   const [tools, setTools] = useState<ToolActivity[]>([])
+  const [cards, setCards] = useState<InlineCard[]>([])
   const [triage, setTriage] = useState<{ band: string; reason: string } | null>(null)
   const [tier, setTier] = useState<{ stt: string; llm: string; tts: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -104,15 +107,30 @@ export default function Console() {
   const starting = useRef(false)
   /** utteranceId → the turn it belongs to, so clauses group into one bubble. */
   const utteranceTurn = useRef<Map<string, string>>(new Map())
+  /** The desk turn being spoken, and whether she was speaking a moment ago. */
+  const deskTurn = useRef<string | null>(null)
+  const wasSpeaking = useRef(false)
 
   const handleEvent = useCallback((event: ServerEvent) => {
     switch (event.type) {
       case 'session.ready':
         setTier(event.tier)
         break
-      case 'agent.state':
+      case 'agent.state': {
         setAgentState(event.state)
+        // She has stopped generating. What the caller hears runs on until the
+        // queued audio does, so that — not this event — is where her lane ends.
+        // A reply that was cut off already ended where it was cut.
+        const id = deskTurn.current
+        if (wasSpeaking.current && event.state !== 'speaking' && id) {
+          const endAt = client.current?.playbackEndsAt() ?? Date.now()
+          setTurns((prev) =>
+            prev.map((t) => (t.id === id && !t.cut ? { ...t, endAt: Math.max(t.endAt ?? 0, endAt) } : t)),
+          )
+        }
+        wasSpeaking.current = event.state === 'speaking'
         break
+      }
       case 'lang.detected':
         setLang(event.lang)
         break
@@ -129,9 +147,11 @@ export default function Console() {
            * under, so a new one starts a new bubble.
            */
           const at = prev.findIndex((t) => t.id === event.turnId)
+          // Each partial is the caller still talking, so the last one is
+          // when they stopped.
           if (at >= 0) {
             const next = [...prev]
-            next[at] = { ...prev[at]!, text: event.text, lang: event.lang }
+            next[at] = { ...prev[at]!, text: event.text, lang: event.lang, endAt: Date.now() }
             return next
           }
           return [
@@ -142,6 +162,7 @@ export default function Console() {
               text: event.text,
               lang: event.lang,
               at: Date.now(),
+              endAt: Date.now(),
               interim: true,
             },
           ]
@@ -155,12 +176,15 @@ export default function Console() {
           const at = prev.findIndex((t) => t.id === event.turnId)
           if (!event.text.trim()) return at >= 0 ? prev.filter((_, i) => i !== at) : prev
 
+          // `stt.final` lands after the reply, so its arrival says nothing
+          // about when the caller stopped; the last partial already did.
           const settled: Turn = {
             id: event.turnId,
             speaker: 'caller',
             text: event.text,
             lang: event.lang,
             at: at >= 0 ? (prev[at]?.at ?? Date.now()) : Date.now(),
+            endAt: at >= 0 ? prev[at]?.endAt : undefined,
           }
 
           // Replace the interim bubble WHERE IT SITS. `stt.final` only arrives
@@ -181,6 +205,7 @@ export default function Console() {
         // answer, not four.
         const turnId = `agent-${event.turnId}`
         utteranceTurn.current.set(event.utteranceId, turnId)
+        deskTurn.current = turnId
         const utterance: Utterance = {
           id: event.utteranceId,
           text: event.text,
@@ -231,6 +256,9 @@ export default function Console() {
               ? t
               : {
                   ...t,
+                  // Talked over: her lane stops here, under the caller's.
+                  cut: true,
+                  endAt: Date.now(),
                   utterances: (t.utterances ?? []).map((u) =>
                     u.id !== event.utteranceId
                       ? u
@@ -250,10 +278,21 @@ export default function Console() {
 
       case 'tool.call':
         setTools((prev) => [...prev, { id: event.id, name: event.name, args: event.args }])
+        setCards((prev) => [
+          ...prev,
+          { kind: 'tool', id: event.id, at: Date.now(), name: event.name, args: event.args },
+        ])
         break
       case 'tool.result':
         setTools((prev) =>
           prev.map((t) => (t.id === event.id ? { ...t, ms: event.ms, ok: event.ok } : t)),
+        )
+        setCards((prev) =>
+          prev.map((c) =>
+            c.kind === 'tool' && c.id === event.id
+              ? { ...c, ms: event.ms, ok: event.ok, result: event.result }
+              : c,
+          ),
         )
         break
       case 'metrics.turn':
@@ -262,6 +301,7 @@ export default function Console() {
 
       case 'ui.event': {
         const p = event.payload as Record<string, string & number>
+        const at = Date.now()
         if (event.event === 'patient.identified') {
           setPatient({
             name: p.name,
@@ -269,8 +309,16 @@ export default function Console() {
             preferredLanguage: p.preferredLanguage,
             upcoming: Number(p.upcoming ?? 0),
           })
+          setCards((prev) => [
+            ...prev,
+            { kind: 'patient', id: `p${at}`, at, name: p.name, phone: p.phone, upcoming: Number(p.upcoming ?? 0) },
+          ])
         } else if (event.event === 'patient.updated') {
           setPatient({ name: p.name, phone: p.phone, isNew: true, upcoming: 0 })
+          setCards((prev) => [
+            ...prev,
+            { kind: 'patient', id: `p${at}`, at, name: p.name, phone: p.phone, isNew: true },
+          ])
         } else if (event.event === 'appointment.booked') {
           setBookings((prev) => [
             ...prev,
@@ -282,8 +330,25 @@ export default function Console() {
               when: p.when,
             },
           ])
+          setCards((prev) => [
+            ...prev,
+            {
+              kind: 'booked',
+              id: String(p.id),
+              at,
+              patient: p.patientName,
+              service: p.serviceName,
+              doctor: p.providerName,
+              start: p.start,
+              when: p.when,
+            },
+          ])
         } else if (event.event === 'triage.escalated') {
           setTriage({ band: String(p.band), reason: String(p.reason) })
+          setCards((prev) => [
+            ...prev,
+            { kind: 'triage', id: `t${at}`, at, band: String(p.band), reason: String(p.reason) },
+          ])
         }
         break
       }
@@ -338,11 +403,14 @@ export default function Console() {
     setWaking(false)
     setLastCall(null)
     utteranceTurn.current.clear()
+    deskTurn.current = null
+    wasSpeaking.current = false
     setTurns([])
     setMetrics([])
     setPatient(null)
     setBookings([])
     setTools([])
+    setCards([])
     setTriage(null)
     setAgentState('idle')
     /**
@@ -411,11 +479,14 @@ export default function Console() {
     })
 
     utteranceTurn.current.clear()
+    deskTurn.current = null
+    wasSpeaking.current = false
     setTurns([])
     setMetrics([])
     setPatient(null)
     setBookings([])
     setTools([])
+    setCards([])
     setTriage(null)
     setAgentState('idle')
     setLevels({ mic: 0, agent: 0 })
@@ -438,330 +509,89 @@ export default function Console() {
 
   const live = status === 'live'
   const latest = metrics.at(-1)
+  const busy = waking ? 'waking' : status === 'connecting' ? 'connecting' : null
+  const inCall = turns.length > 0 && !lastCall
 
   return (
-    <main data-shell="console" className="console-shell" style={s.shell}>
-      {/* ── Left: the call ───────────────────────────────────────────────── */}
-      {/* The phase is for the phone layout, which sizes the stage differently
-          once there is a transcript to scroll. */}
-      <section
-        className="console-stage"
-        data-phase={turns.length > 0 && !lastCall ? 'call' : 'idle'}
-        style={s.stage}
-      >
-        <header className="console-head" style={s.head}>
-          <div>
-            <div style={s.eyebrow}>
-              <span style={{ ...s.dot, background: live ? 'var(--confirm)' : 'var(--ink-faint)' }} />
-              {live ? 'Live · Voice' : 'Vaani · Voice'}
-            </div>
-            <h1 className="console-title" style={s.title}>Front desk</h1>
-            <p style={s.sub}>Smile Dental Care · Bandra, Andheri, Powai</p>
-          </div>
+    <main data-shell="console" className="cc" data-phase={inCall ? 'call' : 'idle'}>
+      <AppBar guest />
 
-          <div className="console-pills" style={s.pillRow}>
-            {/*
-              Named in each language's own script, because nobody scans a list
-              of English names looking for their language — a Tamil speaker
-              finds தமிழ், not "Tamil".
-
-              Choosing mid-call is allowed: the accent lives in a connect-time
-              setting, so the server reconnects on its resumption handle at the
-              next turn boundary rather than cutting anyone off. Choosing before
-              the call simply opens the session in that language.
-            */}
-            <label style={s.langWrap}>
-              <span style={s.srOnly}>Language</span>
-              <select
-                value={lang}
-                onChange={(e) => {
-                  const next = e.target.value as Lang
-                  setLang(next)
-                  client.current?.setLang(next)
-                }}
-                className="lang-select"
-                lang={htmlLang(lang)}
-              >
-                {ALL_LANGS.map((l) => (
-                  <option key={l} value={l} lang={htmlLang(l)}>
-                    {LANG_LABEL[l]}
-                    {LANG_LABEL[l] === LANG_ENGLISH[l] ? '' : ` · ${LANG_ENGLISH[l]}`}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {tier && (
-              <span className="mono" style={{ ...s.pill, fontSize: 10 }}>
-                {tier.llm}
-              </span>
-            )}
-          </div>
-        </header>
-
-        {/* Live telemetry — real measurements, not confidence theatre. */}
-        <div className="console-strip" style={s.strip}>
-          <Stat label="State" value={stateLabel(agentState)} accent={accentFor(agentState)} />
-          <Stat
-            label="Mouth to ear"
-            value={latest ? `${Math.round(latest.e2eMs)} ms` : '—'}
-            accent={
-              !latest
-                ? 'var(--ink-faint)'
-                : latest.e2eMs <= BUDGETS[latest.tier].e2eP50Ms
-                  ? 'var(--confirm)'
-                  : 'var(--agent)'
-            }
+      <div className="cc-grid">
+        <div className="cc-main">
+          <Stage
+            agentState={agentState}
+            live={live}
+            busy={busy}
+            levels={levels}
+            spectrum={spectrum}
+            elapsed={elapsed}
+            lang={lang}
+            onLang={(next) => {
+              setLang(next)
+              client.current?.setLang(next)
+            }}
+            onStart={start}
+            onEnd={end}
+            e2e={latest ? { ms: latest.e2eMs, good: latest.e2eMs <= BUDGETS[latest.tier].e2eP50Ms } : null}
+            turns={metrics.length}
+            model={tier?.llm}
+            compact={inCall || Boolean(lastCall)}
           />
-          <Stat label="Turns" value={String(metrics.length)} />
-          <Stat label="Elapsed" value={live ? clock(elapsed) : '—'} />
-        </div>
 
-        {error && (
-          <div role="alert" style={s.error}>
-            {error}
-          </div>
-        )}
-
-        {lastCall ? (
-          <CallSummaryView summary={lastCall} onNew={start} />
-        ) : (
-        <>
-        {/* ── Hero ───────────────────────────────────────────────────────── */}
-        <div className="console-hero" style={s.hero}>
-          <div
-            className="console-blob"
-            style={{ width: turns.length > 0 ? 190 : 300, transition: 'width 420ms ease' }}
-          >
-            <VoiceBlob
-              state={agentState}
-              micLevel={levels.mic}
-              agentLevel={levels.agent}
-              spectrum={spectrum}
-              live={live}
-            />
-          </div>
-
-          {turns.length === 0 && (
-            <div className="console-pitch" style={s.pitch}>
-              <h2 className="console-pitch-lead" style={s.pitchLead}>
-                Answers in eleven Indian languages,{' '}
-                <br />
-                or two in one sentence.
-              </h2>
-              <p className="console-pitch-body" style={s.pitchBody}>
-                Interrupt mid-sentence and the reply stops where you cut in — nothing is
-                remembered that you never heard.
+          {/* Where CareFlow lists appointments: what is being said. The pitch
+              before a call, the conversation during one, the record after. */}
+          <section className="cc-convo" aria-label="Conversation">
+            {error && (
+              <p className="cc-error" role="alert">
+                {error}
               </p>
-            </div>
-          )}
+            )}
+            {lastCall ? (
+              <div className="cc-convo-body">
+                <CallSummaryView summary={lastCall} onNew={start} />
+              </div>
+            ) : turns.length > 0 ? (
+              <>
+                <header className="cc-convo-head">
+                  <h2>Conversation</h2>
+                  <span className="cc-convo-meta mono">
+                    {metrics.length} {metrics.length === 1 ? 'turn' : 'turns'} · {clock(elapsed)}
+                  </span>
+                </header>
+                <div className="cc-convo-body is-thread">
+                  <Transcript
+                    turns={turns}
+                    cards={cards}
+                    startedAt={startedAt}
+                    thinking={agentState === 'thinking'}
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="cc-convo-body cc-idle">
+                <h2>
+                  Answers in eleven Indian languages,
+                  <br />
+                  or two in one sentence.
+                </h2>
+                <p>
+                  Interrupt mid-sentence and the reply stops where you cut in — nothing is
+                  remembered that you never heard.
+                </p>
+                {/* Things worth trying, so a first call has somewhere to start. */}
+                <ul className="cc-tries" aria-label="Things to try">
+                  <li>Switch to Hindi halfway through a sentence</li>
+                  <li>Talk over her while she is answering</li>
+                  <li>Book a cleaning at Bandra for tomorrow evening</li>
+                  <li>Ask what to take for the pain</li>
+                </ul>
+              </div>
+            )}
+          </section>
         </div>
 
-        {turns.length > 0 && (
-          <div style={s.transcriptWrap}>
-            <Transcript turns={turns} startedAt={startedAt} thinking={agentState === 'thinking'} />
-          </div>
-        )}
-        </>
-        )}
-
-        {/* ── Controls ───────────────────────────────────────────────────── */}
-        {!lastCall && (
-        <div className="console-controls" style={s.controls}>
-          {live ? (
-            // No interrupt button. Interrupting is what talking over someone
-            // *is* — the VAD hears you and she stops. A button would be an
-            // admission that it does not work on its own.
-            <button onClick={end} className="console-cta" style={s.endBtn}>
-              <span style={s.endGlyph}>■</span> End call
-            </button>
-          ) : (
-            <button
-              onClick={start}
-              disabled={waking || status === 'connecting'}
-              className="console-cta"
-              style={s.startBtn}
-            >
-              {waking ? 'Waking the server…' : status === 'connecting' ? 'Connecting…' : 'Take a call'}
-            </button>
-          )}
-        </div>
-        )}
-      </section>
-
-      <PracticePanel patient={patient} bookings={bookings} tools={tools} triage={triage} />
+        <PracticePanel patient={patient} bookings={bookings} tools={tools} triage={triage} />
+      </div>
     </main>
   )
-}
-
-function Stat({ label, value, accent }: { label: string; value: string; accent?: string }) {
-  return (
-    <div className="console-stat" style={s.stat}>
-      <span className="label">{label}</span>
-      <span style={{ ...s.statValue, color: accent ?? 'var(--ink)' }}>{value}</span>
-    </div>
-  )
-}
-
-function stateLabel(state: AgentState): string {
-  return {
-    idle: 'Ready',
-    listening: 'Listening',
-    thinking: 'Thinking',
-    speaking: 'Speaking',
-    tool_running: 'Checking diary',
-  }[state]
-}
-
-function accentFor(state: AgentState): string {
-  if (state === 'speaking') return 'var(--agent)'
-  if (state === 'listening') return 'var(--caller)'
-  return 'var(--ink)'
-}
-
-function clock(sec: number): string {
-  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`
-}
-
-const s: Record<string, React.CSSProperties> = {
-  shell: { display: 'flex', height: '100vh', background: 'var(--bg)' },
-  stage: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '30px 40px 24px',
-    minWidth: 0,
-  },
-  head: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20 },
-  eyebrow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 7,
-    fontFamily: 'var(--font-mono)',
-    fontSize: 10,
-    letterSpacing: '0.16em',
-    textTransform: 'uppercase',
-    color: 'var(--agent)',
-    marginBottom: 7,
-  },
-  dot: { width: 6, height: 6, borderRadius: 999, transition: 'background 300ms' },
-  title: {
-    margin: 0,
-    fontFamily: 'var(--font-display)',
-    fontSize: 38,
-    fontWeight: 600,
-    letterSpacing: '-0.02em',
-    lineHeight: 1,
-  },
-  sub: { margin: '7px 0 0', fontSize: 13, color: 'var(--ink-muted)' },
-  langWrap: { display: 'inline-flex', alignItems: 'center' },
-  srOnly: {
-    position: 'absolute', width: 1, height: 1, overflow: 'hidden',
-    clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap',
-  },
-
-  pillRow: { display: 'flex', gap: 8, flexShrink: 0 },
-  pill: {
-    fontSize: 12,
-    fontWeight: 500,
-    padding: '7px 15px',
-    borderRadius: 'var(--r-pill)',
-    background: 'var(--surface)',
-    border: '1px solid var(--hairline)',
-    boxShadow: 'var(--shadow-sm)',
-    color: 'var(--ink-muted)',
-    whiteSpace: 'nowrap',
-  },
-  strip: {
-    display: 'flex',
-    gap: 34,
-    marginTop: 20,
-    padding: '15px 22px',
-    background: 'var(--surface)',
-    border: '1px solid var(--hairline)',
-    borderRadius: 'var(--r-lg)',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  stat: { display: 'flex', flexDirection: 'column', gap: 5, minWidth: 92 },
-  statValue: {
-    fontSize: 16,
-    fontWeight: 600,
-    letterSpacing: '-0.01em',
-    transition: 'color 240ms',
-  },
-  error: {
-    marginTop: 14,
-    padding: '11px 16px',
-    background: 'var(--alert-soft)',
-    border: '1px solid var(--alert)',
-    borderRadius: 'var(--r-md)',
-    color: 'var(--alert)',
-    fontSize: 13,
-  },
-  hero: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    flex: 1,
-    minHeight: 0,
-  },
-  pitch: { textAlign: 'center', maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 12 },
-  pitchLead: {
-    margin: 0,
-    fontFamily: 'var(--font-display)',
-    fontSize: 32,
-    fontWeight: 500,
-    lineHeight: 1.22,
-    letterSpacing: '-0.015em',
-  },
-  pitchBody: {
-    margin: 0,
-    fontSize: 14,
-    color: 'var(--ink-muted)',
-    lineHeight: 1.65,
-    maxWidth: 430,
-    alignSelf: 'center',
-  },
-  transcriptWrap: { flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, marginTop: 6 },
-  controls: {
-    display: 'flex',
-    gap: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: 20,
-  },
-  startBtn: {
-    fontSize: 14.5,
-    fontWeight: 600,
-    padding: '14px 34px',
-    borderRadius: 'var(--r-pill)',
-    background: 'var(--agent)',
-    color: '#fff',
-    boxShadow: '0 6px 18px rgba(184,115,10,0.28)',
-    transition: 'transform 140ms, box-shadow 140ms',
-  },
-  ghostBtn: {
-    fontSize: 13.5,
-    fontWeight: 500,
-    padding: '12px 22px',
-    borderRadius: 'var(--r-pill)',
-    background: 'var(--surface)',
-    border: '1px solid var(--hairline-strong)',
-    color: 'var(--ink-muted)',
-    boxShadow: 'var(--shadow-sm)',
-  },
-  endBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 8,
-    fontSize: 13.5,
-    fontWeight: 600,
-    padding: '12px 26px',
-    borderRadius: 'var(--r-pill)',
-    background: 'var(--alert)',
-    color: '#fff',
-    boxShadow: '0 6px 16px rgba(179,53,42,0.24)',
-  },
-  endGlyph: { fontSize: 9 },
 }

@@ -33,20 +33,85 @@ export interface Turn {
   speaker: 'caller' | 'priya'
   lang: Lang
   at: number
+  /**
+   * When this voice stopped. For the caller, the last moment their words were
+   * still arriving; for the desk, when the audio queued for the reply ran out
+   * — or the moment it was cut off. What the call summary's lanes are drawn on.
+   */
+  endAt?: number
+  /** The desk was talked over and stopped. */
+  cut?: boolean
   /** Caller turns carry a single text; the desk's may be several utterances. */
   text?: string
   utterances?: Utterance[]
   interim?: boolean
 }
 
+/**
+ * What the desk did between the words, set into the conversation.
+ *
+ * The practice panel showed a tool name and a latency off to the side, which
+ * told you something happened but not what came of it. A diary that was
+ * checked belongs where the caller was told about it — the open slots under
+ * the sentence that offered them, the booking under the "done".
+ */
+export type InlineCard =
+  | {
+      kind: 'tool'
+      id: string
+      at: number
+      name: string
+      args: Record<string, unknown>
+      result?: unknown
+      ok?: boolean
+      ms?: number
+    }
+  | {
+      kind: 'booked'
+      id: string
+      at: number
+      patient?: string
+      service?: string
+      doctor?: string
+      start?: string
+      when?: string
+    }
+  | { kind: 'triage'; id: string; at: number; band: string; reason: string }
+  | {
+      kind: 'patient'
+      id: string
+      at: number
+      name?: string
+      phone?: string
+      upcoming?: number
+      isNew?: boolean
+    }
+
+/** Shown by their own card instead, so a chip for them would say it twice. */
+const CARDED = new Set(['book_appointment', 'lookup_patient', 'create_patient', 'triage_symptoms'])
+
+const TOOL_LABEL: Record<string, string> = {
+  check_availability: 'Checking the diary',
+  list_services: 'Reading the treatment list',
+  list_my_appointments: 'Finding their appointments',
+  reschedule_appointment: 'Moving the appointment',
+  cancel_appointment: 'Cancelling',
+  join_waitlist: 'Adding to the waitlist',
+  search_knowledge: 'Checking what the practice says',
+  escalate_to_human: 'Flagging it for the practice',
+  record_note: 'Leaving a note',
+}
+
 interface Props {
   turns: Turn[]
+  /** Tool results and practice events, placed by time among the turns. */
+  cards?: InlineCard[]
   startedAt: number | null
   /** True between the caller finishing and the reply's first word. */
   thinking?: boolean
 }
 
-export function Transcript({ turns, startedAt, thinking = false }: Props) {
+export function Transcript({ turns, cards = [], startedAt, thinking = false }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null)
   /**
    * Follow the newest line by scrolling this column only.
@@ -59,16 +124,158 @@ export function Transcript({ turns, startedAt, thinking = false }: Props) {
   useEffect(() => {
     const el = scrollRef.current
     el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-  }, [turns, thinking])
+  }, [turns, cards, thinking])
+
+  // Interleaved by when each happened. The sort is stable, so turns that share
+  // a timestamp keep the order they arrived in.
+  const items = [
+    ...turns.map((t) => ({ at: t.at, turn: t })),
+    ...cards
+      .filter((c) => c.kind !== 'tool' || !CARDED.has(c.name))
+      .map((c) => ({ at: c.at, card: c })),
+  ].sort((a, b) => a.at - b.at)
 
   return (
     <div ref={scrollRef} style={s.scroll}>
-      {turns.map((turn) => (
-        <Row key={turn.id} turn={turn} startedAt={startedAt} />
-      ))}
+      {items.map((item) =>
+        'turn' in item && item.turn ? (
+          <Row key={item.turn.id} turn={item.turn} startedAt={startedAt} />
+        ) : 'card' in item && item.card ? (
+          <Card key={`${item.card.kind}-${item.card.id}`} card={item.card} />
+        ) : null,
+      )}
       {thinking && <Thinking />}
     </div>
   )
+}
+
+function Card({ card }: { card: InlineCard }) {
+  switch (card.kind) {
+    case 'tool':
+      return <ToolCard card={card} />
+    case 'booked':
+      return (
+        <div className="tx-card-row is-desk tx-in">
+          <div className="tx-card tx-booked" role="status">
+            <span className="tx-tick" aria-hidden>
+              ✓
+            </span>
+            <div className="tx-booked-body">
+              <span className="tx-card-k">Booked</span>
+              <p className="tx-booked-line">
+                {[card.patient, card.doctor, card.start ? clockOf(card.start) : card.when]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+              <span className="tx-card-sub">
+                {[card.service, card.start ? dayOf(card.start) : null].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+          </div>
+        </div>
+      )
+    case 'triage':
+      return (
+        <div className="tx-card-row tx-in">
+          <div className={`tx-card tx-triage is-${card.band}`} role="alert">
+            <span className="tx-card-k">
+              {card.band === 'red' ? 'Emergency — clinic alerted' : 'Urgent — flagged for the doctor'}
+            </span>
+            <p>{card.reason}</p>
+          </div>
+        </div>
+      )
+    case 'patient':
+      return (
+        <div className="tx-card-row tx-in">
+          <span className="tx-chip is-done">
+            <span aria-hidden>{card.isNew ? '+' : '✓'}</span>
+            {card.isNew ? 'New patient' : 'Caller identified'}
+            {card.name ? ` · ${card.name}` : ''}
+            {!card.isNew && card.upcoming ? ` · ${card.upcoming} upcoming` : ''}
+          </span>
+        </div>
+      )
+  }
+}
+
+/**
+ * A lookup, as it runs.
+ *
+ * A pending chip while the tool is out, so the pause in the conversation has a
+ * visible reason; the diary check then opens into the slots it found.
+ */
+function ToolCard({ card }: { card: Extract<InlineCard, { kind: 'tool' }> }) {
+  const done = card.ms !== undefined
+  const result = (card.result ?? {}) as {
+    service?: string
+    durationMin?: number
+    slots?: Array<{ slotStart: string; doctor?: string; when?: string }>
+  }
+
+  if (card.name === 'check_availability' && done && result.slots && result.slots.length > 0) {
+    return (
+      <div className="tx-card-row is-desk tx-in">
+        <div className="tx-card tx-slots">
+          <div className="tx-card-head">
+            <span className="tx-card-k">Open in the diary</span>
+            <span className="tx-ms mono">{Math.round(card.ms!)} ms</span>
+          </div>
+          <span className="tx-card-sub">
+            {[result.service, result.durationMin ? `${result.durationMin} min` : null]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+          <ul className="tx-slot-grid">
+            {result.slots.slice(0, 4).map((slot) => (
+              <li key={slot.slotStart + (slot.doctor ?? '')} className="tx-slot">
+                <span className="tx-slot-day">{dayOf(slot.slotStart)}</span>
+                <strong className="tx-slot-time">{clockOf(slot.slotStart)}</strong>
+                {slot.doctor && <span className="tx-slot-doc">{slot.doctor}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  const label = TOOL_LABEL[card.name] ?? card.name.replace(/_/g, ' ')
+  const detail =
+    card.name === 'check_availability'
+      ? String(card.args.service ?? '')
+      : card.name === 'search_knowledge'
+        ? String(card.args.query ?? '')
+        : ''
+  const nothing = card.name === 'check_availability' && done && result.slots?.length === 0
+
+  return (
+    <div className="tx-card-row tx-in">
+      <span className={`tx-chip${done ? ' is-done' : ''}${card.ok === false || nothing ? ' is-bad' : ''}`}>
+        {done ? <span aria-hidden>{card.ok === false ? '!' : '✓'}</span> : <i className="tx-spin" aria-hidden />}
+        {nothing ? 'Nothing open — waitlist offered' : label}
+        {detail && !nothing ? ` · ${detail}` : ''}
+        {done && <em className="mono">{Math.round(card.ms!)} ms</em>}
+      </span>
+    </div>
+  )
+}
+
+function dayOf(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(today.getDate() + 1)
+  if (d.toDateString() === today.toDateString()) return 'Today'
+  if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow'
+  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function clockOf(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })
 }
 
 /**

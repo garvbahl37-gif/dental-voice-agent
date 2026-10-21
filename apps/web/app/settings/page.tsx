@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AppBar } from '../app-bar'
+import { LoadingScreen } from '../loading-screen'
 import '../landing.css'
 import '../dashboard/dashboard.css'
+import '../dashboard/careflow.css'
 
 /**
  * Keys, webhooks and branding.
@@ -103,13 +106,13 @@ export default function Settings() {
 
   return (
     <div className="lp db-shell">
+      <LoadingScreen label="Opening settings" done={data !== null} />
+      <AppBar />
+
       <header className="db-head">
         <div>
-          <div className="lp-mark-sub">Settings</div>
           <h1 className="db-title">Keys and connections</h1>
-        </div>
-        <div className="db-head-right">
-          <a className="db-signout" href="/dashboard">Back to dashboard</a>
+          <p className="db-sub">How your practice software talks to the desk, and how the desk sounds.</p>
         </div>
       </header>
 
@@ -129,9 +132,9 @@ export default function Settings() {
 
       {error && <p className="db-empty kb-bad" role="alert" style={{ marginTop: 20 }}>{error}</p>}
 
-      <section className="db-section">
+      <section className="db-section st-card">
         <h2 className="db-h2">API keys</h2>
-        <p className="db-empty" style={{ marginBottom: 16 }}>
+        <p className="st-desc">
           For your practice software to read calls and book appointments. A key is shown once when
           it is created — we only ever store a hash of it.
         </p>
@@ -185,9 +188,9 @@ export default function Settings() {
         )}
       </section>
 
-      <section className="db-section">
+      <section className="db-section st-card">
         <h2 className="db-h2">Webhooks</h2>
-        <p className="db-empty" style={{ marginBottom: 16 }}>
+        <p className="st-desc">
           We POST to your endpoint when something happens, signed so you can verify it came from us.
           An endpoint that keeps failing is switched off and shown here.
         </p>
@@ -243,7 +246,7 @@ export default function Settings() {
         )}
       </section>
 
-      <section className="db-section">
+      <section className="db-section st-card">
         <h2 className="db-h2">Branding and voice</h2>
         <form
           onSubmit={(e) => {
@@ -256,7 +259,7 @@ export default function Settings() {
             onChange={(e) => setBrandName(e.target.value)} placeholder="Leave blank to use Vaani" />
 
           <label className="ob-label" htmlFor="bc">Accent colour</label>
-          <input id="bc" className="kb-input" value={brandColor} placeholder="#b8730a"
+          <input id="bc" className="kb-input" value={brandColor} placeholder="#16884a"
             onChange={(e) => setBrandColor(e.target.value)} pattern="^#[0-9a-fA-F]{6}$" />
           <p className="ob-hint">Six-digit hex. Anything else is ignored.</p>
 
@@ -265,8 +268,9 @@ export default function Settings() {
             value={persona} onChange={(e) => setPersona(e.target.value)}
             placeholder="e.g. Warm but brisk. Always offer the Powai branch first." />
           <p className="ob-hint">
-            Added to the agent&rsquo;s instructions. It cannot override the clinical rules — those
-            are enforced after the words are generated, not asked for politely.
+            Added to the agent&rsquo;s instructions. It cannot override{' '}
+            <a href="/knowledge">the clinical rules</a> — those are enforced after the words are
+            generated, not asked for politely.
           </p>
 
           <button className="lp-btn lp-btn-primary" style={{ marginTop: 16 }}>Save</button>

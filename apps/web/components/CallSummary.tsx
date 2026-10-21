@@ -1,8 +1,9 @@
 'use client'
 
-import { LANG_LABEL, type Lang, type TurnMetrics } from '@vaani/shared'
+import { LANG_LABEL, htmlLang, type Lang, type TurnMetrics } from '@vaani/shared'
 import type { Turn } from './Transcript'
 import type { BookedAppointment, PatientCard, ToolActivity } from './PracticePanel'
+import { CallLanes, spokenMs, type LaneTurn } from './CallLanes'
 
 /**
  * What the agent actually understood, once the call is over.
@@ -50,8 +51,32 @@ export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNe
   const outcome =
     bookings.length > 0 ? 'booked' : triage ? 'escalated' : callerTurns === 0 ? 'no-speech' : 'no-booking'
 
+  /**
+   * The turns, placed on the call's own clock.
+   *
+   * Times are what the console measured: the caller from their first word to
+   * their last, the desk until her queued audio ran out or she was cut off.
+   * A turn the call ended in the middle of has no end yet, so it gets a length
+   * read from its words instead.
+   */
+  const callStart = summary.endedAt - durationSec * 1000
+  const lanes: LaneTurn[] = turns.map((t) => {
+    const text =
+      t.speaker === 'caller' ? (t.text ?? '') : (t.utterances ?? []).map((u) => u.text).join(' ')
+    const start = Math.max(0, t.at - callStart)
+    return {
+      id: t.id,
+      who: t.speaker === 'caller' ? 'caller' : 'desk',
+      start,
+      end: t.endAt ? Math.max(start + 400, t.endAt - callStart) : start + spokenMs(text),
+      text,
+      lang: htmlLang(t.lang),
+      cut: t.cut,
+    }
+  })
+
   return (
-    <div style={s.wrap}>
+    <div className="summary" style={s.wrap}>
       <div className="summary-head" style={s.head}>
         <div>
           <div style={s.eyebrow}>Call ended</div>
@@ -61,6 +86,10 @@ export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNe
           Take another call
         </button>
       </div>
+
+      {/* What was said comes first and open — the cards below are a reading of
+          it, and a record you had to expand to see was a record nobody read. */}
+      <CallLanes turns={lanes} duration={durationSec * 1000} />
 
       <div style={s.grid}>
         <Card title="Caller">
@@ -111,31 +140,6 @@ export function CallSummaryView({ summary, onNew }: { summary: CallSummary; onNe
           )}
         </Card>
       </div>
-
-      {turns.length > 0 && (
-        <details style={s.details}>
-          <summary style={s.summary}>Full transcript ({turns.length} turns)</summary>
-          <div style={s.transcript}>
-            {turns.map((t) => (
-              <div key={t.id} style={s.line}>
-                <span
-                  style={{
-                    ...s.speaker,
-                    color: t.speaker === 'caller' ? 'var(--caller)' : 'var(--agent)',
-                  }}
-                >
-                  {t.speaker === 'caller' ? 'Caller' : 'Front desk'}
-                </span>
-                <span>
-                  {t.speaker === 'caller'
-                    ? t.text
-                    : (t.utterances ?? []).map((u) => u.text).join(' ')}
-                </span>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
     </div>
   )
 }
@@ -188,7 +192,18 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 
 const s: Record<string, React.CSSProperties> = {
-  wrap: { flex: 1, display: 'flex', flexDirection: 'column', gap: 22, minHeight: 0, paddingTop: 10 },
+  // Scrolls inside the stage: on desktop the console is locked to the
+  // viewport, and the lanes and cards together are taller than what is left.
+  wrap: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 18,
+    minHeight: 0,
+    paddingTop: 10,
+    paddingBottom: 12,
+    overflowY: 'auto',
+  },
   head: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' },
   eyebrow: {
     fontFamily: 'var(--font-mono)', fontSize: 10, letterSpacing: '0.16em',
@@ -201,7 +216,7 @@ const s: Record<string, React.CSSProperties> = {
   newBtn: {
     fontSize: 13.5, fontWeight: 600, padding: '11px 24px',
     borderRadius: 'var(--r-pill)', background: 'var(--agent)', color: '#fff',
-    boxShadow: '0 5px 14px rgba(184,115,10,0.26)',
+    boxShadow: '0 5px 14px rgba(22, 136, 74,0.26)',
   },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(215px, 1fr))', gap: 12 },
   card: {
@@ -219,15 +234,4 @@ const s: Record<string, React.CSSProperties> = {
   bookingDoc: { fontSize: 11.5, color: 'var(--ink-faint)' },
   list: { margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 5 },
   listItem: { fontSize: 12.5, lineHeight: 1.45 },
-  details: {
-    border: '1px solid var(--hairline)', borderRadius: 'var(--r-md)',
-    background: 'var(--surface)', padding: '12px 16px', overflow: 'hidden',
-  },
-  summary: { cursor: 'pointer', fontSize: 12.5, color: 'var(--ink-muted)' },
-  transcript: {
-    marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8,
-    maxHeight: 260, overflowY: 'auto',
-  },
-  line: { display: 'flex', gap: 10, fontSize: 13, lineHeight: 1.5 },
-  speaker: { fontSize: 11, fontWeight: 600, minWidth: 44, flexShrink: 0, paddingTop: 2 },
 }

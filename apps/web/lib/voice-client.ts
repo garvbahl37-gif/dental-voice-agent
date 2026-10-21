@@ -190,6 +190,19 @@ export class VoiceClient {
     }
   }
 
+  /**
+   * When the audio already queued will have finished playing, in wall-clock ms.
+   *
+   * The server's "done" arrives when the reply has been *generated*, which is
+   * faster than it is spoken — so the end of what the caller actually heard is
+   * the end of this queue, not the moment that event lands.
+   */
+  playbackEndsAt(): number {
+    const ctx = this.playCtx
+    if (!ctx) return Date.now()
+    return Date.now() + Math.max(0, this.nextStartAt - ctx.currentTime) * 1000
+  }
+
   /** Stop talking without the click that reads as a dropped call. */
   private duck(): void {
     const ctx = this.playCtx

@@ -1,0 +1,2733 @@
+/*
+ * The landing page, after Odama's Momo.
+ *
+ * Their look, as close as it goes without their photographs: a mint sky over
+ * pale stone, curved glass with a ring of light, white glass cards with soft
+ * wide shadows, a clean grotesk set tight, black for the main action, green for
+ * "go" and for the eyebrow. The scenery is painted in CSS; the
+ * people in Momo's shots are replaced by the scripts Vaani's callers speak.
+ *
+ * Selectors are `mo-`. Motion is everywhere but slow — lines drift, the call
+ * timer ticks, the voice trace moves, pills float — and all of it stops for
+ * anyone who asked for less.
+ */
+
+.mo {
+  --mo-green: #34c759;
+  --mo-green-deep: #1f9d47;
+  --mo-mint: #cfe9df;
+  --mo-sky: #bfe1dc;
+  --mo-glass: rgba(255, 255, 255, 0.72);
+  --mo-line: rgba(255, 255, 255, 0.75);
+  background: var(--surface);
+  color: var(--ink);
+  overflow-x: clip;
+}
+
+.mo h1,
+.mo h2,
+.mo h3 {
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+/* ══ Buttons ══════════════════════════════════════════════════════════════════ */
+
+.mo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 11px 22px;
+  border: 1px solid rgba(14, 17, 16, 0.08);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: 0 6px 18px -10px rgba(14, 40, 26, 0.35);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.mo-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px -12px rgba(14, 40, 26, 0.45);
+}
+
+.mo-btn.is-dark {
+  border-color: transparent;
+  background: linear-gradient(180deg, #2b2f2d, #0b0d0c);
+  color: #fff;
+}
+
+.mo-btn.is-green {
+  border-color: transparent;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green));
+  color: #fff;
+}
+
+.mo-btn.is-glass {
+  background: rgba(255, 255, 255, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.mo-btn.is-sm {
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+}
+
+.mo-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* ══ The bar ══════════════════════════════════════════════════════════════════ */
+
+.mo-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding: 20px clamp(20px, 4.4vw, 48px) 0;
+  transition: padding 300ms ease;
+}
+
+.mo-nav.is-lifted {
+  padding-top: 10px;
+}
+
+.mo-nav-in {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 8px 10px 8px 22px;
+  border: 1px solid transparent;
+  border-radius: 18px;
+  transition: background 300ms ease, border-color 300ms ease, box-shadow 300ms ease;
+}
+
+.mo-nav.is-lifted .mo-nav-in {
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  backdrop-filter: blur(16px) saturate(160%);
+  box-shadow: 0 14px 34px -18px rgba(14, 40, 26, 0.35);
+}
+
+.mo-logo {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.mo-nav-links {
+  display: flex;
+  gap: 28px;
+}
+
+.mo-nav-links a {
+  font-size: 14.5px;
+  color: var(--ink);
+  text-decoration: none;
+  opacity: 0.85;
+  transition: opacity 160ms ease;
+}
+
+.mo-nav-links a:hover {
+  opacity: 1;
+}
+
+.mo-nav-end {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.mo-burger {
+  display: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.mo-burger span {
+  width: 16px;
+  height: 1.6px;
+  background: var(--ink);
+  transition: transform 200ms ease;
+}
+
+.mo-burger[aria-expanded='true'] span:first-child {
+  transform: translateY(3.3px) rotate(45deg);
+}
+
+.mo-burger[aria-expanded='true'] span:last-child {
+  transform: translateY(-3.3px) rotate(-45deg);
+}
+
+.mo-menu {
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  animation: rise 220ms ease both;
+}
+
+.mo-menu a:not(.mo-btn) {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: var(--ink);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.mo-menu .mo-btn {
+  margin-top: 6px;
+}
+
+@media (max-width: 900px) {
+  .mo-nav-in {
+    grid-template-columns: 1fr auto;
+    padding-left: 14px;
+  }
+  .mo-nav-links,
+  .mo-nav-end .is-glass {
+    display: none;
+  }
+  .mo-burger {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 901px) {
+  .mo-menu {
+    display: none;
+  }
+}
+
+/* ══ Scenery ══════════════════════════════════════════════════════════════════ */
+
+.mo-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(70% 40% at 50% 62%, rgba(255, 246, 222, 0.95), transparent 70%),
+    linear-gradient(180deg, #b9ddd8 0%, #cfe7e1 30%, #e9f2ea 52%, #fbf7ec 64%, #ffffff 82%);
+}
+
+.mo-scene.is-room {
+  background:
+    radial-gradient(60% 50% at 70% 30%, rgba(255, 248, 228, 0.9), transparent 70%),
+    linear-gradient(160deg, #e8efe2 0%, #d5e8dd 45%, #c7e2d4 100%);
+}
+
+.mo-scene.is-garden {
+  background:
+    radial-gradient(60% 50% at 50% 40%, rgba(255, 255, 255, 0.9), transparent 70%),
+    linear-gradient(180deg, #ffffff 0%, #eef6f0 40%, #e3f0e6 70%, #ffffff 100%);
+}
+
+/* Clouds: blurred white masses drifting very slowly. */
+.mo-cloud {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  filter: blur(22px);
+  animation: mo-cloud 38s ease-in-out infinite alternate;
+}
+
+.mo-cloud.c1 { left: 6%; top: 38%; width: 30%; height: 16%; }
+.mo-cloud.c2 { right: 4%; top: 30%; width: 26%; height: 14%; animation-delay: -12s; }
+.mo-cloud.c3 { left: 30%; top: 50%; width: 22%; height: 9%; opacity: 0.7; animation-delay: -6s; }
+.mo-cloud.c4 { right: 22%; top: 46%; width: 18%; height: 8%; opacity: 0.6; animation-delay: -20s; }
+
+.is-room .mo-cloud { top: 8%; opacity: 0.5; }
+.is-garden .mo-cloud { top: 20%; opacity: 0.45; }
+
+@keyframes mo-cloud {
+  from { transform: translateX(-3%); }
+  to { transform: translateX(4%); }
+}
+
+/* Curved glass at the edges of the frame, with a band of light near the top. */
+.mo-glass {
+  position: absolute;
+  top: -6%;
+  bottom: 22%;
+  width: clamp(110px, 17vw, 260px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.12) 40%, rgba(255, 255, 255, 0.4)),
+    rgba(200, 230, 225, 0.25);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.mo-glass.is-left {
+  left: -4%;
+  border-radius: 0 50% 0 0 / 0 14% 0 0;
+}
+
+.mo-glass.is-right {
+  right: -4%;
+  border-radius: 50% 0 0 0 / 14% 0 0 0;
+}
+
+.mo-ring {
+  position: absolute;
+  left: -40%;
+  right: -40%;
+  top: 22%;
+  height: 34px;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  box-shadow: 0 0 22px 4px rgba(255, 243, 210, 0.9), inset 0 0 14px rgba(255, 243, 210, 0.8);
+  transform: rotate(-8deg);
+  animation: mo-glow 5s ease-in-out infinite alternate;
+}
+
+.mo-glass.is-right .mo-ring {
+  transform: rotate(8deg);
+}
+
+@keyframes mo-glow {
+  from { opacity: 0.75; }
+  to { opacity: 1; }
+}
+
+.is-room .mo-glass {
+  top: -30%;
+  bottom: 40%;
+  opacity: 0.7;
+}
+
+.is-room .mo-glass.is-left { display: none; }
+
+.mo-hills {
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 56%;
+  height: 12%;
+  background: radial-gradient(60% 100% at 30% 100%, rgba(170, 205, 200, 0.55), transparent 70%),
+    radial-gradient(50% 100% at 75% 100%, rgba(170, 205, 200, 0.45), transparent 70%);
+  filter: blur(6px);
+}
+
+.is-room .mo-hills,
+.is-garden .mo-hills {
+  display: none;
+}
+
+/* Greenery: soft clusters at the frame's lower corners, swaying a little. */
+.mo-leaves {
+  position: absolute;
+  bottom: 20%;
+  width: clamp(150px, 19vw, 280px);
+  aspect-ratio: 1.5;
+  background:
+    radial-gradient(26% 34% at 30% 52%, rgba(96, 158, 88, 0.75), transparent 72%),
+    radial-gradient(30% 40% at 52% 40%, rgba(120, 178, 98, 0.7), transparent 72%),
+    radial-gradient(26% 34% at 72% 54%, rgba(86, 150, 84, 0.7), transparent 72%),
+    radial-gradient(34% 26% at 50% 70%, rgba(150, 196, 116, 0.6), transparent 72%);
+  transform-origin: 50% 100%;
+  animation: mo-sway 7s ease-in-out infinite alternate;
+}
+
+/* The white planter the greenery sits in, as in Momo's lobby. */
+.mo-leaves::after {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  bottom: -26%;
+  height: 34%;
+  border-radius: 14px 14px 6px 6px;
+  background: linear-gradient(180deg, #ffffff, #eef2ee);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 18px 30px -18px rgba(14, 40, 26, 0.3);
+}
+
+.is-room .mo-leaves::after,
+.is-garden .mo-leaves::after {
+  display: none;
+}
+
+.mo-leaves.is-left { left: 9%; }
+.mo-leaves.is-right { right: 9%; animation-delay: -3s; }
+
+.is-room .mo-leaves.is-left {
+  left: -6%;
+  bottom: -14%;
+  width: 46%;
+  filter: blur(10px);
+  opacity: 0.8;
+}
+
+.is-room .mo-leaves.is-right { display: none; }
+
+.is-garden .mo-leaves {
+  bottom: 10%;
+  width: 34%;
+  filter: blur(8px);
+  opacity: 0.75;
+}
+
+.is-garden .mo-leaves.is-left { left: -4%; }
+.is-garden .mo-leaves.is-right { right: -4%; }
+
+@keyframes mo-sway {
+  from { transform: rotate(-1.4deg); }
+  to { transform: rotate(1.4deg); }
+}
+
+.mo-flowers {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14%;
+  height: 26%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.95) 2px, transparent 2.6px),
+    radial-gradient(rgba(255, 255, 255, 0.8) 1.5px, transparent 2px);
+  background-size: 34px 26px, 22px 30px;
+  background-position: 0 0, 11px 13px;
+  -webkit-mask-image: radial-gradient(60% 80% at 50% 100%, transparent 30%, #000 60%);
+  mask-image: radial-gradient(60% 80% at 50% 100%, transparent 30%, #000 60%);
+  opacity: 0.45;
+}
+
+/* The polished floor the scene stands on, melting into the page. */
+.mo-floor {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), #fff 70%);
+}
+
+.is-room .mo-floor { height: 0; }
+
+/* Large thin ellipses behind the hero and the close, as Momo draws them. */
+.mo-ellipse {
+  position: absolute;
+  z-index: -1;
+  border: 1px solid rgba(14, 40, 26, 0.12);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.mo-ellipse.e-hero {
+  left: 50%;
+  top: 150px;
+  width: min(1040px, 94vw);
+  height: 420px;
+  transform: translateX(-50%);
+  animation: mo-breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes mo-breathe {
+  from { transform: translateX(-50%) scale(1); }
+  to { transform: translateX(-50%) scale(1.03); }
+}
+
+/* ══ The hero ═════════════════════════════════════════════════════════════════ */
+
+.mo-hero {
+  position: relative;
+  isolation: isolate;
+  margin: 10px clamp(8px, 1.4vw, 20px) 0;
+  padding-bottom: 0;
+  border-radius: clamp(20px, 2.6vw, 34px) clamp(20px, 2.6vw, 34px) 0 0;
+  overflow: hidden;
+  text-align: center;
+}
+
+.mo-hero-in {
+  max-width: 900px;
+  margin: 0 auto;
+  /* Room at the top for the fixed bar, which floats over the sky. */
+  padding: calc(clamp(48px, 7vw, 92px) + 76px) var(--lp-gutter) 0;
+}
+
+/* The eyebrow: a pill of white glass with the desk's green in it and a dot
+   that keeps breathing, like a line that is open. */
+.mo-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 22px;
+  padding: 6px 15px 6px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(236, 248, 240, 0.7));
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 26px -16px rgba(14, 40, 26, 0.45), 0 0 0 1px rgba(31, 157, 71, 0.12);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  color: var(--mo-green-deep);
+}
+
+.mo-eyebrow i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mo-green);
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.5);
+  animation: mo-live 2.4s ease-out infinite;
+}
+
+@keyframes mo-live {
+  0% { box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.5); }
+  70%, 100% { box-shadow: 0 0 0 7px rgba(52, 199, 89, 0); }
+}
+
+.mo-h1 {
+  margin: 0 0 24px;
+  font-size: clamp(40px, 6.8vw, 86px);
+  line-height: 1.04;
+  letter-spacing: -0.032em !important;
+  /* The old headline's settings: a little soft, a little wonky, sized for
+     display — the face reads warm rather than corporate. */
+  font-variation-settings: 'SOFT' 20, 'WONK' 1, 'opsz' 48;
+}
+
+/* The word that turns: green, set in whichever script it is in. */
+.mo-turn {
+  position: relative;
+  display: inline-block;
+  color: var(--mo-green-deep);
+  white-space: nowrap;
+}
+
+.mo-turn-word {
+  display: inline-block;
+  animation: mo-turn 2.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mo-turn-word:not(:lang(en)) {
+  font-family: var(--indic), sans-serif;
+  font-size: 0.86em;
+}
+
+@keyframes mo-turn {
+  0% { opacity: 0; transform: translateY(0.35em); filter: blur(6px); }
+  18%, 82% { opacity: 1; transform: none; filter: none; }
+  100% { opacity: 0; transform: translateY(-0.3em); filter: blur(6px); }
+}
+
+.mo-lede {
+  max-width: 58ch;
+  margin: 0 auto 30px;
+  font-size: clamp(15px, 1.4vw, 17px);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.mo-hero-call {
+  position: relative;
+  margin-top: clamp(40px, 6vw, 64px);
+  padding-bottom: 0;
+}
+
+.mo-hero-flow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  width: 100%;
+  height: 70px;
+}
+
+.mo-flow path {
+  fill: none;
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+.mo-flow-a path { stroke: rgba(31, 157, 71, 0.85); }
+.mo-flow-b path { stroke: rgba(52, 199, 89, 0.7); }
+.mo-flow-c path { stroke: rgba(31, 157, 71, 0.45); }
+
+/* Each line is twice the frame wide and slides one frame across, forever. */
+.mo-flow g {
+  animation: mo-slide 16s linear infinite;
+}
+
+.mo-flow-b { animation-duration: 11s !important; animation-direction: reverse !important; }
+.mo-flow-c { animation-duration: 21s !important; }
+
+@keyframes mo-slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(-1200px); }
+}
+
+/* ── The call card ────────────────────────────────────────────────────────── */
+
+.mo-callcard {
+  position: relative;
+  z-index: 1;
+  width: min(290px, 78vw);
+  margin: 0 auto;
+  padding: 24px 22px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.98));
+  box-shadow: 0 -10px 40px -20px rgba(14, 40, 26, 0.25);
+}
+
+.mo-orb {
+  width: 132px;
+  margin: -10px 0 -6px;
+}
+
+.mo-orb.is-small {
+  width: 108px;
+  margin: -8px auto -4px;
+}
+
+.mo-callcard-title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.mo-callcard-sub {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.mo-voice {
+  width: 130px;
+  height: 34px;
+  margin: 14px 0 10px;
+  overflow: visible;
+}
+
+.mo-voice-l {
+  fill: none;
+  stroke-width: 1.1;
+  transform-origin: 50% 50%;
+  animation: mo-voice 1.4s ease-in-out infinite alternate;
+}
+
+.mo-voice-l.v0 { stroke: var(--mo-green-deep); }
+.mo-voice-l.v1 { stroke: var(--mo-green); animation-delay: -0.35s; }
+.mo-voice-l.v2 { stroke: rgba(31, 157, 71, 0.5); animation-delay: -0.7s; }
+.mo-voice-l.v3 { stroke: rgba(52, 199, 89, 0.5); animation-delay: -1.05s; }
+
+@keyframes mo-voice {
+  from { transform: scaleY(0.35); }
+  to { transform: scaleY(1); }
+}
+
+.mo-callbtn {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  margin-top: 8px;
+  border-radius: 50%;
+  color: #fff;
+}
+
+.mo-callbtn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mo-callbtn.is-end {
+  background: linear-gradient(180deg, #ff5a4f, #e53228);
+  box-shadow: 0 12px 24px -10px rgba(229, 50, 40, 0.7);
+}
+
+.mo-callbtn.is-end svg {
+  transform: rotate(135deg);
+}
+
+.mo-callbtn.is-answer {
+  margin-top: 22px;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green));
+  box-shadow: 0 12px 24px -10px rgba(52, 199, 89, 0.75);
+  animation: mo-ringing 2.4s ease-in-out infinite;
+}
+
+@keyframes mo-ringing {
+  0%, 60%, 100% { transform: none; }
+  65% { transform: rotate(-12deg); }
+  72% { transform: rotate(10deg); }
+  79% { transform: rotate(-8deg); }
+  86% { transform: rotate(5deg); }
+}
+
+/* ══ The product panel ════════════════════════════════════════════════════════ */
+
+.mo-panel-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--lp-gutter);
+  background:
+    radial-gradient(40% 50% at 50% 40%, rgba(207, 233, 223, 0.45), transparent 70%),
+    var(--surface);
+}
+
+/* The line from the call down to its record, drawn as the panel arrives. */
+.mo-drop {
+  width: 1.5px;
+  height: 120px;
+  background: linear-gradient(180deg, var(--hairline-strong), var(--mo-green));
+  transform-origin: top;
+}
+
+.lp-motion .mo-drop[data-reveal],
+.lp-motion .mo-drop[data-reveal].is-in {
+  opacity: 1;
+  /* Drawn by the scroll: `--drop` runs from 0 to 1 as the panel arrives. */
+  transform: scaleY(var(--drop, 1));
+  transition: transform 160ms linear;
+}
+
+/* Kept for the example calls, which arrive the way the old transcript did. */
+@keyframes mo-msg {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.mo-caption {
+  margin: 22px 0 0;
+  font-size: 15px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .mo-drop {
+    height: 70px;
+  }
+}
+
+/* ══ Where the logos go ═══════════════════════════════════════════════════════ */
+
+.mo-langs {
+  padding: clamp(48px, 7vw, 76px) var(--lp-gutter) 0;
+  text-align: center;
+}
+
+.mo-langs p {
+  margin: 0 0 26px;
+  font-size: 15.5px;
+}
+
+.mo-langs ul {
+  list-style: none;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px clamp(26px, 4vw, 54px);
+}
+
+.mo-langs li {
+  font-size: clamp(19px, 2vw, 24px);
+  font-weight: 600;
+  color: #a7aca9;
+  letter-spacing: -0.01em;
+  transition: color 200ms ease;
+}
+
+.mo-langs li:hover {
+  color: var(--mo-green-deep);
+}
+
+@media (max-width: 640px) {
+  .mo-langs ul {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    overflow-x: auto;
+    margin-inline: calc(var(--lp-gutter) * -1);
+    padding: 4px var(--lp-gutter);
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .mo-langs ul::-webkit-scrollbar {
+    display: none;
+  }
+  .mo-langs li {
+    flex: none;
+  }
+}
+
+/* ══ Sections ═════════════════════════════════════════════════════════════════ */
+
+.mo-section {
+  padding-top: clamp(84px, 11vw, 140px);
+}
+
+.mo-head {
+  max-width: 760px;
+  margin: 0 auto clamp(40px, 5vw, 64px);
+  text-align: center;
+}
+
+.mo-head h2 {
+  margin: 0 0 16px;
+  font-size: clamp(32px, 4.4vw, 54px);
+  line-height: 1.04;
+  text-wrap: balance;
+}
+
+/* On a phone the authored line breaks strand a word; let the lines balance. */
+@media (max-width: 560px) {
+  .mo-head h2 br {
+    display: none;
+  }
+}
+
+.mo-head p {
+  max-width: 54ch;
+  margin: 0 auto;
+  font-size: clamp(15px, 1.3vw, 16.5px);
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+/* ── Whatever patients need ───────────────────────────────────────────────── */
+
+.mo-needs {
+  position: relative;
+  isolation: isolate;
+  margin: clamp(84px, 11vw, 140px) clamp(8px, 1.4vw, 20px) 0;
+  padding: 0 0 clamp(60px, 8vw, 100px);
+  border-radius: clamp(20px, 2.6vw, 34px);
+  overflow: hidden;
+}
+
+.mo-needs .mo-scene {
+  background:
+    radial-gradient(40% 36% at 50% 26%, rgba(255, 248, 230, 0.95), transparent 72%),
+    linear-gradient(180deg, #d3ebe1 0%, #e2f1e8 34%, #f1f6ee 60%, #ffffff 92%);
+}
+
+.mo-needs .mo-glass {
+  bottom: 30%;
+}
+
+.mo-needs .mo-leaves {
+  bottom: 34%;
+  opacity: 0.6;
+}
+
+.mo-bubbles {
+  position: relative;
+  /* Room above the top scripts for them to rise into as the page scrolls. */
+  margin-top: 56px;
+  height: clamp(300px, 34vw, 400px);
+}
+
+.mo-sun {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  width: clamp(240px, 26vw, 320px);
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 252, 240, 0.95), rgba(248, 240, 220, 0.6) 60%, transparent 72%);
+}
+
+/* Where Momo floats portraits: the scripts, each in a white disc, bobbing.
+   The holder takes the place; the disc inside does the moving. */
+.mo-bubble-pos {
+  --bub: clamp(64px, 6.4vw, 84px);
+  position: absolute;
+  width: var(--bub);
+  aspect-ratio: 1;
+}
+
+/* Each outer script rings now and then, a beat apart: calls coming in. */
+.mo-bubble-pos::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  opacity: 0;
+  animation: mo-bubble-ping 5s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+  animation-delay: calc(var(--n, 0) * 1s + 1.4s);
+}
+
+@keyframes mo-bubble-ping {
+  0% { opacity: 0.9; transform: scale(1); }
+  30%, 100% { opacity: 0; transform: scale(1.7); }
+}
+
+.mo-bubble-script {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #e5f4ea);
+  font-size: clamp(15px, 1.5vw, 19px);
+  font-weight: 600;
+  color: var(--mo-green-deep);
+  box-shadow: 0 14px 30px -14px rgba(14, 40, 26, 0.45);
+  animation: mo-bob 6s ease-in-out infinite alternate;
+  animation-delay: calc(var(--n, 0) * -1.3s);
+}
+
+.mo-bubble-pos.b0 { left: calc(50% - 170px); top: 54px; }
+.mo-bubble-pos.b1 { left: calc(50% + 100px); top: 24px; }
+.mo-bubble-pos.b2 { left: calc(50% - 40px); top: 150px; }
+.mo-bubble-pos.b3 { left: calc(50% - 190px); top: 248px; }
+.mo-bubble-pos.b4 { left: calc(50% + 110px); top: 240px; }
+
+/* The middle one is the line that is open: green, and it does not ring —
+   it glows. */
+.mo-bubble-pos.b2::before {
+  inset: -10px;
+  border: 0;
+  background: radial-gradient(circle, rgba(79, 214, 114, 0.45), transparent 70%);
+  animation: mo-core-glow 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes mo-core-glow {
+  from { opacity: 0.4; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1.25); }
+}
+
+.b2 .mo-bubble-script {
+  background: radial-gradient(circle at 35% 30%, #4fd672, var(--mo-green-deep));
+  color: #fff;
+}
+
+/* Two orbits round the middle script, a light riding each. A circle turning
+   inside a squashed frame: the ring looks still, and only the light moves. */
+.mo-orbit {
+  --o-size: 380px;
+  position: absolute;
+  left: 50%;
+  top: calc(150px + clamp(64px, 6.4vw, 84px) / 2);
+  width: var(--o-size);
+  height: var(--o-size);
+  margin: calc(var(--o-size) / -2) 0 0 calc(var(--o-size) / -2);
+  transform: rotate(-14deg) scaleY(0.38);
+  pointer-events: none;
+}
+
+.mo-orbit.o2 {
+  --o-size: 560px;
+  transform: rotate(9deg) scaleY(0.34);
+}
+
+.mo-orbit::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2.4px solid rgba(255, 255, 255, 0.85);
+}
+
+.mo-orbit.o2::before {
+  border-color: rgba(31, 157, 71, 0.16);
+}
+
+.mo-orbit i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  animation: mo-orbit 16s linear infinite;
+}
+
+.mo-orbit.o2 i {
+  animation-duration: 26s;
+  animation-direction: reverse;
+}
+
+.mo-orbit i::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: #6fe08f;
+  box-shadow: 0 0 14px 4px rgba(79, 214, 114, 0.55);
+}
+
+@keyframes mo-orbit {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes mo-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-12px); }
+}
+
+.mo-needs-in {
+  position: relative;
+}
+
+.mo-needs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mo-need {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 24px 50px -32px rgba(14, 40, 26, 0.4);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+
+.mo-need:hover {
+  translate: 0 -4px;
+  box-shadow: 0 30px 60px -30px rgba(14, 40, 26, 0.45);
+}
+
+/* A soft green light under the pointer, which landing-fx.ts places. */
+.mo-need::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(260px circle at var(--gx, 50%) var(--gy, 0%), rgba(79, 214, 114, 0.16), transparent 65%);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.mo-need:hover::before {
+  opacity: 1;
+}
+
+.mo-need-n {
+  position: absolute;
+  top: 22px;
+  right: 20px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+/* A green line along the foot: it runs across once as the card arrives, and
+   stays while the pointer is on the card. */
+.mo-need-line {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4fd672, var(--mo-green-deep));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mo-need:hover .mo-need-line {
+  transform: scaleX(1);
+}
+
+.mo-need-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--mo-green-deep);
+}
+
+.mo-need-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mo-need h3 {
+  margin: auto 0 8px;
+  font-size: 19px;
+}
+
+.mo-need p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+@media (max-width: 960px) {
+  .mo-needs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .mo-needs-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mo-need {
+    min-height: 0;
+  }
+  .mo-need h3 {
+    margin-top: 28px;
+  }
+  .mo-bubbles {
+    height: 280px;
+  }
+  .mo-bubble-pos.b0 { left: 8%; top: 40px; }
+  .mo-bubble-pos.b1 { left: auto; right: 8%; top: 20px; }
+  .mo-bubble-pos.b2 { left: calc(50% - 32px); top: 110px; }
+  .mo-bubble-pos.b3 { left: 12%; top: 190px; }
+  .mo-bubble-pos.b4 { left: auto; right: 12%; top: 190px; }
+  .mo-orbit {
+    --o-size: 250px;
+    top: 142px;
+  }
+  .mo-orbit.o2 {
+    --o-size: 360px;
+  }
+}
+
+/* ── Voices ───────────────────────────────────────────────────────────────── */
+
+.mo-honey {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: clamp(48px, 7vw, 90px);
+}
+
+.mo-honey-row {
+  display: flex;
+  gap: 18px;
+}
+
+.mo-honey-row + .mo-honey-row {
+  margin-top: -6px;
+}
+
+.mo-cell {
+  position: relative;
+  isolation: isolate;
+  width: clamp(54px, 6vw, 78px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1f3f2;
+  font-size: clamp(15px, 1.6vw, 21px);
+  font-weight: 600;
+  color: #c3c9c5;
+  opacity: 0.8;
+}
+
+.mo-cell.is-lit {
+  opacity: 1;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d5efdd);
+  color: var(--mo-green-deep);
+  box-shadow: 0 14px 28px -16px rgba(14, 40, 26, 0.5);
+  animation: mo-bob 5s ease-in-out infinite alternate;
+  animation-delay: calc(var(--i, 0) * -0.6s);
+}
+
+/* The middle cell is the example on screen, in green, its script arriving
+   with each call. */
+.mo-cell.is-core {
+  background: radial-gradient(circle at 35% 30%, #4fd672, var(--mo-green-deep));
+  color: #fff;
+  box-shadow: 0 18px 34px -14px rgba(31, 157, 71, 0.75);
+}
+
+.mo-cell.is-core::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  border-radius: 50%;
+  border: 2px solid rgba(52, 199, 89, 0.55);
+  animation: mo-bubble-ping 2.6s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.mo-core-t {
+  display: inline-block;
+  animation: mo-core-in 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes mo-core-in {
+  from {
+    opacity: 0;
+    scale: 0.4;
+    filter: blur(4px);
+  }
+}
+
+/* The wave: a ring of mint light passing outward through every cell, the
+   middle first, each time the example call changes. */
+.mo-cell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #c4ead0);
+  box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.3);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mo-cell.is-core::after {
+  background: none;
+}
+
+.mo-honey.is-wave .mo-cell::after {
+  animation: mo-wave 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: calc(var(--ring, 0) * 140ms);
+}
+
+@keyframes mo-wave {
+  0% { opacity: 0; transform: scale(0.8); }
+  28% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0; transform: scale(1.14); }
+}
+
+/* A faint cell lifts and greens under the pointer. */
+.mo-cell:not(.is-lit) {
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), color 200ms ease, background 200ms ease;
+}
+
+.mo-cell:not(.is-lit):hover {
+  transform: scale(1.12);
+  background: #e6f5eb;
+  color: var(--mo-green-deep);
+}
+
+.mo-quote {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: end;
+}
+
+.mo-quote-text {
+  margin: 0;
+  animation: mo-msg 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mo-quote-text blockquote {
+  margin: 0 0 22px;
+  font-size: clamp(24px, 2.8vw, 36px);
+  font-weight: 500;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.mo-quote-then {
+  display: block;
+  margin-top: 12px;
+  font-size: clamp(17px, 1.6vw, 21px);
+  color: var(--ink-faint);
+  letter-spacing: -0.015em;
+}
+
+.mo-quote-text figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+
+.mo-quote-text figcaption span {
+  color: var(--ink-faint);
+}
+
+.mo-quote-pick {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  max-width: 420px;
+  min-height: 200px;
+  align-content: center;
+}
+
+.mo-quote-mark {
+  position: absolute;
+  right: -20px;
+  top: -100px;
+  font-size: 380px;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1.2px #e4e8e5;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mo-pick {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #f1f3f2;
+  font-size: 17px;
+  font-weight: 600;
+  color: #a7aca9;
+  transition: transform 200ms ease, background 200ms ease, color 200ms ease, box-shadow 200ms ease;
+}
+
+.mo-pick:hover {
+  transform: scale(1.06);
+}
+
+.mo-pick.is-on {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #d5efdd);
+  color: var(--mo-green-deep);
+  box-shadow: 0 0 0 3px var(--surface), 0 0 0 4.5px var(--ink);
+}
+
+@media (max-width: 760px) {
+  .mo-quote {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .mo-quote-pick {
+    min-height: 0;
+    order: -1;
+    max-width: none;
+    gap: 10px;
+  }
+  .mo-pick {
+    width: 52px;
+    height: 52px;
+  }
+  .mo-quote-mark {
+    font-size: 220px;
+    top: -60px;
+    right: 0;
+  }
+  .mo-honey-row {
+    gap: 10px;
+  }
+}
+
+/* ── The close ────────────────────────────────────────────────────────────── */
+
+.mo-close {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  margin-top: clamp(84px, 11vw, 140px);
+  padding: clamp(80px, 10vw, 130px) var(--lp-gutter);
+  overflow: hidden;
+}
+
+/* Centred with the individual `translate`, not `transform`, so the scroll
+   can scale them from their own middle. */
+.mo-ellipse.e1 {
+  left: 50%;
+  top: 50%;
+  width: min(1000px, 96vw);
+  height: 70%;
+  translate: -50% -50%;
+}
+
+/* Taller than the section: faded out at both ends rather than cut flat. */
+.mo-ellipse.e2 {
+  left: 50%;
+  top: 50%;
+  width: min(720px, 90vw);
+  height: 110%;
+  translate: -50% -50%;
+  border-radius: 50% / 50%;
+  -webkit-mask-image: linear-gradient(180deg, transparent 4%, #000 20%, #000 80%, transparent 96%);
+  mask-image: linear-gradient(180deg, transparent 4%, #000 20%, #000 80%, transparent 96%);
+  animation: mo-breathe2 10s ease-in-out infinite alternate;
+}
+
+@keyframes mo-breathe2 {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(1.06); }
+}
+
+/* Rings leaving the card, a third of the way apart: the line is open. The
+   layer fills the section and fades at top and bottom, so a ring grown past
+   the section's edge melts away instead of being cut flat. */
+.mo-close-waves {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent 2%, #000 22%, #000 78%, transparent 98%);
+  mask-image: linear-gradient(180deg, transparent 2%, #000 22%, #000 78%, transparent 98%);
+}
+
+.mo-close-waves i {
+  grid-area: 1 / 1;
+  width: min(440px, 84vw);
+  aspect-ratio: 1.15;
+  border-radius: 50%;
+  border: 1.5px solid rgba(52, 199, 89, 0.35);
+  opacity: 0;
+  animation: mo-close-wave 6s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+.mo-close-waves i:nth-child(2) { animation-delay: -2s; }
+.mo-close-waves i:nth-child(3) { animation-delay: -4s; }
+
+@keyframes mo-close-wave {
+  0% { opacity: 0; transform: scale(0.9); }
+  12% { opacity: 0.9; }
+  100% { opacity: 0; transform: scale(2.7); }
+}
+
+/* Light rising out of the garden, slowly, each mote on its own path. */
+.mo-pollen {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mo-pollen i {
+  position: absolute;
+  left: var(--x);
+  bottom: 8%;
+  width: var(--s);
+  height: var(--s);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.9), 0 0 16px 5px rgba(120, 210, 140, 0.35);
+  opacity: 0;
+  animation: mo-pollen var(--t) linear infinite;
+  animation-delay: var(--d);
+}
+
+@keyframes mo-pollen {
+  0% { opacity: 0; transform: translate(0, 0); }
+  15% { opacity: 0.95; }
+  80% { opacity: 0.6; }
+  100% { opacity: 0; transform: translate(var(--dx), -480px); }
+}
+
+/* The orb in the card keeps ringing softly. Isolated, so the rings sit
+   behind the orb but in front of the card. */
+.mo-close .mo-orb {
+  position: relative;
+  isolation: isolate;
+}
+
+.mo-close .mo-orb::before,
+.mo-close .mo-orb::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 50%;
+  width: 62%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 1.5px solid rgba(52, 199, 89, 0.4);
+  translate: -50% -50%;
+  animation: mo-orb-ping 3s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.mo-close .mo-orb::after {
+  animation-delay: -1.5s;
+}
+
+@keyframes mo-orb-ping {
+  from { opacity: 0.9; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.9); }
+}
+
+/* The card's contents arrive one after another once it is in: the orb pops,
+   then the heading, the line, the buttons. */
+.lp-motion .mo-close-card > * {
+  opacity: 0;
+  translate: 0 16px;
+}
+
+.lp-motion .mo-close-card.is-in > * {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 700ms ease, translate 1000ms cubic-bezier(0.16, 1, 0.3, 1), scale 900ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.lp-motion .mo-close-card .mo-orb {
+  scale: 0.5;
+}
+
+.lp-motion .mo-close-card.is-in .mo-orb {
+  scale: 1;
+}
+
+.lp-motion .mo-close-card.is-in > :nth-child(1) { transition-delay: 180ms; }
+.lp-motion .mo-close-card.is-in > :nth-child(2) { transition-delay: 320ms; }
+.lp-motion .mo-close-card.is-in > :nth-child(3) { transition-delay: 460ms; }
+.lp-motion .mo-close-card.is-in > :nth-child(4) { transition-delay: 600ms; }
+
+.mo-close-card {
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 26px 34px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 40px 80px -40px rgba(14, 40, 26, 0.45);
+  text-align: center;
+}
+
+.mo-close-card h2 {
+  margin: 4px 0 14px;
+  font-size: clamp(28px, 3vw, 36px);
+  line-height: 1.06;
+}
+
+.mo-close-card p {
+  margin: 0 0 22px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+/* ── The wordmark ─────────────────────────────────────────────────────────── */
+
+/* The whole word, sitting on the footer. It used to be pinned below the
+   frame and filled as one block, which cropped its foot and sliced the last
+   letter where its serif ran past the box. Now it is in the flow with room
+   above for the pills, only the empty space below the baseline is trimmed,
+   and each letter carries its own fill. */
+.mo-word {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: clamp(84px, 11vw, 150px);
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff, #f2faf4);
+}
+
+.mo-word-text {
+  display: block;
+  /* Fraunces leaves little room under its baseline; this trims only that, so
+     the word sits on the footer's edge without losing the foot of a letter. */
+  margin-bottom: -0.03em;
+  font-size: clamp(130px, 27vw, 400px);
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.mo-lx {
+  display: inline-block;
+}
+
+.mo-letter {
+  display: inline-block;
+  /* A little room either side so a serif or a dot that reaches past the
+     advance width is still inside the box its fill is clipped to; the
+     negative margin hands the spacing back. */
+  padding: 0 0.06em;
+  margin: 0 -0.06em;
+  color: transparent;
+  background: linear-gradient(180deg, #b9e6c6 12%, rgba(185, 230, 198, 0.3) 92%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* Letters rise one after another as the word comes into view. */
+.lp-motion .mo-word .mo-letter {
+  opacity: 0;
+  transform: translateY(42%);
+}
+
+.lp-motion .mo-word.is-in .mo-letter {
+  animation: mo-letter 1s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--l, 0) * 90ms + 120ms);
+}
+
+@keyframes mo-letter {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.mo-pill {
+  position: absolute;
+  z-index: 1;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: clamp(12px, 1.2vw, 15px);
+  white-space: nowrap;
+  box-shadow: 0 14px 30px -14px rgba(14, 40, 26, 0.4);
+  animation: mo-bob 5.5s ease-in-out infinite alternate;
+  animation-delay: calc(var(--p, 0) * -1.1s);
+}
+
+/* With motion on, the pills pop in after the letters, then float. */
+.lp-motion .mo-word .mo-pill {
+  opacity: 0;
+}
+
+.lp-motion .mo-word.is-in .mo-pill {
+  animation:
+    mo-pill-in 520ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    mo-bob 5.5s ease-in-out infinite alternate;
+  animation-delay:
+    calc(var(--p, 0) * 110ms + 700ms),
+    calc(var(--p, 0) * -1.1s);
+}
+
+@keyframes mo-pill-in {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+.mo-pill.is-dark { background: var(--ink); color: #fff; }
+.mo-pill.is-green { background: var(--mo-green); color: #fff; }
+.mo-pill.is-mint { background: #cfe9df; color: var(--sage-ink); }
+
+.mo-pill.p1 { left: 18%; top: 8%; }
+.mo-pill.p2 { left: 3%; top: 54%; }
+.mo-pill.p3 { left: 42%; top: 30%; }
+.mo-pill.p4 { right: 3%; top: 60%; }
+.mo-pill.p5 { right: 4%; top: 18%; }
+
+@media (max-width: 640px) {
+  .mo-pill.p2,
+  .mo-pill.p4 {
+    display: none;
+  }
+  .mo-pill.p1 { left: 5%; top: 10%; }
+  .mo-pill.p3 { left: 32%; top: 34%; }
+  .mo-pill.p5 { right: 5%; top: 18%; }
+}
+
+/* ── The footer ───────────────────────────────────────────────────────────── */
+
+.mo-foot {
+  padding: clamp(48px, 6vw, 72px) 0 32px;
+  background: var(--surface);
+}
+
+.mo-foot-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 40px;
+}
+
+.mo-foot-brand p {
+  margin: 0 0 14px;
+  max-width: 34ch;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.mo-foot-brand .mo-logo {
+  display: inline-block;
+  margin-bottom: 18px;
+}
+
+.mo-foot-tag {
+  font-style: italic;
+  color: var(--ink) !important;
+}
+
+.mo-foot-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, auto));
+  justify-content: start;
+  gap: 40px;
+}
+
+.mo-foot h4 {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.mo-foot-cols a {
+  display: block;
+  padding: 5px 0;
+  font-size: 14.5px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.mo-foot-cols a:hover {
+  color: var(--ink);
+}
+
+.mo-foot-contact small {
+  display: block;
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--ink-faint);
+}
+
+.mo-foot-contact p {
+  margin: 4px 0 0;
+  font-size: 14.5px;
+}
+
+.mo-foot-contact a {
+  color: var(--ink);
+}
+
+.mo-foot-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 48px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hairline);
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.mo-foot-legal a {
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .mo-foot-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .mo-foot-cols {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mo-foot-cols a {
+    padding: 9px 0;
+  }
+}
+
+/* ══ Phones ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 640px) {
+  .mo-hero {
+    margin-inline: 8px;
+  }
+  .mo-ctas .mo-btn {
+    flex: 1 1 100%;
+  }
+  .mo-glass {
+    width: 70px;
+  }
+  .mo-ring {
+    height: 18px;
+  }
+  .mo-leaves.is-left { left: -2%; }
+  .mo-leaves.is-right { right: -2%; }
+  .mo-ellipse.e-hero {
+    top: 110px;
+    height: 360px;
+  }
+}
+
+/* ══ Asked not to move ════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .mo-cloud,
+  .mo-ring,
+  .mo-leaves,
+  .mo-ellipse,
+  .mo-flow g,
+  .mo-voice-l,
+  .mo-callbtn,
+  .mo-turn-word,
+  .mo-msg,
+  .mo-bubble-script,
+  .mo-cell,
+  .mo-quote-text,
+  .mo-pill,
+  .mo-menu,
+  .mo-eyebrow i,
+  .mo-w,
+  .mo-letter,
+  .mo-marquee-track {
+    animation: none !important;
+  }
+  .mo-marquee-track {
+    width: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .mo-marquee ul {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+  .mo-marquee ul[aria-hidden='true'] {
+    display: none !important;
+  }
+}
+
+/* ══ Motion, second pass ══════════════════════════════════════════════════════
+
+   Everything here is layered on: the headline arrives a word at a time, the
+   painted hero has depth, the cards answer the pointer, and the long sections
+   arrive with a little choreography rather than all at once. Pointer and
+   scroll values come from landing-fx.ts as custom properties; without them
+   every value falls back to 0 and the page is simply still.               */
+
+/* ── The headline, word by word ───────────────────────────────────────────── */
+
+.lp-motion .mo-h1[data-reveal],
+.lp-motion .mo-h1[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.mo-w {
+  display: inline-block;
+}
+
+.lp-motion .mo-h1 .mo-w {
+  opacity: 0;
+  transform: translateY(0.38em);
+  filter: blur(10px);
+}
+
+.lp-motion .mo-h1.is-in .mo-w {
+  animation: mo-word 950ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--w, 0) * 95ms + 80ms);
+}
+
+@keyframes mo-word {
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+/* ── Depth in the hero ────────────────────────────────────────────────────── */
+
+/* Near layers move further than far ones, and the scene sinks as the page
+   scrolls while the call card rises out of it. The short transition is what
+   makes a jerky pointer read as a slow drift. */
+.mo-hero .mo-glass,
+.mo-hero .mo-cloud,
+.mo-hero .mo-leaves,
+.mo-hero .mo-hills,
+.mo-hero-in,
+.mo-lift {
+  transition: translate 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mo-hero .mo-glass { translate: calc(var(--mx, 0) * -14px) calc(var(--hero, 0) * 90px); }
+.mo-hero .mo-cloud { translate: calc(var(--mx, 0) * 28px) calc(var(--my, 0) * 8px + var(--hero, 0) * 50px); }
+.mo-hero .mo-cloud.c2,
+.mo-hero .mo-cloud.c4 { translate: calc(var(--mx, 0) * 18px) calc(var(--my, 0) * 6px + var(--hero, 0) * 35px); }
+.mo-hero .mo-leaves { translate: calc(var(--mx, 0) * -36px) calc(var(--hero, 0) * 40px); }
+.mo-hero .mo-hills { translate: calc(var(--mx, 0) * 10px) calc(var(--hero, 0) * 25px); }
+.mo-hero-in { translate: 0 calc(var(--hero, 0) * 70px); }
+.mo-lift { translate: 0 calc(var(--hero, 0) * -46px); }
+
+/* ── Cards that answer the pointer ────────────────────────────────────────── */
+
+.mo-hero-call,
+.mo-needs-grid,
+.mo-close {
+  perspective: 1100px;
+}
+
+[data-tilt] {
+  transition:
+    rotate 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    translate 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.mo-lift[data-tilt] {
+  transition: rotate 500ms cubic-bezier(0.2, 0.8, 0.2, 1), translate 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ── The language marquee ─────────────────────────────────────────────────── */
+
+.mo-marquee {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+
+.mo-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: mo-marquee 48s linear infinite;
+}
+
+.mo-marquee:hover .mo-marquee-track {
+  animation-play-state: paused;
+}
+
+.mo-langs .mo-marquee ul {
+  max-width: none;
+  margin: 0;
+  padding: 4px clamp(26px, 4vw, 54px) 4px 0;
+  overflow: visible;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.mo-langs .mo-marquee li {
+  flex: none;
+}
+
+@keyframes mo-marquee {
+  to { transform: translateX(-50%); }
+}
+
+/* ── The honeycomb ripples out from its middle ────────────────────────────── */
+
+.lp-motion .mo-honey .mo-cell {
+  opacity: 0;
+  scale: 0.4;
+}
+
+.lp-motion .mo-honey.is-in .mo-cell {
+  animation: mo-cell-in 640ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--ring, 0) * 120ms + 100ms);
+}
+
+.lp-motion .mo-honey.is-in .mo-cell.is-lit {
+  animation:
+    mo-cell-in 640ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    mo-bob 5s ease-in-out infinite alternate;
+  animation-delay:
+    calc(var(--ring, 0) * 120ms + 100ms),
+    calc(var(--i, 0) * -0.6s);
+}
+
+/* Each cell settles at its own opacity: the faint ones faint, the lit ones full. */
+@keyframes mo-cell-in {
+  to {
+    opacity: var(--o, 0.8);
+    scale: 1;
+  }
+}
+
+.mo-cell.is-lit {
+  --o: 1;
+}
+
+/* ── Small answers to the pointer ─────────────────────────────────────────── */
+
+.mo-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.mo-btn.is-dark::after,
+.mo-btn.is-green::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.3) 50%, transparent 62%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+/* One pass on hover. A sheen that loops on its own is a casino, not a product. */
+.lp-motion .mo-btn:hover::after {
+  animation: lp-sheen 720ms ease-out;
+}
+
+.mo-need-icon {
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), background 200ms ease;
+}
+
+.mo-need:hover .mo-need-icon {
+  transform: translateY(-3px) rotate(-8deg);
+  background: #e6f7ec;
+}
+
+.mo-pick:not(.is-on):hover {
+  color: var(--mo-green-deep);
+}
+
+/* ══ Motion, third pass: smooth, and throughout ═══════════════════════════════
+
+   Everything that moves here moves on transform and opacity, or clips —
+   nothing that makes the page lay itself out again. The loops pause where
+   nobody can see them (landing-fx.ts marks those sections `is-paused`), and
+   the decoration that drifts forever has its own layer, so scrolling past it
+   costs the compositor, not the main thread.                               */
+
+.is-paused,
+.is-paused *,
+.is-paused *::before,
+.is-paused *::after {
+  animation-play-state: paused !important;
+}
+
+.mo-cloud,
+.mo-leaves,
+.mo-flow g,
+.mo-bubble-script,
+.mo-cell.is-lit,
+.mo-pill,
+.mo-marquee-track,
+.mo-ring {
+  will-change: transform;
+}
+
+/* Anchor links glide to their section, clear of the fixed bar. */
+html:has(.mo) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 96px;
+}
+
+/* ── The progress line ────────────────────────────────────────────────────── */
+
+.mo-progress {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #4fd672, var(--mo-green-deep));
+  transform: scaleX(var(--progress, 0));
+  transform-origin: left;
+  opacity: 0;
+  transition: opacity 300ms ease;
+  pointer-events: none;
+}
+
+.mo-nav.is-lifted .mo-progress {
+  opacity: 1;
+}
+
+/* ── Underlines that slide in ─────────────────────────────────────────────── */
+
+.mo-nav-links a,
+.mo-foot-cols a {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 320ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, color 160ms ease;
+}
+
+.mo-nav-links a:hover,
+.mo-foot-cols a:hover {
+  background-size: 100% 1px;
+}
+
+/* ── Headings wipe up from behind a line ──────────────────────────────────── */
+
+.lp-motion .mo-head h2[data-reveal] {
+  opacity: 1;
+  transform: none;
+}
+
+.mo-wipe {
+  display: block;
+}
+
+.lp-motion [data-reveal] > .mo-wipe {
+  clip-path: inset(0 -6% 100% -6%);
+  transform: translateY(0.45em);
+}
+
+.lp-motion .is-in > .mo-wipe {
+  clip-path: inset(-12% -6% -12% -6%);
+  transform: none;
+  transition:
+    clip-path 1000ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1000ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+
+/* ── The product panel settles in from a little smaller ───────────────────── */
+
+.lp-motion .mo-panel[data-reveal] {
+  transform: translateY(34px) scale(0.965);
+}
+
+.lp-motion .mo-panel[data-reveal].is-in {
+  transform: none;
+  transition:
+    opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── The use-case scripts pop in, one by one, then float ──────────────────── */
+
+.lp-motion .mo-bubbles[data-reveal] {
+  transform: none;
+}
+
+.lp-motion .mo-bubbles .mo-bubble-script {
+  opacity: 0;
+  scale: 0.5;
+}
+
+.lp-motion .mo-bubbles.is-in .mo-bubble-script {
+  animation:
+    mo-pop-in 760ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    mo-bob 6s ease-in-out infinite alternate;
+  animation-delay:
+    calc(var(--n, 0) * 130ms + 150ms),
+    calc(var(--n, 0) * -1.3s);
+}
+
+@keyframes mo-pop-in {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+  to {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* ── The example call's time, as a ring that fills ────────────────────────── */
+
+.mo-pick-ring {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.mo-pick-ring circle {
+  fill: none;
+  stroke: var(--mo-green);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 195;
+  stroke-dashoffset: 195;
+  animation: mo-ring-fill 6.5s linear forwards;
+}
+
+@keyframes mo-ring-fill {
+  to { stroke-dashoffset: 0; }
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  html:has(.mo) {
+    scroll-behavior: auto;
+  }
+  .mo-progress,
+  .mo-pick-ring {
+    display: none;
+  }
+  .mo-wipe {
+    clip-path: none !important;
+    transform: none !important;
+  }
+  .mo-bubble-script,
+  .mo-pick-ring circle {
+    animation: none !important;
+  }
+}
+
+/* ══ Motion, fourth pass: the page moves with the scroll ══════════════════════
+
+   Until now everything arrived once and stopped. Here the page answers the
+   scroll itself, both ways: the hero's words recede as they go up, the record
+   tilts up into place, the languages drift against the scroll, headings float
+   a little slower than the page, the use-case frame widens as it arrives, the
+   scripts rise at their own depths, the honeycomb's rows slide together, the
+   closing card rises out of its garden and the wordmark gathers its letters.
+
+   It is all CSS scroll-driven animation — run by the compositor, with no
+   script on the scroll — and only where the browser has it. Anywhere else the
+   page keeps its arrivals and is simply still between them. Every property
+   used is one of the individual transforms or opacity, so none of it fights
+   the arrival transitions or the pointer tilt, which use `transform` and
+   `rotate`.                                                                   */
+
+/* ── The use-case cards stand up into place, then fill in ─────────────────── */
+
+.lp-motion .mo-needs-grid .mo-need[data-reveal] {
+  transform: perspective(900px) translateY(70px) rotateX(18deg) scale(0.96);
+  transform-origin: 50% 100%;
+}
+
+.lp-motion .mo-needs-grid .mo-need[data-reveal].is-in {
+  transform: none;
+  transition:
+    opacity 800ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 1200ms cubic-bezier(0.16, 1, 0.3, 1),
+    translate 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    rotate 500ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 300ms ease;
+  transition-delay: calc(var(--i, 0) * 120ms), calc(var(--i, 0) * 120ms), 0s, 0s, 0s;
+}
+
+.lp-motion .mo-need .mo-need-icon {
+  opacity: 0;
+  scale: 0.3;
+}
+
+.lp-motion .mo-need.is-in .mo-need-icon {
+  opacity: 1;
+  scale: 1;
+  transition:
+    opacity 400ms ease,
+    scale 800ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 200ms ease;
+  transition-delay: calc(var(--i, 0) * 120ms + 420ms), calc(var(--i, 0) * 120ms + 420ms), 0s, 0s;
+}
+
+.lp-motion .mo-need h3,
+.lp-motion .mo-need p,
+.lp-motion .mo-need .mo-need-n {
+  opacity: 0;
+  translate: 0 12px;
+}
+
+.lp-motion .mo-need.is-in h3,
+.lp-motion .mo-need.is-in p,
+.lp-motion .mo-need.is-in .mo-need-n {
+  opacity: 1;
+  translate: 0 0;
+  transition: opacity 600ms ease, translate 900ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * 120ms + 520ms);
+}
+
+.lp-motion .mo-need.is-in p {
+  transition-delay: calc(var(--i, 0) * 120ms + 620ms);
+}
+
+.lp-motion .mo-need.is-in .mo-need-line {
+  animation: mo-need-sweep 1.6s cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 120ms + 760ms);
+}
+
+@keyframes mo-need-sweep {
+  0% { transform: scaleX(0); transform-origin: left; }
+  50% { transform: scaleX(1); transform-origin: left; }
+  50.1% { transform-origin: right; }
+  100% { transform: scaleX(0); transform-origin: right; }
+}
+
+/* Depths for the use-case scripts: the nearer, the further they travel. */
+.mo-bubble-pos.b0 { --z: 1.4; }
+.mo-bubble-pos.b1 { --z: 0.7; }
+.mo-bubble-pos.b2 { --z: 0.25; }
+.mo-bubble-pos.b3 { --z: 1.9; }
+.mo-bubble-pos.b4 { --z: 1.1; }
+
+.mo-honey-row:nth-child(odd) { --dir: -1; }
+.mo-honey-row:nth-child(even) { --dir: 1; }
+
+/* The loops pause offscreen (see the third pass), but these must not: a
+   scroll-linked animation that was paused comes back out of step with the
+   scroll. They cost nothing while out of range. */
+.is-paused:is(.mo-needs, .hw-stage),
+.is-paused :is(.mo-hero-in, .mo-panel, .mo-marquee ul, .mo-head, .hw-copy, .mo-bubble-pos, .mo-sun, .mo-honey-row, .mo-quote-mark, .mo-close-card, .mo-close .mo-ellipse, .mo-lx) {
+  animation-play-state: running !important;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* The hero's words recede as they go up. */
+    .lp-motion .mo-hero-in {
+      animation: sd-recede linear both;
+      animation-timeline: view();
+      animation-range: exit 0% exit 100%;
+    }
+
+    /* The record tilts up from the table into place. */
+    .lp-motion .mo-panel-wrap {
+      perspective: 1600px;
+    }
+
+    .lp-motion .mo-panel {
+      transform-origin: 50% 0%;
+      animation: sd-tilt linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 42%;
+    }
+
+    /* The languages drift against the scroll, on top of their own run. */
+    .lp-motion .mo-marquee ul {
+      animation: sd-drift linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+
+    /* Headings float a little slower than the page. */
+    .lp-motion .mo-head,
+    .lp-motion .hw-copy {
+      animation: sd-float linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+
+    /* The pinned stage grows into its frame as the section arrives. */
+    .lp-motion .hw-stage:not(.is-small) {
+      animation: sd-grow linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+
+    /* The use-case frame widens to the page's edges as it comes up. */
+    .lp-motion .mo-needs {
+      animation: sd-widen linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+
+    .lp-motion .mo-bubble-pos {
+      animation: sd-depth linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+
+    .lp-motion .mo-sun {
+      animation: sd-dawn linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+
+    /* The honeycomb's rows slide together from either side. */
+    .lp-motion .mo-honey-row {
+      animation: sd-row linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    .lp-motion .mo-quote-mark {
+      animation: sd-mark linear both;
+      animation-timeline: view();
+      animation-range: cover;
+    }
+
+    /* The closing card rises out of its garden. */
+    .lp-motion .mo-close-card {
+      animation: sd-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 45%;
+    }
+
+    /* The close's ellipses open out from the card as it arrives. */
+    .lp-motion .mo-close .mo-ellipse.e1 {
+      animation: sd-ring linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 50%;
+    }
+
+    .lp-motion .mo-close .mo-ellipse.e2 {
+      animation:
+        mo-breathe2 10s ease-in-out infinite alternate,
+        sd-ring linear both;
+      animation-timeline: auto, view();
+      animation-range: normal, entry 0% cover 50%;
+    }
+
+    /* The wordmark gathers its letters as it comes up. */
+    .lp-motion .mo-lx {
+      animation: sd-gather linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 55%;
+    }
+  }
+}
+
+@keyframes sd-recede {
+  to {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+
+@keyframes sd-tilt {
+  from { rotate: x 24deg; }
+  to { rotate: x 0deg; }
+}
+
+@keyframes sd-drift {
+  from { translate: 90px 0; }
+  to { translate: -90px 0; }
+}
+
+@keyframes sd-float {
+  from { translate: 0 40px; }
+  to { translate: 0 -40px; }
+}
+
+@keyframes sd-grow {
+  from {
+    scale: 0.9;
+    opacity: 0.4;
+  }
+}
+
+@keyframes sd-widen {
+  from { scale: 0.93; }
+}
+
+@keyframes sd-depth {
+  from { translate: 0 calc(var(--z, 1) * 56px); }
+  to { translate: 0 calc(var(--z, 1) * -56px); }
+}
+
+@keyframes sd-dawn {
+  from { opacity: 0.2; }
+}
+
+@keyframes sd-row {
+  from { translate: calc(var(--dir, 1) * 120px) 0; }
+}
+
+@keyframes sd-mark {
+  from {
+    translate: 0 70px;
+    rotate: -8deg;
+  }
+  to {
+    translate: 0 -70px;
+    rotate: 6deg;
+  }
+}
+
+@keyframes sd-rise {
+  from {
+    scale: 0.86;
+    translate: 0 70px;
+  }
+}
+
+@keyframes sd-ring {
+  from {
+    scale: 0.55;
+    opacity: 0;
+  }
+}
+
+@keyframes sd-gather {
+  from { translate: calc((var(--l, 2) - 2) * 0.18em) 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mo-bubble-pos::before,
+  .mo-orbit i,
+  .mo-cell::before,
+  .mo-cell::after,
+  .mo-core-t,
+  .mo-need-line,
+  .mo-close-waves i,
+  .mo-close .mo-orb::before,
+  .mo-close .mo-orb::after {
+    animation: none !important;
+  }
+  .mo-pollen,
+  .mo-close-waves {
+    display: none;
+  }
+  .lp-motion .mo-close-card > * {
+    opacity: 1;
+    translate: none;
+    scale: 1;
+  }
+  .mo-orbit i::after {
+    display: none;
+  }
+  .lp-motion .mo-need .mo-need-icon,
+  .lp-motion .mo-need h3,
+  .lp-motion .mo-need p,
+  .lp-motion .mo-need .mo-need-n {
+    opacity: 1;
+    scale: 1;
+    translate: none;
+  }
+}
+
+/* ══ The hero, in motion ══════════════════════════════════════════════════════
+
+   Lights ride the big ellipse, a glint crosses the glass now and then, each
+   turning word is underlined as it lands, motes drift up through the sky, and
+   the two buttons carry a small working detail: a voice for "hear", an arrow
+   for "go".                                                                   */
+
+/* The ellipse is drawn in SVG now; its box keeps the old size and breathing. */
+.mo-ellipse.e-hero {
+  border: 0;
+}
+
+.mo-ellipse.e-hero svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.mo-rim {
+  fill: none;
+  stroke: rgba(14, 40, 26, 0.12);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* A light on the rim: a bright head on a fading tail. Lengths are in
+   hundredths of the rim; every piece's front sits ten along at the start, so
+   the three move as one. */
+.mo-comet {
+  fill: none;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  animation: mo-comet 11s linear infinite;
+}
+
+.mo-comet.is-t1 {
+  stroke: rgba(79, 214, 114, 0.14);
+  stroke-width: 2;
+  stroke-dasharray: 10 90;
+}
+
+.mo-comet.is-t2 {
+  stroke: rgba(79, 214, 114, 0.35);
+  stroke-width: 2.4;
+  stroke-dasharray: 4.5 95.5;
+  animation-name: mo-comet-t2;
+}
+
+.mo-comet.is-head {
+  stroke: #4fd672;
+  stroke-width: 3.2;
+  stroke-dasharray: 1.2 98.8;
+  filter: drop-shadow(0 0 5px rgba(79, 214, 114, 0.95));
+  animation-name: mo-comet-head;
+}
+
+/* The warm light runs the other way, so its front is where the dashes start:
+   the same keyframes for all three keep their starts together. */
+.mo-comet.is-warm {
+  animation-name: mo-comet;
+  animation-duration: 17s;
+  animation-direction: reverse;
+}
+
+.mo-comet.is-t1.is-warm { stroke: rgba(255, 255, 255, 0.25); }
+.mo-comet.is-t2.is-warm { stroke: rgba(255, 255, 255, 0.55); }
+
+.mo-comet.is-head.is-warm {
+  stroke: #fff;
+  filter: drop-shadow(0 0 6px rgba(255, 236, 196, 1));
+}
+
+@keyframes mo-comet {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes mo-comet-t2 {
+  from { stroke-dashoffset: 94.5; }
+  to { stroke-dashoffset: -5.5; }
+}
+
+@keyframes mo-comet-head {
+  from { stroke-dashoffset: 91.2; }
+  to { stroke-dashoffset: -8.8; }
+}
+
+/* A glint across the glass, once every few seconds. */
+.mo-glint {
+  display: none;
+}
+
+.mo-hero .mo-glint {
+  position: absolute;
+  inset: 0;
+  display: block;
+  border-radius: inherit;
+  overflow: hidden;
+}
+
+.mo-hero .mo-glint::after {
+  content: '';
+  position: absolute;
+  inset: -10% -60%;
+  background: linear-gradient(105deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+  transform: translateX(-70%);
+  animation: mo-glint 8s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+.mo-hero .mo-glass.is-right .mo-glint::after {
+  animation-delay: -4s;
+}
+
+@keyframes mo-glint {
+  0%, 62% { transform: translateX(-70%); }
+  82%, 100% { transform: translateX(70%); }
+}
+
+/* The turning word, underlined in green as it lands. */
+.mo-turn-word {
+  position: relative;
+}
+
+.mo-turn-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.06em;
+  width: 100%;
+  height: 0.2em;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.mo-turn-line path {
+  fill: none;
+  stroke: #4fd672;
+  stroke-width: 3.5;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: mo-underline 700ms cubic-bezier(0.65, 0, 0.35, 1) 380ms forwards;
+}
+
+@keyframes mo-underline {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Motes in the hero's sky: fewer and higher than the close's. */
+.mo-pollen.is-hero i {
+  bottom: 22%;
+}
+
+.mo-pollen.is-hero i:nth-child(3n) {
+  display: none;
+}
+
+/* A voice for "hear it first". */
+.mo-eq {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+}
+
+.mo-eq i {
+  width: 2.5px;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--mo-green-deep);
+  animation: mo-eq 1.1s ease-in-out infinite;
+}
+
+.mo-eq i:nth-child(2) { animation-delay: -0.3s; }
+.mo-eq i:nth-child(3) { animation-delay: -0.6s; }
+.mo-eq i:nth-child(4) { animation-delay: -0.15s; }
+
+@keyframes mo-eq {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+/* An arrow for "set up", that leans forward on hover. */
+.mo-arrow {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mo-btn:hover .mo-arrow {
+  translate: 4px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mo-comet,
+  .mo-glint::after,
+  .mo-eq i {
+    animation: none !important;
+  }
+  .mo-comet {
+    display: none;
+  }
+  .mo-turn-line path {
+    animation: none !important;
+    stroke-dashoffset: 0;
+  }
+}

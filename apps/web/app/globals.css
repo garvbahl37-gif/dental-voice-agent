@@ -1,47 +1,66 @@
 /*
- * Vaani console — "Porcelain".
+ * Vaani — after Momo.
  *
- * Light, because the room this belongs in is light. A dental practice is
- * daylight, enamel and paper; a black instrument panel is borrowed from a
- * different profession. The base is a warm off-white rather than #fff —
- * pure white glares under clinic lighting and flattens every surface above it.
+ * Light and calm, the way Odama's Momo is: white glass on a pale grey ground,
+ * a mint sky, and one green that belongs to the desk and to every action that
+ * moves a call forward. Black for the secondary action, red only for hanging
+ * up and for emergencies.
  *
- * The two-channel colour rule survives from the dark version and matters more
- * here: each participant owns one hue, and nothing decorative may borrow it,
- * so "who is speaking" is legible from across a reception desk.
+ * The two-channel colour rule survives the change of palette: each participant
+ * owns one hue and nothing decorative may borrow it — green for the desk, sky
+ * blue for the caller — so "who is speaking" is legible from across a
+ * reception desk.
  */
 
 :root {
   /* Ground */
-  --bg: #fbfaf7;
-  --bg-tint: #f4f1ea;
+  --bg: #f7f8f7;
+  --bg-tint: #f0f3f1;
   --surface: #ffffff;
   /* The light ink, for type on a dark ground. Named because it was being
      written as a literal in one place and referenced as a token in four
      others, where it silently resolved to whatever colour happened to be
      inherited — which on the dark intro meant dark text on dark. */
-  --paper: #f6f3ec;
-  --hairline: #e9e4da;
-  --hairline-strong: #d8d1c4;
+  --paper: #f3f7f4;
+  --hairline: #e4e9e5;
+  --hairline-strong: #d2dad4;
 
   /* Ink */
-  --ink: #1a1815;
-  --ink-muted: #6b665c;
-  --ink-faint: #9c968a;
+  --ink: #0e1110;
+  --ink-muted: #5d6662;
+  --ink-faint: #939c97;
 
-  /* Channels — deepened from the dark palette to hold contrast on light. */
-  --agent: #b8730a; /* turmeric — the front desk */
-  --agent-soft: #fdf3e2;
-  --agent-line: #e8b96a;
+  /* Channels. The desk's green is deep enough to carry small text on white;
+     the brighter one is for filled buttons and the orb. */
+  --agent: #16884a; /* green — the front desk */
+  --agent-bright: #2dbd5f;
+  --agent-soft: #e9f7ee;
+  --agent-line: #a6dcb8;
 
-  --caller: #2f4b7c; /* deep slate blue — the person calling */
-  --caller-soft: #eef2f8;
-  --caller-line: #9fb2ce;
+  --caller: #2c6a8c; /* sky blue — the person calling */
+  --caller-soft: #eaf3f8;
+  --caller-line: #a7c8dc;
 
-  --confirm: #2e7d5b;
-  --confirm-soft: #e9f5ef;
-  --alert: #b3352a;
-  --alert-soft: #fbeceb;
+  /* Amber, for a reading that is slow or needs a look — never decoration;
+     the landing page is green throughout. */
+  --warm: #c97a1f;
+  --warm-soft: #fdf5ea;
+
+  /* CareFlow's dashboard palette: sage for anything good or chosen, coral for
+     what needs a person, a deeper sage for the ground the desk card sits on. */
+  --sage: #bdd5c4;
+  --sage-soft: #e3eee6;
+  --sage-deep: #6e8b77;
+  --sage-ink: #2f4a3a;
+  --coral: #ff8b8b;
+  --coral-soft: #ffe6e6;
+  --sky: #a9dcf2;
+  --cloud: #f4f4f4;
+
+  --confirm: #13773f;
+  --confirm-soft: #e7f6ec;
+  --alert: #e0362b;
+  --alert-soft: #fdecea;
 
   /*
    * Every Indian script, appended to every stack.
@@ -68,10 +87,30 @@
   --r-lg: 18px;
   --r-pill: 999px;
 
-  /* Light UI needs real shadows for hierarchy; hairlines alone go flat. */
-  --shadow-sm: 0 1px 2px rgba(26, 24, 21, 0.05);
-  --shadow-md: 0 2px 8px rgba(26, 24, 21, 0.06), 0 1px 2px rgba(26, 24, 21, 0.04);
-  --shadow-lg: 0 12px 32px rgba(26, 24, 21, 0.09), 0 2px 8px rgba(26, 24, 21, 0.04);
+  /* Light UI needs real shadows for hierarchy; hairlines alone go flat.
+     Momo's are soft and wide, with a little green in them. */
+  --shadow-sm: 0 1px 2px rgba(14, 17, 16, 0.05);
+  --shadow-md: 0 4px 14px rgba(14, 40, 26, 0.06), 0 1px 2px rgba(14, 17, 16, 0.04);
+  --shadow-lg: 0 18px 44px rgba(14, 40, 26, 0.1), 0 2px 8px rgba(14, 17, 16, 0.04);
+}
+
+/* Headings, and the figures that are read like headings, in the serif — the
+   face the product has always been set in. */
+h1,
+h2,
+h3,
+.mo-logo,
+.mo-word-text,
+.ls-word,
+.ab-mark,
+.cf-stat-n,
+.cf-chart-n,
+.cf-pip-n,
+.cf-next-who,
+.mo-quote-text blockquote,
+.mo-callcard-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
 }
 
 * {
@@ -265,66 +304,4 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .tx-in { animation: none; }
   .tx-dot { animation: none; opacity: 0.5; }
-}
-
-/* ── The language picker ────────────────────────────────────────────────────
-   The one control in the header, so it should read as actionable next to the
-   passive status pills without shouting over the page title.
-
-   `appearance: none` is the whole point: the native control brings its own
-   double-arrow and, on focus, a blue ring drawn in the browser's palette
-   rather than this one — which is what made it look bolted on. */
-.lang-select {
-  appearance: none;
-  -webkit-appearance: none;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 500;
-  line-height: 1.45;
-  color: var(--ink);
-  background-color: var(--surface);
-  border: 1px solid var(--hairline-strong);
-  border-radius: var(--r-pill);
-  box-shadow: var(--shadow-sm);
-  /* Room on the right for the chevron, and a little optical padding on the
-     left so the script — which may be Devanagari or Tamil — is not crowded. */
-  padding: 7px 32px 7px 15px;
-  max-width: 210px;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    background-color 160ms ease;
-
-  /* A chevron in turmeric, matching the accent the rest of the desk uses. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23b8730a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 13px center;
-}
-
-.lang-select:hover {
-  border-color: var(--agent-line);
-  background-color: var(--agent-soft);
-}
-
-/* The halo replaces the browser's blue ring. Drawn as a shadow rather than an
-   outline so it hugs the pill's radius instead of boxing it. */
-.lang-select:focus-visible {
-  outline: none;
-  border-color: var(--agent);
-  box-shadow: 0 0 0 3px rgba(184, 115, 10, 0.16);
-}
-
-/* A click should not flash the keyboard ring, but the control must still show
-   it is the one being changed. */
-.lang-select:focus:not(:focus-visible) {
-  outline: none;
-  border-color: var(--agent-line);
-}
-
-/* Firefox renders the open list from these; other engines use the OS. */
-.lang-select option {
-  background: var(--surface);
-  color: var(--ink);
 }

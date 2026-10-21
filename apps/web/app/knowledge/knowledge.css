@@ -1,0 +1,697 @@
+/*
+ * What it may say.
+ *
+ * The rules as a flow, after Atlas (Halo Design Studio): a light dotted
+ * canvas, steps as cards joined by lines, and a panel that explains the
+ * selected step. Atlas is neutral grey with pink and green icons; here the
+ * icons take the meanings they already have in this product — slate for the
+ * caller, turmeric for the desk, red only for an emergency.
+ */
+
+.kf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .kf {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── The canvas ───────────────────────────────────────────────────────────── */
+
+.kf-canvas {
+  position: relative;
+  min-width: 0;
+  padding: 18px 20px 26px;
+  border: 1px solid var(--hairline);
+  border-radius: 26px;
+  background-color: var(--bg);
+  background-image: radial-gradient(rgba(26, 24, 21, 0.13) 1px, transparent 1.2px);
+  background-size: 18px 18px;
+  background-position: 9px 9px;
+}
+
+.kf-views {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.kf-view {
+  min-height: 38px;
+  padding: 7px 16px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  color: var(--ink-muted);
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.kf-view:hover {
+  color: var(--ink);
+}
+
+.kf-view.is-on {
+  background: var(--ink);
+  color: #fff;
+}
+
+.kf-said {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.kf-said-k {
+  margin-right: 4px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.kf-ex {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  transition: border-color 140ms ease, background 140ms ease, color 140ms ease;
+}
+
+.kf-ex:hover {
+  color: var(--ink);
+}
+
+.kf-ex.is-on.is-red {
+  border-color: var(--alert);
+  background: var(--alert-soft);
+  color: var(--alert);
+}
+
+.kf-ex.is-on.is-amber {
+  border-color: var(--agent);
+  background: var(--agent-soft);
+  color: var(--agent);
+}
+
+.kf-ex.is-on.is-green {
+  border-color: var(--confirm);
+  background: var(--confirm-soft);
+  color: var(--confirm);
+}
+
+.kf-quote {
+  margin: 14px 0 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--caller);
+}
+
+/* ── The tree ─────────────────────────────────────────────────────────────── */
+
+.kf-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 22px;
+}
+
+.kf-tree > .kf-node {
+  width: min(340px, 100%);
+}
+
+/* Every step after the first hangs from the one above it. */
+.kf-tree > .kf-node + .kf-node,
+.kf-branch > .kf-node + .kf-node {
+  margin-top: 26px;
+}
+
+.kf-tree > .kf-node + .kf-node::before,
+.kf-branch > .kf-node + .kf-node::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 2px;
+  height: 26px;
+  margin-left: -1px;
+  background: var(--hairline-strong);
+}
+
+.kf-bandpick {
+  display: none;
+}
+
+/* Triage splits three ways: a stem down, a bar across, a drop to each band. */
+.kf-branches {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 0;
+  padding-top: 40px;
+}
+
+.kf-branches::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 20px;
+  margin-left: -1px;
+  background: var(--hairline-strong);
+}
+
+.kf-branches::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  height: 22px;
+  /* Column centres, gaps included. */
+  left: calc((100% - 28px) / 6);
+  right: calc((100% - 28px) / 6);
+  border: 2px solid var(--hairline-strong);
+  border-bottom: none;
+  border-radius: 14px 14px 0 0;
+}
+
+.kf-branch {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.kf-branch:nth-child(2)::before {
+  content: '';
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  width: 2px;
+  height: 22px;
+  margin-left: -1px;
+  background: var(--hairline-strong);
+}
+
+.kf-grid {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.kf-grid::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  width: 2px;
+  height: 26px;
+  margin-left: -1px;
+  background: var(--hairline-strong);
+}
+
+/* ── A step ───────────────────────────────────────────────────────────────── */
+
+.kf-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, opacity 220ms ease, transform 160ms ease;
+}
+
+.kf-node:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.kf-node.is-on {
+  border-color: var(--agent);
+  box-shadow: 0 0 0 4px var(--agent-soft), var(--shadow-md);
+}
+
+.kf-node.is-dim {
+  opacity: 0.42;
+}
+
+/* The chosen caller's path lights one step after another. */
+.kf-node.is-lit {
+  animation: kf-lit 520ms ease both;
+  animation-delay: calc(var(--i, 0) * 130ms);
+}
+
+@keyframes kf-lit {
+  from {
+    opacity: 0.42;
+    transform: translateY(4px);
+  }
+}
+
+.kf-node-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kf-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 10px;
+  background: var(--bg-tint);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.kf-node.is-caller .kf-icon,
+.kf-icon.is-caller { background: var(--caller-soft); border-color: var(--caller-line); color: var(--caller); }
+.kf-node.is-desk .kf-icon,
+.kf-icon.is-desk { background: var(--agent-soft); border-color: var(--agent-line); color: var(--agent); }
+.kf-node.is-red .kf-icon,
+.kf-icon.is-red { background: var(--alert-soft); border-color: rgba(179, 53, 42, 0.35); color: var(--alert); }
+.kf-node.is-amber .kf-icon,
+.kf-icon.is-amber { background: var(--agent-soft); border-color: var(--agent-line); color: var(--agent); }
+.kf-node.is-green .kf-icon,
+.kf-icon.is-green { background: var(--confirm-soft); border-color: rgba(46, 125, 91, 0.3); color: var(--confirm); }
+.kf-node.is-human .kf-icon,
+.kf-icon.is-human { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+/* The band itself is the loudest card in its branch. */
+.kf-branch.is-red > .kf-node:first-child {
+  border-color: rgba(179, 53, 42, 0.3);
+  background: linear-gradient(180deg, var(--alert-soft), var(--surface) 70%);
+}
+
+.kf-node-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.kf-node-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.kf-node-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline);
+}
+
+.kf-chip {
+  padding: 2px 9px;
+  border-radius: 7px;
+  background: var(--bg-tint);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+/* ── The panel ────────────────────────────────────────────────────────────── */
+
+.kf-panel {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.kf-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.kf-panel-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.kf-tabs {
+  display: flex;
+  gap: 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.kf-tab {
+  min-height: 40px;
+  margin-bottom: -1px;
+  padding: 8px 2px;
+  border-bottom: 2px solid transparent;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.kf-tab.is-on {
+  border-bottom-color: var(--agent);
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.kf-tabpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: rise 240ms ease both;
+}
+
+.kf-field-k {
+  display: block;
+  margin-top: 4px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.kf-box {
+  margin: 6px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* Words the desk says, set as speech: the desk's colour and its serif. */
+.kf-said-box {
+  border-color: var(--agent-line);
+  background: var(--agent-soft);
+  font-family: var(--font-display);
+  font-size: 15px;
+}
+
+.kf-outcome {
+  font-weight: 600;
+}
+
+.kf-outcome.is-red { border-color: rgba(179, 53, 42, 0.3); background: var(--alert-soft); color: var(--alert); }
+.kf-outcome.is-green { border-color: rgba(46, 125, 91, 0.3); background: var(--confirm-soft); color: var(--confirm); }
+
+.kf-rules {
+  margin: 6px 0 4px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kf-rules li {
+  position: relative;
+  padding: 8px 12px 8px 30px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.kf-rules li::before {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: 13px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--agent);
+}
+
+.kf-fixed {
+  margin: 2px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 1000px) {
+  .kf-panel {
+    position: static;
+  }
+}
+
+/* ── Phones ───────────────────────────────────────────────────────────────── */
+
+@media (max-width: 680px) {
+  .kf-canvas {
+    padding: 14px 14px 20px;
+    border-radius: 22px;
+  }
+
+  .kf-views {
+    display: flex;
+    width: 100%;
+  }
+
+  .kf-view {
+    flex: 1;
+    min-height: 42px;
+  }
+
+  /* The example chips scroll sideways instead of wrapping into five rows. */
+  .kf-said {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin-inline: -14px;
+    padding: 2px 14px 4px;
+    scrollbar-width: none;
+  }
+
+  .kf-said::-webkit-scrollbar {
+    display: none;
+  }
+
+  .kf-ex,
+  .kf-said-k {
+    flex: none;
+  }
+
+  /* One branch, chosen with a switch, instead of three slivers. */
+  .kf-bandpick {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+    margin-top: 26px;
+    padding: 4px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--r-pill);
+    background: var(--surface);
+  }
+
+  .kf-bandbtn {
+    flex: 1;
+    min-height: 40px;
+    border-radius: var(--r-pill);
+    font-size: 13px;
+    text-transform: capitalize;
+    color: var(--ink-muted);
+  }
+
+  .kf-bandbtn.is-on.is-red { background: var(--alert); color: #fff; }
+  .kf-bandbtn.is-on.is-amber { background: var(--agent); color: #fff; }
+  .kf-bandbtn.is-on.is-green { background: var(--confirm); color: #fff; }
+
+  .kf-branches {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 18px;
+  }
+
+  .kf-branches::before,
+  .kf-branches::after,
+  .kf-branch:nth-child(2)::before {
+    display: none;
+  }
+
+  .kf-branch {
+    display: none;
+  }
+
+  .kf-branch.is-shown {
+    display: flex;
+  }
+
+  .kf-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .kf-panel {
+    padding: 18px 16px;
+    border-radius: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kf-node.is-lit,
+  .kf-tabpanel {
+    animation: none;
+  }
+}
+
+/* ══ What it can quote ════════════════════════════════════════════════════════ */
+
+.kb-add {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .kb-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.kb-source {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--hairline);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.kb-source-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--agent-line);
+  border-radius: 11px;
+  background: var(--agent-soft);
+  color: var(--agent);
+  font-size: 16px;
+}
+
+.kb-source-title {
+  margin: 4px 0 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.kb-source-desc {
+  margin: 0 0 4px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.kb-add-btn {
+  align-self: flex-start;
+}
+
+.kb-doc {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+}
+
+.kb-doc-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--bg-tint);
+  color: var(--ink-muted);
+}
+
+.kb-doc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.kb-doc-title {
+  font-size: 14px;
+}
+
+.kb-doc-body .kb-ref {
+  margin: 0;
+}
+
+.kb-doc-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.kb-doc-date {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 640px) {
+  .kb-doc {
+    grid-template-columns: 36px minmax(0, 1fr);
+    grid-template-areas:
+      'icon body'
+      '. meta'
+      '. forget';
+    gap: 8px 12px;
+  }
+  .kb-doc-icon { grid-area: icon; }
+  .kb-doc-body { grid-area: body; }
+  .kb-doc-meta {
+    grid-area: meta;
+    flex-direction: row;
+    align-items: center;
+  }
+  .kb-forget {
+    grid-area: forget;
+    justify-self: start;
+    min-height: 40px;
+  }
+  .kb-row .lp-btn {
+    flex: 1 1 100%;
+  }
+}

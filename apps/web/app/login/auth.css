@@ -1,50 +1,192 @@
 /*
  * Signing in and signing up.
  *
+ * Dressed as the landing page is. On a wide screen, Momo's sky fills the left
+ * in a rounded frame — the call card standing in it, the three things the
+ * desk does floating round it — and the form sits on the right in white glass,
+ * with the landing's green for the one action. On a phone the sky is a band
+ * above the card.
+ *
  * One card, two modes, and a segmented control that moves between them rather
  * than swapping two static states — the movement is what tells someone the two
  * forms are the same object seen differently, not two different pages.
  */
 
+/* The page grows when "Create account" adds fields; a scrollbar appearing
+   then would push the whole layout sideways. The track is always there
+   instead (`scrollbar-gutter` on the root is not honoured everywhere); where
+   scrollbars hide themselves, as on a Mac by default, nothing shows. */
+html:has(.au-shell) {
+  overflow-y: scroll;
+}
+
 .au-shell {
   min-height: 100vh;
   display: grid;
-  place-items: center;
-  padding: clamp(20px, 5vw, 48px);
-  background:
-    radial-gradient(120% 90% at 50% -10%, var(--agent-soft) 0%, transparent 58%),
-    var(--bg);
-}
-
-.au-card {
-  width: min(440px, 100%);
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  /* Rows take their own height and no more: spare height shared between the
+     sky band and the form would move the form whenever the form changed. */
+  align-content: start;
+  gap: clamp(12px, 2vw, 28px);
+  padding: 10px;
   background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-  padding: clamp(26px, 5vw, 38px);
-  box-shadow: var(--shadow-lg);
-  /* Fields are 100% wide with padding; without this they overflow the card. */
-  box-sizing: border-box;
 }
 
-.au-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+/* ── The sky ──────────────────────────────────────────────────────────────── */
+
+.au-side {
+  /* Holds the screen and stays there: when the form beside it grows, the sky
+     does not stretch and the call card in it does not move. */
+  position: sticky;
+  top: 10px;
+  align-self: start;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 20px);
+  padding: clamp(28px, 4vw, 48px);
+  border-radius: clamp(20px, 2.4vw, 32px);
+  overflow: hidden;
+  text-align: center;
+}
+
+/* The hero's sky, carried to the frame's foot: no floor fading to white, and
+   the glass runs the full height, so the card stands in the sky, not on the
+   page. */
+.au-side .mo-scene {
+  background:
+    radial-gradient(70% 34% at 50% 70%, rgba(255, 246, 222, 0.9), transparent 70%),
+    linear-gradient(180deg, #b9ddd8 0%, #cfe7e1 34%, #e1efe6 64%, #eef5ee 100%);
+}
+
+.au-side .mo-floor,
+.au-side .mo-hills {
+  display: none;
+}
+
+.au-side .mo-glass {
+  bottom: -4%;
+}
+
+.au-side .mo-leaves {
+  bottom: 6%;
+}
+
+.au-side-mark {
+  align-self: flex-start;
   font-family: var(--font-display);
-  font-size: 19px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--ink);
   text-decoration: none;
-  margin-bottom: 22px;
+}
+
+.au-side-copy {
+  margin-top: clamp(40px, 9vh, 96px);
+  animation: au-rise 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.au-side-copy h2 {
+  margin: 0;
+  font-size: clamp(36px, 4.2vw, 62px);
+  line-height: 1.03;
+  font-variation-settings: 'SOFT' 20, 'WONK' 1, 'opsz' 48;
+}
+
+.au-side-call {
+  position: relative;
+  margin: auto auto 0;
+  padding-top: 32px;
+  animation: au-rise 1100ms cubic-bezier(0.16, 1, 0.3, 1) 150ms both;
+}
+
+.au-side-call .mo-callcard {
+  border-radius: 24px;
+  box-shadow: 0 40px 70px -40px rgba(14, 40, 26, 0.5);
+}
+
+/* The facts float round the card, each on its own clock, as Momo's do. */
+.au-fact {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 18px 36px -22px rgba(14, 40, 26, 0.5);
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--ink);
+  animation:
+    au-pop 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    au-bob 6s ease-in-out infinite alternate;
+}
+
+.au-fact i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--mo-green);
+  box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.2);
+}
+
+.au-fact.f1 { left: -68%; top: 24%; animation-delay: 600ms, 0s; }
+.au-fact.f2 { right: -60%; top: 50%; animation-delay: 750ms, -2s; }
+.au-fact.f3 { left: -72%; bottom: 16%; animation-delay: 900ms, -4s; }
+
+@keyframes au-rise {
+  from {
+    opacity: 0;
+    translate: 0 28px;
+  }
+}
+
+@keyframes au-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+@keyframes au-bob {
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
+}
+
+/* ── The form ─────────────────────────────────────────────────────────────── */
+
+.au-main {
+  display: grid;
+  justify-items: center;
+  /* From a fixed height, not centred: switching to "Create account" (more
+     fields) or an error appearing only grows the form downward, so the
+     switch and the fields never move under the pointer. */
+  align-content: start;
+  padding: clamp(40px, 13vh, 140px) clamp(16px, 3vw, 40px) clamp(32px, 6vh, 64px);
+}
+
+.au-card {
+  width: min(430px, 100%);
+  /* Fields are 100% wide with padding; without this they overflow the card. */
+  box-sizing: border-box;
+  animation: au-rise 800ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+}
+
+.au-mark {
+  display: none;
 }
 
 .au-mark-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--agent);
+  background: var(--mo-green);
 }
 
 /* ── The switch ───────────────────────────────────────────────────────────── */
@@ -54,22 +196,22 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2px;
-  padding: 3px;
-  border-radius: var(--r-pill);
-  background: var(--bg-tint);
-  margin-bottom: 24px;
+  padding: 4px;
+  border-radius: 999px;
+  background: #f1f4f2;
+  margin-bottom: clamp(26px, 4vh, 40px);
 }
 
 .au-switch-pill {
   position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: 3px;
-  width: calc(50% - 3px);
-  border-radius: var(--r-pill);
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc(50% - 4px);
+  border-radius: 999px;
   background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  transition: transform 340ms cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: 0 6px 16px -8px rgba(14, 40, 26, 0.35), 0 1px 2px rgba(14, 40, 26, 0.06);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .au-switch-pill.is-right {
@@ -79,13 +221,13 @@
 .au-switch-tab {
   position: relative;
   z-index: 1;
-  min-height: 38px;
+  min-height: 42px;
   border: 0;
   background: transparent;
-  border-radius: var(--r-pill);
+  border-radius: 999px;
   font: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--ink-muted);
   cursor: pointer;
   transition: color 200ms ease;
@@ -95,28 +237,74 @@
   color: var(--ink);
 }
 
-/* ── The form ─────────────────────────────────────────────────────────────── */
+.au-head {
+  animation: au-swap 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes au-swap {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+    filter: blur(4px);
+  }
+}
 
 .au-title {
-  font-family: var(--font-display);
-  font-size: clamp(25px, 4vw, 30px);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  margin: 0 0 7px;
+  margin: 0 0 8px;
+  font-size: clamp(32px, 3.4vw, 44px);
+  font-weight: 500;
+  line-height: 1.05;
+  font-variation-settings: 'SOFT' 20, 'WONK' 1, 'opsz' 48;
 }
 
 .au-sub {
-  margin: 0 0 6px;
-  font-size: 13.5px;
+  margin: 0 0 8px;
+  /* Two lines kept for either mode's sentence, so the fields below start at
+     the same height whichever is showing. */
+  min-height: calc(15px * 1.55 * 2);
+  font-size: 15px;
   line-height: 1.55;
   color: var(--ink-muted);
 }
 
+/* The extra fields for a new practice open in, rather than appearing. */
+.au-more {
+  animation: au-swap 520ms cubic-bezier(0.16, 1, 0.3, 1) 60ms both;
+}
+
 .au-label {
   display: block;
-  font-size: 12.5px;
-  font-weight: 600;
-  margin: 16px 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 18px 0 7px;
+}
+
+/* Momo's fields: soft grey wells that turn white and green when you are in
+   them. */
+.au-card .kb-input {
+  min-height: 50px;
+  padding: 12px 16px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: #f4f6f5;
+  font-size: 15px;
+  transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.au-card .kb-input:hover {
+  background: #eff3f0;
+}
+
+.au-card .kb-input:focus,
+.au-card .kb-input:focus-visible {
+  background: var(--surface);
+  border-color: var(--mo-green-deep);
+  box-shadow: 0 0 0 4px rgba(52, 199, 89, 0.16);
+}
+
+.au-card .kb-input:-webkit-autofill,
+.au-card .kb-input:-webkit-autofill:focus {
+  box-shadow: 0 0 0 1000px #f4f6f5 inset;
 }
 
 .au-hint {
@@ -132,19 +320,56 @@
   color: var(--alert);
   background: var(--alert-soft);
   border: 1px solid rgba(179, 53, 42, 0.24);
-  border-radius: var(--r-md);
+  border-radius: 12px;
   padding: 10px 13px;
+  animation: au-swap 400ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* The one action, in the landing's green, with the sheen it has there. */
 .au-go {
-  width: 100%;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
   justify-content: center;
-  margin-top: 20px;
+  width: 100%;
+  min-height: 52px;
+  margin-top: 24px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green));
+  box-shadow: 0 14px 28px -12px rgba(52, 199, 89, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  transition: translate 200ms ease, box-shadow 200ms ease, filter 200ms ease;
+}
+
+.au-go::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 255, 255, 0.32) 50%, transparent 62%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.au-go:hover:not(:disabled) {
+  translate: 0 -1px;
+  box-shadow: 0 18px 32px -12px rgba(52, 199, 89, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.au-go:hover:not(:disabled)::after {
+  animation: lp-sheen 720ms ease-out;
+}
+
+.au-go:active:not(:disabled) {
+  translate: 0 0;
+  filter: brightness(0.97);
 }
 
 .au-foot {
-  margin: 18px 0 0;
-  font-size: 12.5px;
+  margin: 20px 0 0;
+  font-size: 13.5px;
   line-height: 1.6;
   color: var(--ink-muted);
   text-align: center;
@@ -152,9 +377,11 @@
 
 .au-foot a,
 .au-link {
-  color: var(--agent);
+  color: var(--mo-green-deep);
+  font-weight: 500;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration-color: rgba(31, 157, 71, 0.35);
+  text-underline-offset: 3px;
 }
 
 /* A button, because it changes what is on screen rather than navigating —
@@ -162,13 +389,90 @@
 .au-link {
   border: 0;
   background: none;
-  padding: 0;
   font: inherit;
+  font-weight: 500;
   cursor: pointer;
+  /* A thumb-sized target that still sits in the sentence: the padding grows
+     the hit area, the negative margin gives the line its height back. */
+  padding: 11px 4px;
+  margin: -11px -4px;
+}
+
+/* ── Narrower screens ─────────────────────────────────────────────────────── */
+
+@media (max-width: 1100px) {
+  .au-fact.f1 { left: -44%; }
+  .au-fact.f2 { right: -42%; }
+  .au-fact.f3 { left: -46%; }
+}
+
+@media (max-width: 900px) {
+  .au-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+
+  /* The sky becomes a band: the name, the line, the facts as a row. */
+  .au-side {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    padding: 22px 20px 28px;
+  }
+
+  .au-side .mo-leaves {
+    display: none;
+  }
+
+  .au-side-copy {
+    margin-top: 18px;
+  }
+
+  .au-side-copy .mo-eyebrow {
+    margin-bottom: 14px;
+  }
+
+  .au-side-copy h2 {
+    font-size: clamp(30px, 8vw, 40px);
+  }
+
+  .au-side-call {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding-top: 20px;
+  }
+
+  .au-side-call .mo-callcard {
+    display: none;
+  }
+
+  .au-fact {
+    position: static;
+    font-size: 12px;
+    animation: au-pop 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .au-main {
+    padding: 28px 10px 40px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .au-switch-pill {
+  .au-switch-pill,
+  .au-go {
     transition: none;
+  }
+  .au-side-copy,
+  .au-side-call,
+  .au-fact,
+  .au-card,
+  .au-head,
+  .au-more,
+  .au-error {
+    animation: none !important;
   }
 }

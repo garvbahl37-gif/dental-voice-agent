@@ -21,7 +21,7 @@ export function Skeleton({ w, h, r }: { w?: string; h?: number; r?: number }) {
   )
 }
 
-/** The dashboard: a header, a band of tiles, and the calls table. */
+/** The dashboard: the bar, a header, the four cards, and the calls. */
 export function DashboardSkeleton() {
   return (
     <>
@@ -29,26 +29,35 @@ export function DashboardSkeleton() {
         Loading the dashboard
       </span>
 
-      <header className="db-head" aria-hidden>
+      <div className="ab" aria-hidden>
+        <Skeleton w="132px" h={44} r={12} />
+      </div>
+
+      <header className="cf-head" aria-hidden>
         <div>
-          <Skeleton w="90px" h={11} />
+          <Skeleton w="260px" h={34} r={8} />
           <div style={{ height: 10 }} />
-          <Skeleton w="220px" h={30} r={8} />
+          <Skeleton w="320px" h={12} />
         </div>
       </header>
 
-      <section className="db-section" aria-hidden>
-        <Skeleton w="150px" h={18} r={6} />
-        <div className="db-tiles" style={{ marginTop: 18 }}>
-          {Array.from({ length: 8 }, (_, i) => (
-            <div key={i} className="sk-tile">
-              <Skeleton w="54px" h={26} r={7} />
-              <div style={{ height: 9 }} />
-              <Skeleton w="76%" h={10} />
+      {/* The same grid as the page: the desk and the list on the left, the
+          readings on the right. */}
+      <div className="cf-grid" aria-hidden>
+        <div className="cf-main">
+          <div className="sk sk-desk" />
+          <div className="sk-tile sk-cf">
+            <Skeleton w="180px" h={22} r={6} />
+          </div>
+        </div>
+        <div className="cf-side">
+          {[110, 120, 300, 200].map((h, i) => (
+            <div key={i} className="sk-tile sk-cf" style={{ minHeight: h }}>
+              <Skeleton w="50%" h={16} r={6} />
             </div>
           ))}
         </div>
-      </section>
+      </div>
 
       <section className="db-section" aria-hidden>
         <Skeleton w="120px" h={18} r={6} />

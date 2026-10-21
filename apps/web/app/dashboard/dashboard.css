@@ -17,12 +17,9 @@
 .db-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 16px 24px;
   align-items: flex-end;
   justify-content: space-between;
-  padding-bottom: 22px;
-  border-bottom: 1px solid var(--hairline);
-  margin-bottom: 8px;
 }
 
 .db-title {
@@ -51,7 +48,8 @@
 .db-range-btn {
   font: inherit;
   font-size: 12.5px;
-  padding: 7px 15px;
+  padding: 7px 16px;
+  min-height: 38px;
   border: none;
   background: none;
   color: var(--ink-muted);
@@ -66,27 +64,6 @@
 .db-range-btn.is-on {
   background: var(--agent);
   color: #fff;
-}
-
-.db-who {
-  font-size: 12.5px;
-  color: var(--ink-faint);
-}
-
-.db-signout {
-  font: inherit;
-  font-size: 12.5px;
-  color: var(--ink-muted);
-  background: none;
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-pill);
-  padding: 7px 15px;
-  cursor: pointer;
-}
-
-.db-signout:hover {
-  background: var(--bg-tint);
-  color: var(--ink);
 }
 
 .db-section {
@@ -129,69 +106,6 @@
   color: var(--confirm);
   background: var(--confirm-soft);
   border-color: rgba(46, 125, 91, 0.28);
-}
-
-/* ── Tiles ───────────────────────────────────────────────────────────────── */
-
-.db-tiles {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
-  gap: 12px;
-}
-
-.db-tile {
-  background: var(--surface);
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-  padding: 18px 20px 20px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.db-tile-wide {
-  grid-column: span 2;
-}
-
-@media (max-width: 640px) {
-  .db-tile-wide {
-    grid-column: span 1;
-  }
-}
-
-.db-tile-n {
-  font-family: var(--font-display);
-  font-size: 27px;
-  font-weight: 600;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.db-tile-wide .db-tile-n {
-  font-size: 17px;
-  letter-spacing: -0.01em;
-}
-
-.db-tile-k {
-  font-size: 12.5px;
-  line-height: 1.4;
-  color: var(--ink-muted);
-}
-
-/* Colour only where something is true about the number, never decoratively. */
-.db-tile-good .db-tile-n {
-  color: var(--confirm);
-}
-.db-tile-warn .db-tile-n {
-  color: var(--agent);
-}
-.db-tile-alert {
-  border-color: rgba(179, 53, 42, 0.3);
-  background: var(--alert-soft);
-}
-.db-tile-alert .db-tile-n {
-  color: var(--alert);
 }
 
 .db-note {
@@ -285,69 +199,6 @@
   border-top: 1px solid var(--hairline);
 }
 
-/* ── Table ───────────────────────────────────────────────────────────────── */
-
-.db-table-wrap {
-  border: 1px solid var(--hairline);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  /* Wide content scrolls inside its own box; the page never scrolls sideways. */
-  overflow-x: auto;
-  box-shadow: var(--shadow-sm);
-}
-
-.db-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-  min-width: 640px;
-}
-
-.db-table th {
-  text-align: left;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-  font-weight: 400;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--hairline);
-  white-space: nowrap;
-}
-
-.db-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--hairline);
-  vertical-align: middle;
-}
-
-.db-table tr:last-child td {
-  border-bottom: none;
-}
-
-.db-table .mono {
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-.db-outcome {
-  font-size: 12.5px;
-}
-
-.db-outcome-booked {
-  color: var(--confirm);
-  font-weight: 600;
-}
-.db-outcome-escalated,
-.db-outcome-failed {
-  color: var(--alert);
-}
-.db-outcome-no_speech,
-.db-outcome-abandoned {
-  color: var(--ink-faint);
-}
-
 .db-more {
   font: inherit;
   font-size: 13px;
@@ -412,7 +263,7 @@
      the phone" and was standing in as a focus colour, which is why every form
      in a turmeric app rang blue. */
   border-color: var(--agent);
-  box-shadow: 0 0 0 3px rgba(184, 115, 10, 0.16);
+  box-shadow: 0 0 0 3px rgba(22, 136, 74, 0.16);
 }
 
 /* Chrome paints its own yellow fill on an autofilled field, which reads as an
@@ -594,6 +445,33 @@
 
 /* ── Settings ────────────────────────────────────────────────────────────── */
 
+/* Each group on its own card, after Helix's API settings: the explanation is a
+   line under the heading rather than a grey box competing with the form. */
+.st-card {
+  margin-top: 18px;
+  padding: clamp(18px, 2.6vw, 26px);
+  border: 1px solid var(--hairline);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.st-card .db-h2 {
+  margin-bottom: 6px;
+}
+
+.st-desc {
+  margin: 0 0 18px;
+  max-width: 64ch;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.st-card .ob-hint a {
+  color: var(--agent);
+}
+
 /* A secret shown once. Loud, and dismissed deliberately. */
 .st-secret {
   background: var(--agent-soft);
@@ -641,6 +519,14 @@
   font-size: 13px;
   color: var(--ink-muted);
   cursor: pointer;
+  /* A comfortable target on a phone; the label is the hit area. */
+  min-height: 32px;
+}
+
+.st-check input {
+  accent-color: var(--agent);
+  width: 16px;
+  height: 16px;
 }
 
 .st-url {
@@ -655,21 +541,6 @@
    them, which made every number on the page something to take on faith. This
    is where a number becomes checkable: what was said, and what the agent did
    underneath it.                                                             */
-
-.db-row-open {
-  cursor: pointer;
-  transition: background 140ms ease;
-}
-
-.db-row-open:hover,
-.db-row-open:focus-visible {
-  background: var(--bg-tint);
-  outline: none;
-}
-
-.db-row-open:focus-visible td:first-child {
-  box-shadow: inset 2px 0 0 var(--agent);
-}
 
 .cv-scrim {
   position: fixed;
@@ -816,59 +687,6 @@
   font-weight: 600;
 }
 
-/* ── The conversation ─────────────────────────────────────────────────────── */
-
-.cv-thread {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.cv-turn {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-width: 88%;
-}
-
-.cv-turn.is-caller {
-  align-self: flex-start;
-}
-
-.cv-turn.is-desk {
-  align-self: flex-end;
-  align-items: flex-end;
-}
-
-.cv-who {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-.cv-turn p {
-  margin: 0;
-  padding: 10px 14px;
-  border: 1px solid var(--hairline);
-  border-radius: 4px 14px 14px 14px;
-  background: var(--surface);
-  font-size: 14.5px;
-  line-height: 1.55;
-  /* Indian scripts stack marks above and below the line and need the room. */
-}
-
-.cv-turn.is-desk p {
-  border-radius: 14px 4px 14px 14px;
-  background: var(--agent-soft);
-  border-color: var(--agent-line);
-  text-align: right;
-}
-
 /* ── The trace ────────────────────────────────────────────────────────────── */
 
 .cv-trace {
@@ -993,6 +811,21 @@
   background: var(--surface);
 }
 
+/* The dashboard's skeleton takes the dashboard's grid, so each shape sits
+   where its card will. */
+.sk-cf {
+  border: 0;
+  border-radius: 22px;
+  padding: 20px;
+  min-height: 160px;
+}
+
+.sk-desk {
+  min-height: clamp(420px, 46vw, 600px);
+  border-radius: 22px;
+  background-color: var(--sage);
+}
+
 .sk-rows {
   margin-top: 18px;
   border: 1px solid var(--hairline);
@@ -1048,81 +881,20 @@
   }
 }
 
-/* ══ Hierarchy ════════════════════════════════════════════════════════════════
-
-   The page was nineteen identical tiles in three rows, which gave "calls
-   answered" and "transferred" the same weight — and when everything is
-   emphasised nothing is. Three figures carry the week, one line carries the
-   rest of the shape of it, and the numbers you only check when you have a
-   question are set as a list.                                                */
-
-.db-sub {
-  margin: 6px 0 0;
-  font-size: 13.5px;
-  color: var(--ink-muted);
-}
-
-.db-lead {
-  padding-block: clamp(22px, 3vw, 34px);
-  border-bottom: 1px solid var(--hairline);
-  margin-bottom: clamp(22px, 3vw, 32px);
-}
-
-.db-big {
-  display: flex;
-  flex-wrap: wrap;
-  gap: clamp(28px, 6vw, 72px);
-}
-
-.db-big-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.db-big-n {
-  font-family: var(--font-display);
-  font-size: clamp(38px, 6vw, 60px);
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.db-big-k {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
-
-/* The shape of the week, in a sentence rather than five more cards. */
-.db-lead-line {
-  margin: clamp(18px, 2.4vw, 26px) 0 0;
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: var(--ink-muted);
-  max-width: 78ch;
-}
-
-.db-tone-good {
-  color: var(--good, #2f6b4f);
-}
-
-.db-tone-alert {
-  color: var(--alert);
-}
-
-.db-tone-warn {
-  color: var(--agent);
-}
 
 /* ── The detail ───────────────────────────────────────────────────────────── */
 
 .db-detail {
   margin: 0;
-  border-top: 1px solid var(--hairline);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 40px;
+}
+
+@media (max-width: 760px) {
+  .db-detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .db-detail-row {
@@ -1144,13 +916,466 @@
   font-size: 14px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ── Shared by knowledge and settings ─────────────────────────────────────── */
+
+.db-sub {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.db-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--cloud);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
   white-space: nowrap;
 }
 
-/* ── The controls, given room ─────────────────────────────────────────────── */
+.db-tag-booked { background: var(--sage); color: var(--sage-ink); }
+.db-tag-alert { background: var(--coral); color: #fff; }
 
-.db-head-right {
+.db-tone-good { color: var(--confirm); }
+.db-tone-alert { color: var(--alert); }
+.db-tone-warn { color: var(--warm); }
+
+/* Rows on one white card. */
+.db-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 22px;
+}
+
+.db-list > li + li {
+  border-top: 1px solid var(--hairline);
+}
+
+/* ── Phones ───────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .db-shell {
+    padding: 12px 12px 72px;
+  }
+}
+
+/* ══ Call details ═════════════════════════════════════════════════════════════
+
+   After Meeto.ai: the record on the left, the call on the right. Wide enough
+   for both on a desktop; on a phone the sheet is the screen and the columns
+   stack, the call under its summary.                                         */
+
+.cv-scrim {
+  justify-content: center;
+  align-items: center;
+  padding: clamp(0px, 2vw, 28px);
+}
+
+.cd {
+  width: min(1240px, 100%);
+  height: 100%;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: clamp(0px, 2vw, 28px);
+  background: var(--bg-tint);
+  box-shadow: 0 40px 100px -40px rgba(26, 24, 21, 0.55);
+  animation: cv-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.cd-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px clamp(14px, 2vw, 22px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.cd-back {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  color: var(--ink-muted);
+}
+
+.cd-back:hover {
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+}
+
+.cd-bar-title {
+  flex: 1;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.cd-bar-btn,
+.cd-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 14px;
+  border: 1px solid var(--hairline-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.cd-bar-btn:hover,
+.cd-act:hover {
+  border-color: var(--agent-line);
+  background: var(--agent-soft);
+}
+
+.cd-act.is-main {
+  border-color: var(--agent);
+  background: var(--agent);
+  color: #fff;
+}
+
+.cd-pad {
+  padding: 22px;
+}
+
+.cd-grid {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 14px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.cd-main,
+.cd-side {
+  min-height: 0;
+  overflow-y: auto;
+  border-radius: 22px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+}
+
+.cd-main {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(18px, 2.2vw, 26px) clamp(18px, 2.2vw, 26px) 0;
+}
+
+.cd-side {
+  padding: 10px;
+}
+
+.cd-side .ln {
+  border: 0;
+  box-shadow: none;
+}
+
+.cd-side .ln-turns {
+  max-height: none;
+}
+
+.cd-title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: clamp(24px, 2.6vw, 30px);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.cd-meta {
+  display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  gap: 8px 18px;
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.cd-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cd-rows {
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+  margin: 0 0 20px;
+}
+
+.cd-rows > div {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.cd-rows dt {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.cd-rows dd {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  background: var(--bg);
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  text-transform: capitalize;
+}
+
+.cd-chip i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.cd-chip.is-caller i { background: var(--caller); }
+.cd-chip.is-desk i { background: var(--agent); }
+.cd-chip.is-good { background: var(--agent-soft); border-color: var(--agent-line); color: var(--agent); }
+.cd-chip.is-bad { background: var(--alert-soft); border-color: rgba(179, 53, 42, 0.3); color: var(--alert); }
+
+.cd-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cd-tab {
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.cd-tab.is-on {
+  background: var(--agent);
+  color: #fff;
+  box-shadow: 0 6px 16px -6px rgba(22, 136, 74, 0.55);
+}
+
+.cd-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+}
+
+.cd-block {
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--bg);
+}
+
+.cd-block.is-alert {
+  background: var(--alert-soft);
+}
+
+.cd-block h4 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cd-block h4 svg {
+  color: var(--agent);
+}
+
+.cd-block.is-alert h4 svg {
+  color: var(--alert);
+}
+
+.cd-block p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-muted);
+}
+
+.cd-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
+.cd-points {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 22px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-muted);
+}
+
+.cd-points li::marker {
+  color: var(--agent);
+}
+
+.cd-trace {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cd-trace li {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 13.5px;
+}
+
+.cd-trace li.is-bad .cd-trace-what {
+  color: var(--alert);
+}
+
+.cd-trace-at {
+  color: var(--ink-faint);
+}
+
+.cd-trace-what em {
+  font-style: normal;
+  color: var(--ink-faint);
+}
+
+.cd-trace-what small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  overflow-wrap: anywhere;
+}
+
+.cd-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cd-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--bg);
+}
+
+.cd-fact span {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.cd-fact strong {
+  font-size: 17px;
+}
+
+/* The next step sits at the foot of the record, always in reach. */
+.cd-next {
+  position: sticky;
+  bottom: 0;
+  margin: auto calc(clamp(18px, 2.2vw, 26px) * -1) 0;
+  padding: 14px clamp(18px, 2.2vw, 26px) 18px;
+  border-top: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
+.cd-next p {
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.cd-next div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .cv-scrim {
+    padding: 0;
+  }
+  .cd {
+    border-radius: 0;
+  }
+  /* Stacked, the whole sheet scrolls as one page rather than two boxes. */
+  .cd-grid {
+    display: block;
+    overflow-y: auto;
+    padding: 10px;
+  }
+  .cd-main,
+  .cd-side {
+    overflow: visible;
+  }
+  .cd-side {
+    margin-top: 10px;
+  }
+  .cd-numbers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cd-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cd-bar-btn {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cd {
+    animation: none;
+  }
 }

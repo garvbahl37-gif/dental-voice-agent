@@ -1,0 +1,1336 @@
+/*
+ * The dashboard, after Ronas IT's CareFlow.
+ *
+ * Their system, nearly verbatim: a #F4F4F4 ground, white cards with generous
+ * radii and no visible borders, sage (#BDD5C4) for anything chosen or good,
+ * coral (#FF8B8B) for anything that needs a person, black for today and for
+ * the one action that matters most, and one large dark card holding whatever
+ * is live. Selectors are `cf-` and scoped under `.cf`, so knowledge and
+ * settings — which share the bar — keep their own layouts.
+ */
+
+/* ══ Ground and bar ═══════════════════════════════════════════════════════════ */
+
+body:has(.cf),
+body:has(.ab) {
+  background: var(--cloud);
+}
+
+.db-shell {
+  max-width: 1400px;
+  padding: 14px clamp(12px, 2vw, 22px) 64px;
+}
+
+.ab {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 10px 14px 10px 12px;
+  margin-bottom: 14px;
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+.ab-mark {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.ab-tile {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--sage);
+  color: var(--sage-ink);
+}
+
+.ab-rail {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ab-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.ab-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  font-size: 15px;
+  color: var(--ink);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 160ms ease;
+}
+
+.ab-link:hover {
+  background: var(--cloud);
+}
+
+.ab-link.is-on {
+  background: var(--sage);
+}
+
+.ab-end {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ab-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ab-initials {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--sage-deep);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.ab-who-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.ab-who-text strong {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.ab-who-text small {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  text-transform: capitalize;
+}
+
+.ab-out {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: var(--ink-muted);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.ab-out:hover {
+  background: var(--coral-soft);
+  color: var(--alert);
+}
+
+.ab-signin {
+  display: inline-flex;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.ab-signin:hover {
+  background: #2b2f2d;
+}
+
+@media (max-width: 1080px) {
+  .ab-who-text {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .ab {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+  }
+  .ab-end {
+    margin-left: auto;
+  }
+  .ab-rail {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: flex-start;
+  }
+  .ab-link {
+    font-size: 14px;
+    padding: 8px 12px;
+  }
+}
+
+/* ══ Heading ══════════════════════════════════════════════════════════════════ */
+
+.cf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 4px 4px 16px;
+}
+
+.cf-title {
+  margin: 0;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.cf-sub {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.cf-range {
+  display: inline-flex;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.cf-range-btn {
+  min-height: 38px;
+  padding: 7px 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.cf-range-btn:hover {
+  color: var(--ink);
+}
+
+.cf-range-btn.is-on {
+  background: var(--ink);
+  color: #fff;
+}
+
+/* ══ The grid ═════════════════════════════════════════════════════════════════ */
+
+.cf-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.15fr) minmax(320px, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.cf-main,
+.cf-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cf-card {
+  min-width: 0;
+  padding: 20px;
+  border-radius: 22px;
+  background: var(--surface);
+  animation: cf-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.cf-side > :nth-child(2) { animation-delay: 70ms; }
+.cf-side > :nth-child(3) { animation-delay: 140ms; }
+.cf-side > :nth-child(4) { animation-delay: 210ms; }
+
+@keyframes cf-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.cf-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cf-card-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.cf-count {
+  min-width: 26px;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: var(--coral);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.cf-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 4px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.cf-more svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cf-more.is-block {
+  width: 100%;
+  justify-content: center;
+  margin-top: 8px;
+  border-radius: 12px;
+  background: var(--cloud);
+}
+
+.cf-empty {
+  margin: 0;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--cloud);
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.cf-empty.is-good {
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+}
+
+/* ── The desk ─────────────────────────────────────────────────────────────── */
+
+/* Where CareFlow has its video call: a dark sage room with the orb in it. */
+.cf-desk {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: clamp(420px, 46vw, 600px);
+  border-radius: 22px;
+  color: #fff;
+  background: #2c3f33;
+  animation: cf-in 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.cf-desk-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(42% 46% at 50% 52%, rgba(189, 213, 196, 0.38), transparent 70%),
+    radial-gradient(70% 60% at 85% 10%, rgba(255, 255, 255, 0.1), transparent 70%),
+    radial-gradient(60% 60% at 10% 100%, rgba(110, 139, 119, 0.65), transparent 70%),
+    linear-gradient(160deg, #3d5546 0%, #2c3f33 55%, #22322a 100%);
+}
+
+/* Slow light drifting across the room, so the card is never a still image. */
+.cf-desk-scene::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(30% 30% at 50% 50%, rgba(189, 213, 196, 0.16), transparent 70%);
+  animation: cf-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes cf-drift {
+  from { transform: translate(-18%, -8%); }
+  to { transform: translate(18%, 10%); }
+}
+
+.cf-desk-head {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  right: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-desk-head h2 {
+  margin: 0;
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.cf-desk-head p {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.cf-desk-state {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-size: 13px;
+}
+
+.cf-desk-state i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sage);
+  box-shadow: 0 0 0 0 rgba(189, 213, 196, 0.7);
+  animation: cf-ping 2s ease-out infinite;
+}
+
+.cf-desk.is-live .cf-desk-state i {
+  background: var(--coral);
+}
+
+@keyframes cf-ping {
+  to { box-shadow: 0 0 0 10px rgba(189, 213, 196, 0); }
+}
+
+.cf-desk-orb {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(360px, 62%);
+  transform: translate(-50%, -52%);
+}
+
+/* The second camera's place: today, in two numbers. */
+.cf-desk-pip {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: clamp(190px, 24%, 250px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--ink);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.5);
+}
+
+.cf-pip-k {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.cf-pip-n {
+  display: flex;
+  flex-direction: column;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.cf-pip-n small {
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ink-muted);
+}
+
+.cf-pip-foot {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--hairline);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+/* CareFlow's round controls: coral for the call, white for the rest. */
+.cf-desk-controls {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+}
+
+.cf-round {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6);
+  transition: transform 160ms ease;
+}
+
+.cf-round:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.cf-round.is-coral {
+  background: var(--coral);
+  color: #fff;
+}
+
+.cf-round:disabled {
+  opacity: 0.5;
+}
+
+.cf-round-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--coral);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px #2c3f33;
+}
+
+/* ── Recent calls: CareFlow's appointments table ──────────────────────────── */
+
+.cf-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.cf-tr {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(130px, 1.2fr) minmax(110px, 1fr) 90px minmax(130px, 1.2fr) 64px 118px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  font-size: 15px;
+  text-align: left;
+  color: var(--ink);
+  transition: background 140ms ease;
+}
+
+button.cf-tr:hover {
+  background: var(--cloud);
+}
+
+.cf-th {
+  min-height: 36px;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.cf-td-from {
+  font-size: 14px;
+}
+
+.cf-td-out {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cf-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: 7px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.cf-pill.is-sage { background: var(--sage); color: var(--sage-ink); }
+.cf-pill.is-coral { background: var(--coral); color: #fff; }
+.cf-pill.is-sky { background: var(--sky); color: #134a64; }
+.cf-pill.is-grey { background: var(--cloud); color: var(--ink-muted); }
+
+/* ── The side column ──────────────────────────────────────────────────────── */
+
+.cf-tile {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 2px 8px -2px rgba(47, 74, 58, 0.25);
+}
+
+.cf-chart-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cf-chart-k {
+  flex: 1;
+  font-size: 15px;
+}
+
+.cf-chart-n {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.cf-chart-n small {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* CareFlow's weight card: sage, with the plot running off its foot. */
+.cf-chart {
+  padding: 16px 0 0;
+  overflow: hidden;
+  background: var(--sage);
+}
+
+.cf-chart .cf-chart-head {
+  padding: 0 16px;
+}
+
+.cf-chart-plot {
+  position: relative;
+  height: 104px;
+  margin-top: 4px;
+}
+
+.cf-chart-plot svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cf-area {
+  fill: rgba(255, 255, 255, 0.35);
+}
+
+.cf-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: cf-draw 1.4s 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes cf-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.cf-peak {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.45);
+  animation: cf-pop 400ms 1.3s both;
+}
+
+.cf-peak-tag {
+  position: absolute;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 12.5px;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 14px));
+  animation: cf-pop 400ms 1.4s both;
+}
+
+/* A peak near the top would put its tag over the total, so it hangs below. */
+.cf-peak-tag.is-below {
+  transform: translate(-50%, 14px);
+}
+
+@keyframes cf-pop {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+.cf-chart-days {
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  padding: 6px 14px 10px;
+  background: rgba(255, 255, 255, 0.35);
+  font-size: 11.5px;
+  color: var(--sage-ink);
+}
+
+.cf-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.cf-stat {
+  padding: 16px;
+}
+
+.cf-stat header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.cf-stat .cf-tile {
+  background: var(--sage);
+  box-shadow: none;
+}
+
+.cf-stat-n {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin: 18px 0 0;
+  font-size: 42px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.cf-stat-n small {
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.cf-stat-n.is-big {
+  margin-top: 16px;
+}
+
+.cf-stat-note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.cf-stat-note.is-warn {
+  color: var(--alert);
+}
+
+/* ── The month ────────────────────────────────────────────────────────────── */
+
+.cf-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.cf-cal-head h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.cf-cal-nav {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--ink);
+}
+
+.cf-cal-nav:hover:not(:disabled) {
+  background: var(--cloud);
+}
+
+.cf-cal-nav:disabled {
+  opacity: 0.25;
+}
+
+.cf-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cf-cal-w {
+  padding-bottom: 6px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.cf-day {
+  aspect-ratio: 1.12;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--cloud);
+  font-size: 14px;
+  transition: transform 140ms ease;
+}
+
+.cf-day:hover {
+  transform: scale(1.06);
+}
+
+.cf-day.l1 { background: var(--sage-soft); }
+.cf-day.l2 { background: var(--sage); }
+.cf-day.l3 { background: var(--sage-deep); color: #fff; }
+
+.cf-day.is-out {
+  background: transparent;
+  color: var(--ink-faint);
+}
+
+.cf-day.is-today {
+  background: var(--ink);
+  color: #fff;
+}
+
+.cf-cal-key {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.cf-cal-key i {
+  width: 12px;
+  height: 12px;
+  margin-left: 6px;
+  border-radius: 4px;
+}
+
+.cf-cal-key i:first-child {
+  margin-left: 0;
+}
+
+.cf-cal-key .l1 { background: var(--sage-soft); }
+.cf-cal-key .l2 { background: var(--sage); }
+.cf-cal-key .l3 { background: var(--sage-deep); }
+
+/* ── Next callback, where CareFlow sells its subscription ─────────────────── */
+
+.cf-next {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 22px;
+  background:
+    radial-gradient(60% 80% at 90% 10%, rgba(255, 255, 255, 0.8), transparent 70%),
+    radial-gradient(70% 90% at 0% 100%, rgba(110, 139, 119, 0.45), transparent 70%),
+    linear-gradient(135deg, #d6e6da, #bdd5c4);
+  animation: cf-in 520ms 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.cf-next.is-urgent {
+  background:
+    radial-gradient(60% 80% at 90% 10%, rgba(255, 255, 255, 0.8), transparent 70%),
+    radial-gradient(70% 90% at 0% 100%, rgba(255, 139, 139, 0.5), transparent 70%),
+    linear-gradient(135deg, #f3e1de, #d8e6db);
+}
+
+.cf-next header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cf-next h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.cf-next p {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.cf-next-who {
+  font-size: 18px !important;
+  font-weight: 600;
+}
+
+.cf-next-do {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cf-next-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  margin-top: 6px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  text-decoration: none;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.cf-next-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px -12px rgba(47, 74, 58, 0.6);
+}
+
+.cf-next-link {
+  align-self: center;
+  min-height: 40px;
+  font-size: 13.5px;
+  color: var(--sage-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cf-next-foot {
+  font-size: 12px !important;
+  color: rgba(14, 17, 16, 0.6);
+  text-align: center;
+}
+
+/* ══ Below the fold ═══════════════════════════════════════════════════════════ */
+
+.cf-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cf-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.cf-q + .cf-q {
+  border-top: 1px solid var(--hairline);
+}
+
+.cf-q-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(110px, 0.8fr) minmax(0, 1.6fr) auto 74px;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 6px 4px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.cf-q-who {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cf-q-reason {
+  color: var(--ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cf-q-when {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  text-align: right;
+}
+
+.cf-q-row .cf-pill {
+  min-width: 0;
+  padding: 4px 10px;
+  font-size: 12.5px;
+}
+
+.cf-q-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 4px 14px;
+  animation: cf-in 260ms ease both;
+}
+
+.cf-q-body ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+
+.cf-q-body .cf-next-do {
+  background: var(--cloud);
+  font-size: 14px;
+}
+
+.cf-q-do {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  background: var(--cloud);
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.cf-btn.is-dark {
+  background: var(--ink);
+  color: #fff;
+}
+
+.cf-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.cf-bar {
+  position: relative;
+  height: 10px;
+  margin: 16px 0 14px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--sage);
+}
+
+.cf-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+}
+
+.cf-mini {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.cf-mini div {
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--cloud);
+}
+
+.cf-mini dt {
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+
+.cf-mini dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cf-lang-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 18px 0 0;
+  padding: 0;
+}
+
+.cf-lang-list li {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.cf-lang-bar {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--cloud);
+  overflow: hidden;
+}
+
+.cf-lang-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--sage-deep);
+  transform-origin: left;
+  animation: cf-grow 900ms 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* The month and the calls arrive in a quick stagger, not all at once. */
+.cf-day {
+  animation: cf-cell 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--d, 0) * 12ms + 200ms);
+}
+
+button.cf-tr {
+  animation: cf-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--d, 0) * 45ms + 150ms);
+}
+
+@keyframes cf-cell {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes cf-grow {
+  from { transform: scaleX(0); }
+}
+
+.cf-lang-n {
+  text-align: right;
+  color: var(--ink-muted);
+}
+
+.cf-detail {
+  margin-top: 12px;
+}
+
+/* ══ Smaller screens ══════════════════════════════════════════════════════════ */
+
+@media (max-width: 1180px) {
+  .cf-lower {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .cf-queue {
+    grid-column: 1 / -1;
+  }
+}
+
+/* One column, reordered by what someone opens the page for: who to ring
+   first, then the desk, then the readings, then the list and the month. */
+@media (max-width: 980px) {
+  .cf-grid {
+    display: flex;
+    flex-direction: column;
+  }
+  .cf-main,
+  .cf-side {
+    display: contents;
+  }
+  .cf-next { order: 1; }
+  .cf-desk { order: 2; }
+  .cf-pair { order: 3; }
+  .cf-chart { order: 4; }
+  .cf-calls { order: 5; }
+  .cf-cal { order: 6; }
+}
+
+@media (max-width: 760px) {
+  .cf-tr {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'from out'
+      'date len';
+    gap: 2px 12px;
+    padding: 10px;
+    font-size: 14px;
+  }
+  .cf-th {
+    display: none;
+  }
+  .cf-tr > :nth-child(1) { grid-area: from; }
+  .cf-tr > :nth-child(2) { grid-area: date; color: var(--ink-muted); font-size: 13px; }
+  .cf-tr > :nth-child(3),
+  .cf-tr > :nth-child(4) { display: none; }
+  .cf-tr > :nth-child(5) { grid-area: len; text-align: right; color: var(--ink-muted); font-size: 13px; }
+  .cf-tr > :nth-child(6) { grid-area: out; }
+  .cf-tr + .cf-tr {
+    border-top: 1px solid var(--hairline);
+    border-radius: 0;
+  }
+  .cf-pill {
+    min-width: 0;
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 640px) {
+  .cf-side,
+  .cf-lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cf-card,
+  .cf-next {
+    padding: 16px;
+    border-radius: 20px;
+  }
+  .cf-chart {
+    padding: 16px 0 0;
+  }
+  .cf-desk {
+    min-height: 470px;
+  }
+  .cf-desk-orb {
+    width: min(240px, 66%);
+    top: 44%;
+  }
+  .cf-desk-state {
+    position: static;
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+  /* The inset moves above the controls and spans the card. */
+  .cf-desk-pip {
+    left: 14px;
+    right: 14px;
+    bottom: 86px;
+    width: auto;
+    grid-template-columns: auto auto 1fr;
+    align-items: end;
+    padding: 12px 14px;
+  }
+  .cf-pip-k {
+    grid-column: auto;
+    align-self: center;
+  }
+  .cf-pip-n {
+    font-size: 26px;
+  }
+  .cf-pip-foot {
+    display: none;
+  }
+  .cf-head {
+    align-items: stretch;
+  }
+  .cf-range {
+    width: 100%;
+  }
+  .cf-range-btn {
+    flex: 1;
+    min-height: 44px;
+  }
+  .cf-q-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'who pill'
+      'reason reason'
+      'when when';
+    gap: 2px 10px;
+    padding: 10px 2px;
+  }
+  .cf-q-who { grid-area: who; }
+  .cf-q-row .cf-pill { grid-area: pill; }
+  .cf-q-reason { grid-area: reason; white-space: normal; }
+  .cf-q-when { grid-area: when; text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cf-card,
+  .cf-desk,
+  .cf-next,
+  .cf-q-body,
+  .cf-peak,
+  .cf-peak-tag,
+  .cf-lang-bar span,
+  .cf-day,
+  button.cf-tr,
+  .cf-desk-scene::after,
+  .cf-desk-state i {
+    animation: none;
+  }
+  .cf-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}

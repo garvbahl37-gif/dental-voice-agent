@@ -1,0 +1,731 @@
+/*
+ * The record board — the panel under the hero.
+ *
+ * CareFlow's board in Momo's colours: a pale grey tray holding a big dark-sage
+ * card (the call) and, beside it, a white card, a black card and a sage card
+ * (the appointment, the patient, the reason), with a step rail along the foot.
+ * Values arrive as the call reaches them; until then each is a soft shimmer.
+ */
+
+.rb {
+  width: min(1080px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 32px;
+  background: var(--cloud);
+  box-shadow: 0 50px 90px -60px rgba(14, 40, 26, 0.5), 0 2px 6px rgba(14, 40, 26, 0.04);
+}
+
+/* ── Shared pieces ────────────────────────────────────────────────────────── */
+
+/* A value arriving: up out of a blur. */
+.rb-in {
+  display: inline-block;
+  animation: rb-in 650ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes rb-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(4px);
+  }
+}
+
+/* A value not yet reached: a soft bar with light passing along it. */
+.rb-sk {
+  display: inline-block;
+  width: var(--sk, 60%);
+  height: 0.72em;
+  vertical-align: middle;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(14, 40, 26, 0.07) 30%, rgba(14, 40, 26, 0.14) 50%, rgba(14, 40, 26, 0.07) 70%);
+  background-size: 220% 100%;
+  animation: rb-shimmer 1.6s linear infinite;
+}
+
+.is-ink .rb-sk {
+  background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 30%, rgba(255, 255, 255, 0.22) 50%, rgba(255, 255, 255, 0.1) 70%);
+}
+
+@keyframes rb-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+.rb-tick {
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 24;
+  animation: rb-tick 500ms ease 100ms both;
+}
+
+@keyframes rb-tick {
+  from { stroke-dashoffset: 24; }
+}
+
+/* ── The call ─────────────────────────────────────────────────────────────── */
+
+.rb-call {
+  position: relative;
+  isolation: isolate;
+  grid-row: span 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 430px;
+  padding: 16px;
+  border-radius: 24px;
+  overflow: hidden;
+  color: #fff;
+  background:
+    radial-gradient(60% 45% at 50% 34%, rgba(189, 213, 196, 0.38), transparent 72%),
+    radial-gradient(50% 40% at 85% 100%, rgba(52, 199, 89, 0.25), transparent 70%),
+    linear-gradient(165deg, #718f7b 0%, #557261 52%, #3b5546 100%);
+}
+
+/* A faint ring of light behind the orb, as Momo hangs one in its glass. */
+.rb-call::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 36%;
+  width: 92%;
+  height: 34%;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  translate: -50% -50%;
+  rotate: -8deg;
+}
+
+.rb-call-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rb-live,
+.rb-time,
+.rb-lang {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.rb-live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #6fe08f;
+  box-shadow: 0 0 0 0 rgba(111, 224, 143, 0.6);
+  animation: mo-live 2s ease-out infinite;
+}
+
+.rb-time {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rb-lang {
+  margin-left: auto;
+  min-width: 74px;
+  justify-content: center;
+}
+
+.rb-replay {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--ink);
+  transition: scale 200ms ease;
+}
+
+.rb-replay:hover {
+  scale: 1.08;
+}
+
+.rb-replay svg {
+  width: 13px;
+  height: 13px;
+  margin-left: 2px;
+  fill: currentColor;
+}
+
+.rb-orb {
+  position: relative;
+  width: 132px;
+  margin: 18px auto 6px;
+}
+
+/* A ring that breathes round the orb: green while the desk speaks, sky blue
+   while the caller does. */
+.rb-orb-ring {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(111, 224, 143, 0.6);
+  animation: rb-ring 2.2s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+}
+
+.rb-orb-ring.is-caller {
+  border-color: rgba(169, 220, 242, 0.75);
+}
+
+@keyframes rb-ring {
+  from {
+    opacity: 0.9;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.rb-caps {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: auto;
+  min-height: 150px;
+}
+
+.rb-cap {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 16px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.rb-cap b {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+.rb-cap b .mono {
+  margin-left: 4px;
+  opacity: 0.7;
+}
+
+.rb-cap.is-now {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: rb-in 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.rb-cap.is-now.is-caller b { color: #b9e6f7; }
+.rb-cap.is-now.is-desk b { color: #9df0b5; }
+
+/* The line before, stepping back as the next arrives. */
+.rb-cap.is-before {
+  padding-block: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  animation: rb-back 500ms ease both;
+}
+
+.rb-cap.is-before b {
+  display: inline;
+  margin-right: 6px;
+}
+
+@keyframes rb-back {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+.rb-cap.is-wait {
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Each word as it is said. */
+.rb-w {
+  display: inline-block;
+  white-space: pre;
+  animation: rb-word 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--w, 0) * 90ms + 120ms);
+}
+
+@keyframes rb-word {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+    filter: blur(3px);
+  }
+}
+
+/* ── The cards ────────────────────────────────────────────────────────────── */
+
+.rb-side {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+}
+
+.rb-card {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(14, 17, 16, 0.04);
+}
+
+.rb-card.is-ink {
+  background: var(--ink);
+  color: #fff;
+}
+
+.rb-card.is-sage {
+  background: var(--sage);
+  color: var(--sage-ink);
+}
+
+.rb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.is-ink .rb-head { color: rgba(255, 255, 255, 0.6); }
+.is-sage .rb-head { color: rgba(47, 74, 58, 0.75); }
+
+/* The appointment's state, in CareFlow's pills. */
+.rb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 26px;
+  padding: 0 11px;
+  border-radius: 999px;
+  background: var(--cloud);
+  font-size: 12px;
+  color: var(--ink-muted);
+  transition: background 400ms ease, color 400ms ease;
+}
+
+.rb-pill.is-busy {
+  background: var(--sky);
+  color: #1d4a63;
+}
+
+.rb-pill.is-held {
+  background: var(--sage-soft);
+  color: var(--sage-ink);
+}
+
+.rb-pill.is-booked {
+  background: var(--mo-green-deep);
+  color: #fff;
+}
+
+.rb-spin {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.6px solid rgba(29, 74, 99, 0.25);
+  border-top-color: #1d4a63;
+  animation: hw-spin 900ms linear infinite;
+}
+
+@keyframes hw-spin {
+  to { transform: rotate(360deg); }
+}
+
+.rb-appt {
+  grid-column: 1 / -1;
+}
+
+.rb-when {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.rb-when small {
+  font-family: var(--font-ui);
+  font-size: 13.5px;
+  letter-spacing: 0;
+  color: var(--ink-muted);
+}
+
+.rb-pairs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+
+.rb-pairs div {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--cloud);
+}
+
+.rb-pairs dt {
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
+.rb-pairs dd {
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* The evening in the diary: 5 to 8 pm, two times taken, the caller's held
+   (dashed, breathing) while it is offered, then written in green. */
+.rb-day-track {
+  position: relative;
+  height: 34px;
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(33.333% - 1px), var(--hairline) calc(33.333% - 1px) 33.333%),
+    #f7f8f7;
+}
+
+.rb-taken,
+.rb-slot {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  border-radius: 7px;
+}
+
+.rb-taken {
+  background: #e3e7e4;
+}
+
+.rb-taken.t1 { left: 2%; width: 22%; }
+.rb-taken.t2 { left: 67%; width: 15%; }
+
+.rb-slot {
+  left: calc(1.25 / 3 * 100%);
+  width: calc(0.5 / 3 * 100%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  opacity: 0;
+  transform: scaleX(0.4);
+  transition: opacity 400ms ease, transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1), background 400ms ease;
+}
+
+.rb-day.is-held .rb-slot {
+  opacity: 1;
+  transform: none;
+  border: 1.5px dashed var(--mo-green-deep);
+  background: rgba(52, 199, 89, 0.12);
+  animation: rb-held 1.4s ease-in-out infinite alternate;
+}
+
+.rb-day.is-booked .rb-slot {
+  border: 0;
+  background: linear-gradient(180deg, #4fd672, var(--mo-green-deep));
+  box-shadow: 0 6px 14px -6px rgba(31, 157, 71, 0.8);
+  animation: none;
+}
+
+@keyframes rb-held {
+  to { background: rgba(52, 199, 89, 0.26); }
+}
+
+.rb-day-hours {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 5px;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+/* The patient, on CareFlow's black card: initials, never a photograph. */
+.rb-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rb-initials {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  transition: background 400ms ease, color 400ms ease;
+}
+
+.rb-initials.is-on {
+  background: var(--sage);
+  color: var(--sage-ink);
+  animation: rb-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes rb-pop {
+  from { transform: scale(0.6); }
+}
+
+.rb-name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.rb-langs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+}
+
+.rb-langs span {
+  padding: 3px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.4);
+  transition: background 400ms ease, color 400ms ease, border-color 400ms ease;
+}
+
+.rb-langs span.is-on {
+  border-color: transparent;
+  background: rgba(111, 224, 143, 0.2);
+  color: #9df0b5;
+}
+
+.rb-treat {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 21px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.is-sage .rb-sk {
+  background-image: linear-gradient(90deg, rgba(47, 74, 58, 0.1) 30%, rgba(47, 74, 58, 0.2) 50%, rgba(47, 74, 58, 0.1) 70%);
+}
+
+.rb-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: auto;
+  min-height: 24px;
+}
+
+.rb-tags span {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  font-size: 11.5px;
+}
+
+/* ── How far the call has got ─────────────────────────────────────────────── */
+
+.rb-steps {
+  position: relative;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin: 0;
+  padding: 16px 18px 14px;
+  list-style: none;
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+/* The rail runs between the first dot and the last. */
+.rb-steps-rail {
+  position: absolute;
+  left: calc(18px + 10% );
+  right: calc(18px + 10%);
+  top: 29px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--hairline);
+}
+
+.rb-steps-rail i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #4fd672, var(--mo-green-deep));
+  transform-origin: left;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rb-steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.rb-step-dot {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--hairline-strong);
+  background: var(--surface);
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  transition: background 400ms ease, border-color 400ms ease, color 400ms ease;
+}
+
+.rb-steps li.is-now .rb-step-dot {
+  border-color: var(--mo-green-deep);
+  color: var(--mo-green-deep);
+  box-shadow: 0 0 0 0 rgba(52, 199, 89, 0.4);
+  animation: mo-live 1.8s ease-out infinite;
+}
+
+.rb-steps li.is-done .rb-step-dot {
+  border-color: transparent;
+  background: var(--mo-green-deep);
+  color: #fff;
+}
+
+.rb-step-k {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  transition: color 300ms ease;
+}
+
+.rb-steps li.is-now .rb-step-k,
+.rb-steps li.is-done .rb-step-k {
+  color: var(--ink);
+}
+
+/* ── Narrower ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .rb {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 8px;
+    gap: 8px;
+    border-radius: 26px;
+  }
+  .rb-call {
+    min-height: 400px;
+  }
+  .rb-side {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .rb-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rb-when {
+    font-size: 34px;
+  }
+  .rb-cap {
+    font-size: 14px;
+  }
+  .rb-call-top {
+    gap: 6px;
+  }
+  .rb-live,
+  .rb-time,
+  .rb-lang {
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .rb-lang {
+    min-width: 0;
+  }
+  /* Five labels do not fit a phone: the dots stay, and the step the call is
+     on is named once, centred under them. */
+  .rb-steps {
+    padding: 14px 10px 36px;
+  }
+  .rb-steps li {
+    position: static;
+  }
+  .rb-steps-rail {
+    left: calc(10px + 10%);
+    right: calc(10px + 10%);
+    top: 27px;
+  }
+  .rb-step-k {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    font-size: 12px;
+    visibility: hidden;
+  }
+  .rb-steps li.is-now .rb-step-k,
+  .rb-steps li:last-child.is-done .rb-step-k {
+    visibility: visible;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rb *,
+  .rb *::before,
+  .rb *::after {
+    animation: none !important;
+  }
+}
